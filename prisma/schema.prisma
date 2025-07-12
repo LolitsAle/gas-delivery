@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  nickname     String
+  phoneNumber  String   @unique
+  password     String
+  address      String?
+  addressNote  String?
+  houseImage   String?
+  role         Role     @default(USER)
+  isVerified   Boolean  @default(false)
+  updatedAt    DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  orders       Order[]
+}
+
+model Product {
+  id          String       @id @default(uuid())
+  productName String       @unique // this must be unique
+  currentPrice Int
+  quantity    Int
+  updatedAt   DateTime     @default(now())
+  createdAt   DateTime     @default(now())
+
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id          String       @id @default(uuid())
+  user        User         @relation(fields: [userId], references: [id])
+  userId      String
+  totalPrice  Int
+  status      OrderStatus  @default(NOT_VERIFIED)
+  updatedAt   DateTime     @default(now())
+  createdAt   DateTime     @default(now())
+
+  items       OrderItem[]
+  coupons     OrderCoupon[]
+}
+
+model OrderItem {
+  id         String    @id @default(uuid())
+  order      Order     @relation(fields: [orderId], references: [id])
+  orderId    String
+  product    Product   @relation(fields: [productId], references: [id])
+  productId  String
+  quantity   Int
+  unitPrice  Int
+  updatedAt  DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+}
+
+model Coupon {
+  id             String        @id @default(uuid())
+  code           String        @unique
+  discountType   DiscountType
+  discountAmount Int
+  isActive       Boolean       @default(true)
+  isPermanent    Boolean       @default(false)
+  expireDate     DateTime?
+  usableTimes    Int?
+  updatedAt      DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+
+  orders         OrderCoupon[]
+}
+
+model OrderCoupon {
+  id         String   @id @default(uuid())
+  order      Order    @relation(fields: [orderId], references: [id])
+  orderId    String
+  coupon     Coupon   @relation(fields: [couponId], references: [id])
+  couponId   String
+  appliedAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+  createdAt  DateTime @default(now())
+}
+
+enum Role {
+  USER
+  DELIVERER
+  
+  ADMIN
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum OrderStatus {
+  NOT_VERIFIED
+  CONFIRMED
+  DELIVERED
+  UNPAID
+  CANCELLED
+}
