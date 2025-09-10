@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import {
   DollarSign,
@@ -13,8 +14,6 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
-
-interface Props {}
 
 const ICONS = {
   House,
@@ -61,8 +60,7 @@ const DASHBOARD_MENU: IDashboardMenu[] = [
   },
 ];
 
-function Sidebar(props: Props) {
-  const {} = props;
+function Sidebar() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [sidebarItems, setSidebarItems] = useState(DASHBOARD_MENU);

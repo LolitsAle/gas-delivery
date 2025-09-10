@@ -6,7 +6,7 @@ function RegisterForm(props: Props) {
     const {} = props
 
     return (
-        null
+        <>Register Form</>
     )
 }
 
