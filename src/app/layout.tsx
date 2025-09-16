@@ -1,6 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Head from "next/head";
+import { InstallPromptProvider } from "@/components/context/installPromptContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,11 +18,17 @@ export const metadata: Metadata = {
   title: "Ngọc Lâm Gas",
   description: "An toàn là trên hết",
   manifest: "/manifest.json",
-  themeColor: "#ffffff", // for Chrome/Android
   icons: {
     icon: "/icons/icon-192.png", // Fallback browser tab icon
     apple: "/icons/icon-180.png", // iOS homescreen icon
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#ffffff", // for Chrome/Android
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -30,14 +38,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
+      <Head>
         {/* Safari iOS specific */}
         <link rel="apple-touch-icon" href="/icons/icon-180.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-      </head>
+      </Head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {children}
+        <InstallPromptProvider>{children}</InstallPromptProvider>
       </body>
     </html>
   );
