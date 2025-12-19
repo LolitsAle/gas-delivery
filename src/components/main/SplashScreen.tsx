@@ -13,11 +13,11 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
       setProgress((old) => {
         if (old >= 100) {
           clearInterval(interval);
-          setTimeout(onFinish, 500);
+          setTimeout(onFinish, 700);
           return 100;
         }
 
-        if (old < 90) return old + 5; // chạy nhanh đến 90
+        if (old < 90) return old + 7; // chạy nhanh đến 90
         return old + 1; // từ 90 → 100 chậm hơn
       });
     }, 80);
@@ -42,7 +42,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.6 }}
-        className="text-2xl font-bold text-orange-300 mb-10 tracking-wide drop-shadow-md"
+        className="md:text-2xl sm:text-xs font-bold text-orange-300 mb-10 tracking-wide drop-shadow-md"
       >
         Úy Tín - An toàn - Nhanh chóng
       </motion.h1>
