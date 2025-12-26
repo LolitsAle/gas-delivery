@@ -3,7 +3,20 @@
 import InstallOrOpenButton from "@/components/main/InstallAppButton";
 import SplashScreen from "@/components/main/SplashScreen";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuPortal, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   House,
   Minus,
@@ -124,7 +137,9 @@ export default function Home() {
             </div>
             <div className="flex gap-[2vw] my-[3vw]">
               <span className="text-white">Quà khuyến mãi</span>
-              <div className="h-[5vw] bg-white rounded-md px-[2vw] cursor-pointer text-black">nước rửa chén NET</div>
+              <div className="h-[5vw] bg-white rounded-md px-[2vw] cursor-pointer text-black">
+                nước rửa chén NET
+              </div>
             </div>
           </div>
         </div>

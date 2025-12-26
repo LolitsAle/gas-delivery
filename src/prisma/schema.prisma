@@ -80,6 +80,18 @@ model OrderCoupon {
   order     Order    @relation(fields: [orderId], references: [id])
 }
 
+model PhoneOtp {
+  id        String   @id @default(uuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+}
+
+
 enum Role {
   USER
   ADMIN
