@@ -1,10 +1,13 @@
+// src/lib/auth/jwt-node.ts
 import jwt, { SignOptions } from "jsonwebtoken";
 
 const JWT_SECRET =
-  Buffer.from(process.env.JWT_SECRET!, "utf-8") || "keymaster123";
+  Buffer.from(process.env.JWT_SECRET!, "utf-8") || "GasNgocLam";
 
-export function signJwt(payload: object) {
-  const expiresIn: SignOptions["expiresIn"] = "7d";
+export function signJwt(
+  payload: object,
+  expiresIn: SignOptions["expiresIn"] = "7d"
+) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 

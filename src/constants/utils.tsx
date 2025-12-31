@@ -5,7 +5,7 @@ export function generateContrastingColors(count: number): string[] {
     // Spread hues evenly around the circle
     const hue = Math.floor((360 / count) * i);
     const saturation = 80; // keep colors vivid
-    const lightness = 60;  // keep them bright
+    const lightness = 60; // keep them bright
 
     colors.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
   }

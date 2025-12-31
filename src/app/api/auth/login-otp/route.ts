@@ -6,17 +6,20 @@ export async function POST(req: Request) {
   const { phone } = await req.json();
 
   if (!phone) {
-    return NextResponse.json({ message: "Thiếu thông tin" }, { status: 400 });
+    return NextResponse.json(
+      { message: "Thiếu số điện thoại" },
+      { status: 400 }
+    );
   }
 
-  const existingUser = await prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { phoneNumber: phone },
   });
 
-  if (existingUser) {
+  if (!user) {
     return NextResponse.json(
-      { message: "Số điện thoại đã đăng ký" },
-      { status: 409 }
+      { message: "Số điện thoại chưa đăng ký" },
+      { status: 404 }
     );
   }
 
@@ -24,14 +27,10 @@ export async function POST(req: Request) {
     await sendOtpService(phone);
   } catch (error: any) {
     console.error("Send OTP error:", error.message);
-
-    return NextResponse.json(
-      { message: "Failed to send OTP" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Không thể gửi OTP" }, { status: 500 });
   }
 
   return NextResponse.json({
-    message: "OTP sent. Please verify phone number.",
+    message: "OTP đã được gửi",
   });
 }

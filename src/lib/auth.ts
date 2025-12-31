@@ -1,4 +1,4 @@
-import { verifyJwt } from "@/lib/jwt";
+import { verifyJwt } from "@/lib/auth/jwt-node";
 
 export function getAuthUser(req: Request) {
   const auth = req.headers.get("authorization");

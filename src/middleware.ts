@@ -1,22 +1,43 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { verifyJwt } from "@/lib/jwt";
+import { NextRequest, NextResponse } from "next/server";
+import { verifyJwtEdge } from "@/lib/auth/jwt-edge";
 
-export function middleware(req: NextRequest) {
-  const auth = req.headers.get("authorization");
+export default async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-  if (!auth) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  // ✅ ĐÚNG tên cookie
+  const accessToken = req.cookies.get("access_token")?.value;
+  console.log("accessToken", accessToken);
+
+  if (!accessToken) {
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   try {
-    verifyJwt(auth.replace("Bearer ", ""));
+    const payload = await verifyJwtEdge(accessToken);
+    /**
+     * payload chuẩn:
+     * {
+     *   sub: string
+     *   role: "USER" | "ADMIN"
+     *   sv: number
+     *   exp: number
+     * }
+     */
+
+    // 🔐 Protect admin routes
+    if (pathname.startsWith("/admin") && payload.role !== "ADMIN") {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+
     return NextResponse.next();
-  } catch {
-    return NextResponse.json({ message: "Invalid token" }, { status: 401 });
+  } catch (err) {
+    // ❌ Access token hết hạn / không hợp lệ
+    // 👉 KHÔNG redirect thẳng login
+    // 👉 Cho frontend gọi /api/auth/refresh
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 }
 
 export const config = {
-  matcher: ["/api/orders/:path*"], // protect order APIs
+  matcher: ["/admin/:path*", "/profile/:path*"],
 };

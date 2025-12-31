@@ -7,18 +7,50 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  nickname    String
-  phoneNumber String   @unique
-  password    String
-  address     String?
-  addressNote String?
-  houseImage  String?
-  role        Role     @default(USER)
-  isVerified  Boolean  @default(false)
-  updatedAt   DateTime @default(now()) @updatedAt
-  createdAt   DateTime @default(now())
-  orders      Order[]
+  id             String   @id @default(uuid())
+  nickname       String
+  phoneNumber    String   @unique
+  password       String
+  address        String?
+  addressNote    String?
+  houseImage     String?
+  role           Role     @default(USER)
+  isVerified     Boolean  @default(false)
+  sessionVersion Int      @default(1)
+
+  updatedAt      DateTime @default(now()) @updatedAt
+  createdAt      DateTime @default(now())
+
+  orders         Order[]
+  refreshTokens  RefreshToken[]
+}
+
+model RefreshToken {
+  id                   String   @id @default(uuid())
+  userId               String
+  tokenHash            String   @unique
+  replacedByTokenHash  String?
+
+  revoked              Boolean  @default(false)
+  expiresAt            DateTime
+  lastUsedAt           DateTime?
+
+  createdAt            DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PhoneOtp {
+  id        String   @id @default(uuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
 }
 
 model Product {
@@ -28,6 +60,7 @@ model Product {
   quantity     Int
   updatedAt    DateTime    @default(now())
   createdAt    DateTime    @default(now())
+
   orderItems   OrderItem[]
 }
 
@@ -38,6 +71,7 @@ model Order {
   status     OrderStatus   @default(WAITING)
   updatedAt  DateTime      @default(now())
   createdAt  DateTime      @default(now())
+
   user       User          @relation(fields: [userId], references: [id])
   coupons    OrderCoupon[]
   items      OrderItem[]
@@ -51,6 +85,7 @@ model OrderItem {
   unitPrice Int
   updatedAt DateTime @default(now())
   createdAt DateTime @default(now())
+
   order     Order    @relation(fields: [orderId], references: [id])
   product   Product  @relation(fields: [productId], references: [id])
 }
@@ -66,6 +101,7 @@ model Coupon {
   usableTimes    Int?
   updatedAt      DateTime      @default(now())
   createdAt      DateTime      @default(now())
+
   orders         OrderCoupon[]
 }
 
@@ -76,21 +112,10 @@ model OrderCoupon {
   appliedAt DateTime @default(now())
   updatedAt DateTime @default(now())
   createdAt DateTime @default(now())
+
   coupon    Coupon   @relation(fields: [couponId], references: [id])
   order     Order    @relation(fields: [orderId], references: [id])
 }
-
-model PhoneOtp {
-  id        String   @id @default(uuid())
-  phone     String
-  code      String
-  expiresAt DateTime
-  attempts  Int      @default(0)
-  createdAt DateTime @default(now())
-
-  @@index([phone])
-}
-
 
 enum Role {
   USER

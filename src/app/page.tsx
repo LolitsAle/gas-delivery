@@ -2,21 +2,6 @@
 
 import InstallOrOpenButton from "@/components/main/InstallAppButton";
 import SplashScreen from "@/components/main/SplashScreen";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   House,
   Minus,
@@ -30,7 +15,7 @@ import {
 import { useState } from "react";
 
 export default function Home() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [gasQuantity, setGasQuantity] = useState(1);
 
   if (loading) {
@@ -67,7 +52,7 @@ export default function Home() {
       <div className="mt-[4vw] flex justify-end items-center w-full pr-[3vw]">
         {" "}
       </div>
-      <div className="mt-[1vw] w-[100vw] flex">
+      <div className="mt-[1vw] w-screen flex">
         <div className="basis-[40%] flex justify-center items-center z-20">
           <button className="h-[25vw] aspect-square rounded-full text-white cursor-pointer outline-4 outline-none shadow-2xl">
             <span
@@ -146,13 +131,13 @@ export default function Home() {
       </div>
 
       {/* services */}
-      <div className="">
+      {/* <div className="">
         <h3>dịch vụ</h3>
         <div>Sửa bếp</div>
         <div>Sửa máy lọc nước</div>
         <div>phụ tùng bếp</div>
         <div>giao kèm</div>
-      </div>
+      </div> */}
 
       {/* nav bar */}
       <div className="fixed bottom-[4vw] left-1/2 -translate-x-1/2 w-[90vw] flex flex-row bg-[#232428] h-[20vw] rounded-xl text-[3vw] text-white">
