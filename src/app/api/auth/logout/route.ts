@@ -26,7 +26,7 @@ export async function POST() {
     const headers = buildClearAuthCookies();
 
     return new Response(
-      JSON.stringify({ message: "Đã đăng xuất thành công" }),
+      JSON.stringify({ message: "Đã đăng xuất thành công", ok: true }),
       {
         status: 200,
         headers,

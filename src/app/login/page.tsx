@@ -28,13 +28,7 @@ const LoginPage = () => {
   };
 
   const handleLoginSuccess = (user: any) => {
-    // ✅ bắt Next sync lại cookie + middleware state
-    router.refresh();
-
-    // ✅ delay rất nhỏ (1 tick)
-    setTimeout(() => {
-      router.push(user.role === "ADMIN" ? "/admin" : "/");
-    }, 50);
+    router.push(user.role === "ADMIN" ? "/admin" : "/");
   };
 
   // ================= OTP LOGIN =================

@@ -10,7 +10,7 @@ import {
 export async function POST() {
   try {
     // 1️⃣ Lấy refresh token từ cookie
-    const refreshToken = await getCookie("refreshToken");
+    const refreshToken = await getCookie("refresh_token");
 
     if (!refreshToken) {
       return Response.json(
@@ -60,7 +60,7 @@ export async function POST() {
 
     const user = storedToken.user;
 
-    if (!user || !user.isVerified) {
+    if (!user) {
       return Response.json(
         { message: "Tài khoản không hợp lệ" },
         { status: 401 }
@@ -76,9 +76,9 @@ export async function POST() {
     // 5️⃣ Tạo access token mới
     const newAccessToken = signJwt(
       {
-        sub: user.id,
+        userId: user.id,
         role: user.role,
-        sv: user.sessionVersion,
+        sessionVersion: user.sessionVersion,
       },
       ACCESS_TOKEN_EXPIRES
     );

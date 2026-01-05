@@ -1,43 +1,18 @@
+// src/middleware.ts
 import { NextRequest, NextResponse } from "next/server";
-import { verifyJwtEdge } from "@/lib/auth/jwt-edge";
+import { getCookie } from "./lib/auth/cookies";
 
 export default async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const refreshToken = await getCookie("refresh_token");
+  console.log("Middleware - Refresh token:", refreshToken);
 
-  // ✅ ĐÚNG tên cookie
-  const accessToken = req.cookies.get("access_token")?.value;
-  console.log("accessToken", accessToken);
-
-  if (!accessToken) {
+  if (!refreshToken) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  try {
-    const payload = await verifyJwtEdge(accessToken);
-    /**
-     * payload chuẩn:
-     * {
-     *   sub: string
-     *   role: "USER" | "ADMIN"
-     *   sv: number
-     *   exp: number
-     * }
-     */
-
-    // 🔐 Protect admin routes
-    if (pathname.startsWith("/admin") && payload.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
-
-    return NextResponse.next();
-  } catch (err) {
-    // ❌ Access token hết hạn / không hợp lệ
-    // 👉 KHÔNG redirect thẳng login
-    // 👉 Cho frontend gọi /api/auth/refresh
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/profile/:path*"],
+  matcher: ["/admin/:path*"],
 };

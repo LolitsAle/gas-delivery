@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Head from "next/head";
 import { InstallPromptProvider } from "@/components/context/installPromptContext";
+import AuthProvider from "@/components/auth/AuthProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,7 +43,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-180.png" />
       </Head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <InstallPromptProvider>{children}</InstallPromptProvider>
+        <AuthProvider>
+          <InstallPromptProvider>{children}</InstallPromptProvider>
+        </AuthProvider>
       </body>
     </html>
   );

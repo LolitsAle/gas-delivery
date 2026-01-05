@@ -47,9 +47,9 @@ export async function POST(req: Request) {
 
   const accessToken = signJwt(
     {
-      sub: user.id,
+      userId: user.id,
       role: user.role,
-      sv: user.sessionVersion,
+      sessionVersion: user.sessionVersion,
     },
     ACCESS_TOKEN_EXPIRES
   );

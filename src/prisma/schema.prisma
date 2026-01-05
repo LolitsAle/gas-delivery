@@ -17,6 +17,7 @@ model User {
   role           Role     @default(USER)
   isVerified     Boolean  @default(false)
   sessionVersion Int      @default(1)
+  isActive      Boolean  @default(true)
 
   updatedAt      DateTime @default(now()) @updatedAt
   createdAt      DateTime @default(now())

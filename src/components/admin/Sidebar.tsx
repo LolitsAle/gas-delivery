@@ -1,106 +1,48 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-import {
-  DollarSign,
-  House,
-  Info,
-  Mail,
-  Menu,
-  Settings,
-  ShoppingBag,
-  ShoppingCart,
-  Users,
-} from "lucide-react";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React, { useState } from "react";
+import { DASHBOARD_MENU, DASHBOARD_MENU_ICONS } from "./AdminShell";
 
-const ICONS = {
-  House,
-  DollarSign,
-  Settings,
-  ShoppingBag,
-  ShoppingCart,
-  Mail,
-  Users,
-  Info,
-};
-
-interface IDashboardMenu {
-  name: string;
-  icon: string;
-  href: string;
+interface SidebarProps {
+  open: boolean;
+  onClose: () => void;
 }
 
-const DASHBOARD_MENU: IDashboardMenu[] = [
-  {
-    name: "Trang Chủ",
-    icon: "House",
-    href: "/admin",
-  },
-  {
-    name: "Đơn Hàng",
-    icon: "DollarSign",
-    href: "/admin/orders",
-  },
-  {
-    name: "Kho Gas",
-    icon: "Info",
-    href: "/admin/ware-house",
-  },
-  {
-    name: "Sản Phẩm",
-    icon: "ShoppingBag",
-    href: "/admin/products",
-  },
-  {
-    name: "Khách Hàng",
-    icon: "Users",
-    href: "/admin/users",
-  },
-];
-
-function Sidebar() {
-
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [sidebarItems, setSidebarItems] = useState(DASHBOARD_MENU);
-  const pathname = usePathname();
+export default function Sidebar({ open, onClose }: SidebarProps) {
+  const pathname = usePathname() ?? "";
 
   return (
-    <div
-      className={`relative z-10 transition-all duration-300 ease-in-out flex-shrink-0 ${
-        isSidebarOpen ? "w-64" : "w-20"
-      }`}
+    <aside
+      className={`fixed md:static inset-y-0 left-0 z-40 w-64 bg-gray-600 text-white transform transition-transform duration-300 ease-in-out
+      ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
     >
-      <div className="h-full bg-[#1e1e1e] backdrop-blur-md p-4 flex flex-col border-r border-[#2f2f2f]">
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="ml-1 p-2 rounded-full hover:bg-[#2f2f2f] transition-colors max-w-fit cursor-pointer"
-        >
-          <Menu size={24} />
-        </button>
-        <nav className="mt-8 flex-grow ">
-          {sidebarItems.map((item) => {
-            const IconComponent = ICONS[item.icon as keyof typeof ICONS];
-            return (
-              <Link key={item.name} href={item.href}>
-                <div
-                  className={`flex items-center p-3.5 text-sm font-medium rounded-lg hover:bg-[#2f2f2f] transition-colors mb-2 ${
-                    pathname === item.href ? "bg-[#2f2f2f]" : ""
-                  }`}
-                >
-                  <IconComponent size={20} style={{ minWidth: "20px" }} />
-                  {isSidebarOpen && (
-                    <span className="ml-4 whitespace-nowrap">{item.name}</span>
-                  )}
-                </div>
-              </Link>
-            );
-          })}
-        </nav>
+      {/* Logo / Title */}
+      <div className="h-16 flex items-center px-6 border-b border-gray-500 font-semibold text-lg">
+        Admin Panel
       </div>
-    </div>
+
+      {/* Menu */}
+      <nav className="p-3 space-y-1">
+        {DASHBOARD_MENU.map((item) => {
+          const Icon = DASHBOARD_MENU_ICONS[item.icon];
+          const active =
+            pathname === item.href || pathname.startsWith(item.href + "/");
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onClose}
+              className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors
+                ${active ? "bg-gray-500" : "hover:bg-gray-500"}`}
+            >
+              <Icon className="w-5 h-5" />
+              <span>{item.name}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    </aside>
   );
 }
-
-export default Sidebar;

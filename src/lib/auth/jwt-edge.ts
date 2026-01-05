@@ -5,7 +5,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || "GasNgocLam");
 
 export type EdgeJwtPayload = {
   userId: string;
-  role: "ADMIN" | "USER";
+  role: "ADMIN" | "USER" | "STAFF";
   exp: number;
 };
 
