@@ -16,6 +16,12 @@ export function buildHttpOnlyCookie(
   value: string,
   maxAge: number
 ) {
+  console.log(
+    "Build cookie:",
+    `${name}=${value}; HttpOnly; Path=/; Max-Age=${maxAge}; SameSite=Lax${
+      isProd ? "; Secure" : ""
+    }`
+  );
   return `${name}=${value}; HttpOnly; Path=/; Max-Age=${maxAge}; SameSite=Lax${
     isProd ? "; Secure" : ""
   }`;
