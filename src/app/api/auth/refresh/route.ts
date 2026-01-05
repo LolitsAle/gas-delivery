@@ -1,4 +1,3 @@
-import { getCookie, buildAuthCookie } from "@/lib/auth/cookies";
 import { signJwt } from "@/lib/auth/jwt-node";
 import { prisma } from "@/lib/prisma";
 import { generateRefreshToken, hashToken } from "@/lib/auth/helpers";
@@ -7,21 +6,19 @@ import {
   REFRESH_TOKEN_EXPIRES,
 } from "@/lib/auth/authConfig";
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
-    // 1️⃣ Lấy refresh token từ cookie
-    const refreshToken = await getCookie("refresh_token");
+    const { refresh_token } = await req.json();
 
-    if (!refreshToken) {
+    if (!refresh_token) {
       return Response.json(
         { message: "Không tìm thấy refresh token" },
         { status: 401 }
       );
     }
 
-    const refreshTokenHash = hashToken(refreshToken);
+    const refreshTokenHash = hashToken(refresh_token);
 
-    // 2️⃣ Tìm refresh token trong DB
     const storedToken = await prisma.refreshToken.findUnique({
       where: { tokenHash: refreshTokenHash },
       include: {
@@ -43,7 +40,6 @@ export async function POST() {
       );
     }
 
-    // 3️⃣ Kiểm tra trạng thái token
     if (storedToken.revoked) {
       return Response.json(
         { message: "Refresh token đã bị thu hồi" },
@@ -67,14 +63,12 @@ export async function POST() {
       );
     }
 
-    // 4️⃣ Revoke refresh token cũ (ROTATION)
     await prisma.refreshToken.update({
       where: { id: storedToken.id },
       data: { revoked: true },
     });
 
-    // 5️⃣ Tạo access token mới
-    const newAccessToken = signJwt(
+    const access_token = signJwt(
       {
         userId: user.id,
         role: user.role,
@@ -83,36 +77,24 @@ export async function POST() {
       ACCESS_TOKEN_EXPIRES
     );
 
-    // 6️⃣ Tạo refresh token mới
-    const newRefreshToken = generateRefreshToken();
-    const newRefreshTokenHash = hashToken(newRefreshToken);
-
-    const newRefreshExpiresAt = new Date(
-      Date.now() + REFRESH_TOKEN_EXPIRES * 1000
-    );
+    const refresh_token_new = generateRefreshToken();
+    const refreshTokenHashNew = hashToken(refresh_token_new);
 
     await prisma.refreshToken.create({
       data: {
-        tokenHash: newRefreshTokenHash,
+        tokenHash: refreshTokenHashNew,
         userId: user.id,
-        expiresAt: newRefreshExpiresAt,
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRES * 1000),
       },
     });
 
-    // 7️⃣ Set cookie
-    const headers = buildAuthCookie(
-      newAccessToken,
-      ACCESS_TOKEN_EXPIRES,
-      newRefreshToken,
-      REFRESH_TOKEN_EXPIRES
-    );
-
-    return new Response(
-      JSON.stringify({ message: "Làm mới phiên đăng nhập thành công" }),
+    return Response.json(
       {
-        status: 200,
-        headers,
-      }
+        access_token,
+        refresh_token: refresh_token_new,
+        expires_in: ACCESS_TOKEN_EXPIRES,
+      },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Refresh token error:", error);

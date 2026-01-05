@@ -1,41 +1,40 @@
-import { getCookie, buildClearAuthCookies } from "@/lib/auth/cookies";
+// app/api/auth/logout/route.ts
 import { prisma } from "@/lib/prisma";
 import { hashToken } from "@/lib/auth/helpers";
+import { NextResponse } from "next/server";
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
-    // 1️⃣ Lấy refresh token từ cookie
-    const refreshToken = await getCookie("refreshToken");
+    const body = await req.json().catch(() => null);
+    const refreshToken = body?.refresh_token;
 
-    if (refreshToken) {
-      const refreshTokenHash = hashToken(refreshToken);
-
-      // 2️⃣ Revoke refresh token trong DB (nếu tồn tại)
-      await prisma.refreshToken.updateMany({
-        where: {
-          tokenHash: refreshTokenHash,
-          revoked: false,
-        },
-        data: {
-          revoked: true,
-        },
-      });
+    if (!refreshToken) {
+      return NextResponse.json(
+        { ok: true, message: "Đã đăng xuất" },
+        { status: 200 }
+      );
     }
 
-    // 3️⃣ Clear cookie (idempotent)
-    const headers = buildClearAuthCookies();
+    const refreshTokenHash = hashToken(refreshToken);
 
-    return new Response(
-      JSON.stringify({ message: "Đã đăng xuất thành công", ok: true }),
-      {
-        status: 200,
-        headers,
-      }
+    await prisma.refreshToken.updateMany({
+      where: {
+        tokenHash: refreshTokenHash,
+        revoked: false,
+      },
+      data: {
+        revoked: true,
+      },
+    });
+
+    return NextResponse.json(
+      { ok: true, message: "Đã đăng xuất thành công" },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Logout error:", error);
 
-    return Response.json(
+    return NextResponse.json(
       { message: "Có lỗi xảy ra khi đăng xuất" },
       { status: 500 }
     );

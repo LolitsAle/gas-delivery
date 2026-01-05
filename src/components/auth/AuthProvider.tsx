@@ -1,8 +1,8 @@
-// src/components/auth/AuthProvider.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { tokenStorage } from "@/lib/auth/token";
 
 const PUBLIC_ROUTES = ["/login", "/register", "/"];
 
@@ -13,40 +13,24 @@ export default function AuthProvider({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [ready, setReady] = useState(false);
+
+  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+  const [ready, setReady] = useState(isPublicRoute);
 
   useEffect(() => {
-    async function initAuth() {
-      // ✅ Public route → bỏ qua auth
-      if (PUBLIC_ROUTES.includes(pathname)) {
-        setReady(true);
-        return;
-      }
+    if (isPublicRoute) return;
 
-      try {
-        // 🔑 LUÔN refresh trước
-        const res = await fetch("/api/auth/refresh", {
-          method: "POST",
-          credentials: "include",
-        });
+    const accessToken = tokenStorage.getAccess();
 
-        if (res.ok) {
-          // ✅ access token mới đã được set vào cookie
-          setReady(true);
-          return;
-        }
-      } catch {
-        // ignore
-      }
-
-      // ❌ Không refresh được → logout
+    if (!accessToken) {
       router.replace("/login");
+      return;
     }
 
-    initAuth();
-  }, [pathname, router]);
+    setReady(true);
+  }, [isPublicRoute, router]);
 
-  if (!ready) {
+  if (!ready && !isPublicRoute) {
     return (
       <div className="h-screen flex items-center justify-center">
         <span className="text-gray-500">Checking session…</span>

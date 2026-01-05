@@ -13,7 +13,7 @@ model User {
   password       String
   address        String?
   addressNote    String?
-  houseImage     String?
+  houseImage     String[]
   role           Role     @default(USER)
   isVerified     Boolean  @default(false)
   sessionVersion Int      @default(1)

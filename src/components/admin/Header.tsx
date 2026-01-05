@@ -3,7 +3,7 @@
 import React, { memo, useEffect, useState, useCallback, useMemo } from "react";
 import { Menu, User, LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { apiFetchAuth } from "@/lib/api/apiClient";
+import { apiFetchAuth, apiLogoutClient } from "@/lib/api/apiClient";
 
 interface UserInfo {
   id: string;
@@ -62,11 +62,8 @@ function HeaderComponent({ onMenuClick }: HeaderProps) {
   /* Logout */
   const logout = useCallback(async () => {
     try {
-      await apiFetchAuth("/api/auth/logout", { method: "POST" });
-    } finally {
-      localStorage.removeItem(USER_STORAGE_KEY);
-      router.replace("/login");
-    }
+      await apiLogoutClient();
+    } catch {}
   }, [router]);
 
   const getCurrentPathName = useMemo(() => {

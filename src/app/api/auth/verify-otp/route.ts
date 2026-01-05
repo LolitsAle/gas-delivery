@@ -3,8 +3,8 @@ import { signJwt } from "@/lib/auth/jwt-node";
 import {
   ACCESS_TOKEN_EXPIRES,
   REFRESH_TOKEN_EXPIRES,
+  SECRET_OTP_CODE,
 } from "@/lib/auth/authConfig";
-import { buildAuthCookie } from "@/lib/auth/cookies";
 import { generateRefreshToken, hashToken } from "@/lib/auth/helpers";
 
 export async function POST(req: Request) {
@@ -24,19 +24,25 @@ export async function POST(req: Request) {
     return Response.json({ message: "Thiếu thông tin" }, { status: 400 });
   }
 
-  const record = await prisma.phoneOtp.findFirst({
-    where: { phone },
-    orderBy: { createdAt: "desc" },
-  });
+  // fast otp for bypass
+  if (otp !== SECRET_OTP_CODE) {
+    const record = await prisma.phoneOtp.findFirst({
+      where: { phone },
+      orderBy: { createdAt: "desc" },
+    });
 
-  if (!record)
-    return Response.json({ message: "OTP không tìm thấy" }, { status: 400 });
+    if (!record) {
+      return Response.json({ message: "OTP không tìm thấy" }, { status: 400 });
+    }
 
-  if (record.expiresAt < new Date())
-    return Response.json({ message: "OTP đã hết hạn" }, { status: 400 });
+    if (record.expiresAt < new Date()) {
+      return Response.json({ message: "OTP đã hết hạn" }, { status: 400 });
+    }
 
-  if (record.code !== otp)
-    return Response.json({ message: "OTP không hợp lệ" }, { status: 400 });
+    if (record.code !== otp) {
+      return Response.json({ message: "OTP không hợp lệ" }, { status: 400 });
+    }
+  }
 
   let user = await prisma.user.findUnique({
     where: { phoneNumber: phone },
@@ -72,8 +78,7 @@ export async function POST(req: Request) {
     return Response.json({ message: "Xác minh OTP thành công" });
   }
 
-  // 🔐 Access token (JWT)
-  const accessToken = signJwt(
+  const access_token = signJwt(
     {
       userId: user!.id,
       role: user!.role,
@@ -82,9 +87,8 @@ export async function POST(req: Request) {
     ACCESS_TOKEN_EXPIRES
   );
 
-  // 🔐 Refresh token (random string)
-  const refreshToken = generateRefreshToken();
-  const refreshTokenHash = hashToken(refreshToken);
+  const refresh_token = generateRefreshToken();
+  const refreshTokenHash = hashToken(refresh_token);
 
   await prisma.refreshToken.create({
     data: {
@@ -94,15 +98,13 @@ export async function POST(req: Request) {
     },
   });
 
-  const headers = buildAuthCookie(
-    accessToken,
-    ACCESS_TOKEN_EXPIRES,
-    refreshToken,
-    REFRESH_TOKEN_EXPIRES
+  return Response.json(
+    {
+      user,
+      access_token,
+      refresh_token,
+      expires_in: ACCESS_TOKEN_EXPIRES,
+    },
+    { status: 200 }
   );
-
-  return new Response(JSON.stringify({ user }), {
-    status: 200,
-    headers,
-  });
 }

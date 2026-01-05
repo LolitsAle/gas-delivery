@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetchPublic } from "@/lib/api/apiClient";
+import { tokenStorage } from "@/lib/auth/token";
 
 const PHONE_REGEX = /^(?:\+84|0)(?:3|5|7|8|9)\d{8}$/;
 
@@ -28,7 +29,8 @@ export default function RegisterPage() {
     return "";
   }
 
-  // ================= SEND OTP =================
+  /* ================= SEND OTP ================= */
+
   async function sendOtp() {
     const phoneError = validatePhone(phone);
     const nicknameError = validateNickname(nickname);
@@ -55,7 +57,8 @@ export default function RegisterPage() {
     }
   }
 
-  // ================= VERIFY OTP =================
+  /* ================= VERIFY OTP ================= */
+
   async function verifyOtp() {
     if (!otp) {
       setError("Vui lòng nhập OTP");
@@ -66,7 +69,11 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      await apiFetchPublic("/api/auth/verify-otp", {
+      const data = await apiFetchPublic<{
+        user: any;
+        access_token: string;
+        refresh_token: string;
+      }>("/api/auth/verify-otp", {
         method: "POST",
         body: {
           phone,
@@ -76,6 +83,8 @@ export default function RegisterPage() {
         },
       });
 
+      tokenStorage.setTokens(data.access_token, data.refresh_token);
+
       router.replace("/");
     } catch (e: any) {
       setError(e.message || "OTP không hợp lệ");
@@ -84,7 +93,8 @@ export default function RegisterPage() {
     }
   }
 
-  // ================= UI =================
+  /* ================= UI ================= */
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lg">

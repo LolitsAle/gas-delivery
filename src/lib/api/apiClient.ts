@@ -1,5 +1,7 @@
 // apiClient.ts
 
+import { tokenStorage } from "@/lib/auth/token";
+
 export type ApiOptions = {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: any;
@@ -7,7 +9,7 @@ export type ApiOptions = {
 };
 
 /* ======================================================
-   1️⃣ PUBLIC API CLIENT
+   1️⃣ PUBLIC API CLIENT (NO AUTH)
 ====================================================== */
 export async function apiFetchPublic<T = any>(
   url: string,
@@ -19,7 +21,6 @@ export async function apiFetchPublic<T = any>(
       "Content-Type": "application/json",
       ...options.headers,
     },
-    credentials: "include",
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
@@ -36,7 +37,7 @@ export async function apiFetchPublic<T = any>(
 }
 
 /* ======================================================
-   2️⃣ AUTH API CLIENT (AUTO REFRESH + LOCK)
+   2️⃣ AUTH API CLIENT (BEARER + AUTO REFRESH + LOCK)
 ====================================================== */
 export async function apiFetchAuth<T = any>(
   url: string,
@@ -55,13 +56,14 @@ async function requestWithRefresh<T>(
   url: string,
   options: ApiOptions
 ): Promise<T> {
+  const accessToken = tokenStorage.getAccess();
   const res = await fetch(url, {
     method: options.method || "GET",
     headers: {
       "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...options.headers,
     },
-    credentials: "include",
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
@@ -74,11 +76,10 @@ async function requestWithRefresh<T>(
     return data as T;
   }
 
-  // 🔄 Access token hết hạn
   if (res.status === 401) {
-    // 🔒 Nếu chưa có refresh đang chạy → tạo
+    // 🔒 Only one refresh request at a time
     if (!refreshPromise) {
-      refreshPromise = refreshToken().finally(() => {
+      refreshPromise = refreshTokenAction().finally(() => {
         refreshPromise = null;
       });
     }
@@ -86,12 +87,12 @@ async function requestWithRefresh<T>(
     const refreshed = await refreshPromise;
 
     if (refreshed) {
-      // retry request ban đầu
+      // 🔁 retry original request
       return requestWithRefresh<T>(url, options);
     }
 
-    // ❌ Refresh thất bại → logout
-    await logoutClient();
+    // ❌ Refresh failed → logout
+    clearTokens();
     throw new Error("Phiên đăng nhập đã hết hạn");
   }
 
@@ -102,23 +103,60 @@ async function requestWithRefresh<T>(
    Helpers
 ====================================================== */
 
-async function refreshToken(): Promise<boolean> {
+async function refreshTokenAction(): Promise<boolean> {
+  const refreshToken = tokenStorage.getRefresh();
+  if (!refreshToken) return false;
+
   try {
     const res = await fetch("/api/auth/refresh", {
       method: "POST",
-      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
     });
-    return res.ok;
+
+    if (!res.ok) return false;
+
+    const data = await res.json();
+
+    if (!data?.access_token) return false;
+
+    tokenStorage.setTokens(data.access_token, data.refresh_token);
+
+    return true;
   } catch {
     return false;
   }
 }
 
-async function logoutClient() {
-  try {
-    await fetch("/api/auth/logout", {
+function clearTokens() {
+  tokenStorage.clear();
+
+  if (typeof window !== "undefined") {
+    window.location.href = "/login";
+  }
+}
+
+export function apiLogoutClient() {
+  const refreshToken = tokenStorage.getRefresh();
+
+  if (refreshToken) {
+    fetch("/api/auth/logout", {
       method: "POST",
-      credentials: "include",
-    });
-  } catch {}
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        refresh_token: refreshToken,
+      }),
+    }).catch(() => {});
+  }
+
+  tokenStorage.clear();
+  localStorage.removeItem("user");
+
+  if (typeof window !== "undefined") {
+    window.location.href = "/login";
+  }
 }

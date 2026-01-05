@@ -1,64 +1,91 @@
-// // app/api/admin/users/[id]/route.ts
-// import { prisma } from "@/lib/prisma";
-// import { NextRequest, NextResponse } from "next/server";
-// import { requireAdmin } from "@/lib/auth/requireAdmin";
+// app/api/admin/users/[id]/route.ts
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth/withAuth";
 
-import { a } from "framer-motion/client";
+type Params = {
+  params: {
+    id: string;
+  };
+};
 
-// type Params = {
-//   params: {
-//     id: string;
-//   };
-// };
+/* ======================================================
+   CREATE NEW USER
+====================================================== */
+export const POST = withAuth(["ADMIN"], async ({ req }) => {
+  const body = await req.json();
 
-// export async function PATCH(req: NextRequest, { params }: Params) {
-//   await requireAdmin(req);
+  const user = await prisma.user.create({
+    data: {
+      phoneNumber: body.phoneNumber,
+      nickname: body.nickname,
+      password: body.password || "",
+      role: body.role || "USER",
+      isVerified: body.isVerified ?? false,
+      address: body.address || "",
+      addressNote: body.addressNote || "",
+      houseImage: body.houseImage || "",
+      isActive: body.isActive ?? true,
+    },
+  });
 
-//   const body = await req.json();
+  return NextResponse.json({ user }, { status: 201 });
+});
 
-//   const user = await prisma.user.update({
-//     where: { id: params.id },
-//     data: {
-//       nickname: body.nickname,
-//       role: body.role,
-//       isVerified: body.isVerified,
-//       address: body.address,
-//       addressNote: body.addressNote,
-//       houseImage: body.houseImage,
-//       isActive: body.isActive,
-//     },
-//   });
+/* ======================================================
+   UPDATE USER (PATCH)
+====================================================== */
+export const PATCH = withAuth(["ADMIN"], async ({ req }) => {
+  const { params } = req as any;
+  const body = await req.json();
 
-//   return NextResponse.json({ user });
-// }
+  const user = await prisma.user.update({
+    where: { id: params.id },
+    data: {
+      nickname: body.nickname,
+      role: body.role,
+      isVerified: body.isVerified,
+      address: body.address,
+      addressNote: body.addressNote,
+      houseImage: body.houseImage,
+      isActive: body.isActive,
+    },
+  });
 
-// export async function DELETE(req: NextRequest, { params }: Params) {
-//   await requireAdmin(req);
+  return NextResponse.json({ user });
+});
 
-//   await prisma.user.update({
-//     where: { id: params.id },
-//     data: { isActive: false },
-//   });
+/* ======================================================
+   SOFT DELETE USER
+====================================================== */
+export const DELETE = withAuth(["ADMIN"], async ({ req }) => {
+  const { params } = req as any;
 
-//   return NextResponse.json({ ok: true });
-// }
+  await prisma.user.update({
+    where: { id: params.id },
+    data: { isActive: false },
+  });
 
-// export async function PUT(req: NextRequest, { params }: Params) {
-//   await requireAdmin(req);
+  return NextResponse.json({ ok: true });
+});
 
-//   const body = await req.json();
+/* ======================================================
+   FULL UPDATE USER (PUT)
+====================================================== */
+export const PUT = withAuth(["ADMIN"], async ({ req }) => {
+  const { params } = req as any;
+  const body = await req.json();
 
-//   const user = await prisma.user.update({
-//     where: { id: params.id },
-//     data: {
-//       nickname: body.nickname,
-//       address: body.address,
-//       addressNote: body.addressNote,
-//       role: body.role,
-//       isActive: body.isActive,
-//     },
-//   });
+  const user = await prisma.user.update({
+    where: { id: params.id },
+    data: {
+      nickname: body.nickname,
+      address: body.address,
+      addressNote: body.addressNote,
+      role: body.role,
+      isActive: body.isActive,
+    },
+  });
 
-//   return NextResponse.json({ user });
-// }
-export async function GET() {}
+  return NextResponse.json({ user });
+});

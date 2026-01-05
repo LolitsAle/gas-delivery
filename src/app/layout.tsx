@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: "/icons/icon-192.png", // Fallback browser tab icon
-    apple: "/icons/icon-180.png", // iOS homescreen icon
+    apple: "/icons/icon-512.png", // iOS homescreen icon
   },
 };
 
@@ -40,7 +40,7 @@ export default function RootLayout({
     <html lang="en">
       <Head>
         {/* Safari iOS specific */}
-        <link rel="apple-touch-icon" href="/icons/icon-180.png" />
+        <link rel="apple-touch-icon" href="/icons/icon-512.png" />
       </Head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <AuthProvider>

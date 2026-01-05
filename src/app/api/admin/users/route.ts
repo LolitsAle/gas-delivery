@@ -1,11 +1,9 @@
 // app/api/admin/users/route.ts
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth/requireAdmin";
+import { withAuth } from "@/lib/auth/withAuth";
 
-export async function GET(req: Request) {
-  await requireAdmin(req);
-
+export const GET = withAuth(["ADMIN"], async ({ req }) => {
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") || "";
   const page = Number(searchParams.get("page") || 1);
@@ -31,4 +29,4 @@ export async function GET(req: Request) {
   ]);
 
   return NextResponse.json({ users, total });
-}
+});

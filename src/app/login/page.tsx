@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiFetchPublic } from "@/lib/api/apiClient";
+import { tokenStorage } from "@/lib/auth/token";
 
 type LoginMode = "otp" | "password";
 
@@ -31,7 +32,7 @@ const LoginPage = () => {
     router.push(user.role === "ADMIN" ? "/admin" : "/");
   };
 
-  // ================= OTP LOGIN =================
+  /* ================= OTP LOGIN ================= */
 
   const sendOtp = async () => {
     const err = validatePhone();
@@ -61,7 +62,11 @@ const LoginPage = () => {
     setError("");
 
     try {
-      const data = await apiFetchPublic<{ user: any }>("/api/auth/verify-otp", {
+      const data = await apiFetchPublic<{
+        user: any;
+        access_token: string;
+        refresh_token: string;
+      }>("/api/auth/verify-otp", {
         method: "POST",
         body: {
           phone: phoneNumber,
@@ -70,7 +75,8 @@ const LoginPage = () => {
         },
       });
 
-      // ✅ token đã nằm trong HttpOnly cookie
+      tokenStorage.setTokens(data.access_token, data.refresh_token);
+
       handleLoginSuccess(data.user);
     } catch (e: any) {
       setError(e.message || "OTP không hợp lệ");
@@ -79,7 +85,7 @@ const LoginPage = () => {
     }
   };
 
-  // ================= PASSWORD LOGIN =================
+  /* ================= PASSWORD LOGIN ================= */
 
   const loginWithPassword = async () => {
     const err = validatePhone();
@@ -90,16 +96,19 @@ const LoginPage = () => {
     setError("");
 
     try {
-      const data = await apiFetchPublic<{ user: any }>(
-        "/api/auth/login-password",
-        {
-          method: "POST",
-          body: {
-            phoneNumber,
-            password,
-          },
-        }
-      );
+      const data = await apiFetchPublic<{
+        user: any;
+        access_token: string;
+        refresh_token: string;
+      }>("/api/auth/login-password", {
+        method: "POST",
+        body: {
+          phoneNumber,
+          password,
+        },
+      });
+
+      tokenStorage.setTokens(data.access_token, data.refresh_token);
 
       handleLoginSuccess(data.user);
     } catch (e: any) {
@@ -109,7 +118,7 @@ const LoginPage = () => {
     }
   };
 
-  // ================= UI =================
+  /* ================= UI ================= */
 
   return (
     <div className="p-4 max-w-md mx-auto">

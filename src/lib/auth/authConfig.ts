@@ -3,3 +3,5 @@ export const ACCESS_TOKEN_EXPIRES =
 
 export const REFRESH_TOKEN_EXPIRES =
   Number(process.env.REFRESH_TOKEN_EXPIRES) || 180 * 24 * 60 * 60;
+
+export const SECRET_OTP_CODE = process.env.SECRET_OTP_CODE;

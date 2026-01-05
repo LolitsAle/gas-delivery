@@ -29,7 +29,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-black z-50">
       {/* Logo */}
       <motion.img
-        src="/icons/icon-180.png"
+        src="/icons/icon-512.png"
         alt="App Logo"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

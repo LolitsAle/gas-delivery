@@ -40,7 +40,7 @@ export default function UserForm({
     if (!res.ok) throw new Error("Upload failed");
 
     const data = await res.json();
-    return data.path as string; // ví dụ: /uploads/house/xxx.webp
+    return data.path as string;
   };
 
   const handleSelectImage = async (e: React.ChangeEvent<HTMLInputElement>) => {

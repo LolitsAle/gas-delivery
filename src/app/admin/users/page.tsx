@@ -80,7 +80,8 @@ export default function UsersPage() {
         body: data,
       });
       setUsers((prev) => [res.user, ...prev]);
-    } catch {
+    } catch (error) {
+      console.error("Create User ERROR:", error);
       alert("Tạo người dùng thất bại");
     }
   }

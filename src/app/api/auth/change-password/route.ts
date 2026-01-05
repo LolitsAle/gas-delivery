@@ -1,18 +1,26 @@
+// app/api/auth/change-password/route.ts
 import { prisma } from "@/lib/prisma";
 import { verifyJwt } from "@/lib/auth/jwt-node";
 import { verifyPassword, hashPassword } from "@/lib/password";
-import { buildClearAuthCookies } from "@/lib/auth/cookies";
 
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
+    const authHeader = req.headers.get("Authorization");
 
     if (!authHeader?.startsWith("Bearer ")) {
       return Response.json({ message: "Thiếu access token" }, { status: 401 });
     }
 
     const accessToken = authHeader.split(" ")[1];
-    const payload: any = verifyJwt(accessToken);
+    let payload: any;
+    try {
+      payload = verifyJwt(accessToken);
+    } catch {
+      return Response.json(
+        { message: "Access token không hợp lệ hoặc đã hết hạn" },
+        { status: 401 }
+      );
+    }
 
     if (!payload?.sub) {
       return Response.json(
@@ -22,7 +30,6 @@ export async function POST(req: Request) {
     }
 
     const { oldPassword, newPassword } = await req.json();
-
     if (!oldPassword || !newPassword) {
       return Response.json(
         { message: "Thiếu mật khẩu cũ hoặc mới" },
@@ -30,7 +37,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1️⃣ Lấy user
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
     });
@@ -42,7 +48,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2️⃣ Check mật khẩu cũ
     const valid = await verifyPassword(oldPassword, user.password);
     if (!valid) {
       return Response.json(
@@ -51,9 +56,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3️⃣ Update mật khẩu
     const hashedNewPassword = await hashPassword(newPassword);
-
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -62,7 +65,6 @@ export async function POST(req: Request) {
       },
     });
 
-    // 4️⃣ Revoke tất cả refresh token
     await prisma.refreshToken.updateMany({
       where: {
         userId: user.id,
@@ -73,17 +75,12 @@ export async function POST(req: Request) {
       },
     });
 
-    // 5️⃣ Clear cookie → bắt login lại
-    const headers = buildClearAuthCookies();
-
-    return new Response(
-      JSON.stringify({
-        message: "Đổi mật khẩu thành công. Vui lòng đăng nhập lại.",
-      }),
+    return Response.json(
       {
-        status: 200,
-        headers,
-      }
+        message:
+          "Đổi mật khẩu thành công. Vui lòng đăng nhập lại để lấy token mới.",
+      },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Change password error:", error);
