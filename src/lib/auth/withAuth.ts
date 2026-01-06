@@ -4,18 +4,21 @@ import { requireRole } from "./requiredRole";
 import { AuthError } from "./authError";
 
 type HandlerContext = {
-  req: Request;
   user: any;
+  params: any;
 };
 
-type Handler = (ctx: HandlerContext) => Promise<Response>;
+type Handler = (req: Request, ctx: HandlerContext) => Promise<Response>;
 
 export function withAuth(roles: string[], handler: Handler) {
-  return async function (req: Request) {
+  return async function (
+    req: Request,
+    ctx: { params: Record<string, string> }
+  ) {
     try {
       const user = await requireRole(req, roles);
 
-      return await handler({ req, user });
+      return await handler(req, { user, params: ctx.params });
     } catch (err: any) {
       if (err instanceof AuthError) {
         return NextResponse.json(

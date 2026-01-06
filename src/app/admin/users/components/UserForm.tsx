@@ -9,7 +9,7 @@ interface Props {
   user?: User | null;
   mobile: boolean;
   onClose: () => void;
-  onSave: (data: Partial<User>) => void;
+  onSave: (data: Partial<User>) => Promise<void> | void;
 }
 
 export default function UserForm({
@@ -19,15 +19,26 @@ export default function UserForm({
   onClose,
   onSave,
 }: Props) {
+  /* =====================
+      STATE
+  ====================== */
   const [form, setForm] = useState({
     nickname: user?.nickname || "",
     phoneNumber: user?.phoneNumber || "",
     role: user?.role || "USER",
     address: user?.address || "",
     addressNote: user?.addressNote || "",
-    houseImage: user?.houseImage || ([] as string[]),
+    houseImage: (user?.houseImage || []) as string[], // ảnh đã có
   });
 
+  console.log("USER HOUSE IMAGE:", user?.houseImage);
+
+  const [newHouseImages, setNewHouseImages] = useState<File[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  /* =====================
+      UPLOAD
+  ====================== */
   const uploadImage = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -43,32 +54,64 @@ export default function UserForm({
     return data.path as string;
   };
 
-  const handleSelectImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  /* =====================
+      IMAGE SELECT
+  ====================== */
+  const handleSelectImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
 
-    if (form.houseImage.length >= 3) {
+    const total = form.houseImage.length + newHouseImages.length + files.length;
+
+    if (total > 3) {
       alert("Tối đa 3 ảnh nhà");
       return;
     }
 
-    try {
-      const path = await uploadImage(file);
-      setForm({
-        ...form,
-        houseImage: [...form.houseImage, path],
-      });
-    } catch {
-      alert("Upload ảnh thất bại");
-    }
+    setNewHouseImages((prev) => [...prev, ...files]);
+    e.target.value = "";
   };
 
-  const removeImage = (index: number) => {
+  const removeOldImage = (index: number) => {
     setForm({
       ...form,
       houseImage: form.houseImage.filter((_, i) => i !== index),
     });
   };
+
+  const removeNewImage = (index: number) => {
+    setNewHouseImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  /* =====================
+      SAVE
+  ====================== */
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+
+      let uploadedImages: string[] = [];
+
+      if (newHouseImages.length) {
+        uploadedImages = await Promise.all(newHouseImages.map(uploadImage));
+      }
+
+      console.log("uploadedImages:", uploadedImages);
+
+      await onSave({
+        ...form,
+        houseImage: [...form.houseImage, ...uploadedImages],
+      });
+
+      onClose();
+    } catch {
+      alert("Lưu thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalImages = form.houseImage.length + newHouseImages.length;
 
   return (
     <div
@@ -81,6 +124,7 @@ export default function UserForm({
           mobile ? "rounded-t-2xl" : "rounded-xl max-w-lg"
         } p-4`}
       >
+        {/* ================= HEADER ================= */}
         <div className="flex justify-between mb-3">
           <h2 className="font-semibold">{title}</h2>
           <button onClick={onClose}>
@@ -88,6 +132,7 @@ export default function UserForm({
           </button>
         </div>
 
+        {/* ================= FORM ================= */}
         <div className="space-y-3">
           <input
             placeholder="Tên hiển thị"
@@ -128,21 +173,22 @@ export default function UserForm({
             onChange={(e) => setForm({ ...form, addressNote: e.target.value })}
           />
 
-          {/* ========= HOUSE IMAGE UPLOAD ========= */}
+          {/* ================= HOUSE IMAGE ================= */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">
-                Ảnh nhà ({form.houseImage.length}/3)
+                Ảnh nhà ({totalImages}/3)
               </span>
 
-              {form.houseImage.length < 3 && (
+              {totalImages < 3 && (
                 <label className="cursor-pointer flex items-center gap-1 text-sm text-blue-600">
                   <ImagePlus size={16} />
-                  Thêm ảnh
+                  Chọn ảnh
                   <input
                     type="file"
                     accept="image/*"
                     hidden
+                    multiple
                     onChange={handleSelectImage}
                   />
                 </label>
@@ -150,6 +196,7 @@ export default function UserForm({
             </div>
 
             <div className="grid grid-cols-3 gap-2">
+              {/* ảnh cũ */}
               {form.houseImage.map((img, idx) => (
                 <div key={img} className="relative">
                   <img
@@ -157,7 +204,23 @@ export default function UserForm({
                     className="w-full h-24 object-cover rounded border"
                   />
                   <button
-                    onClick={() => removeImage(idx)}
+                    onClick={() => removeOldImage(idx)}
+                    className="absolute top-1 right-1 bg-black/60 text-white p-1 rounded"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+
+              {/* ảnh mới */}
+              {newHouseImages.map((file, idx) => (
+                <div key={idx} className="relative">
+                  <img
+                    src={URL.createObjectURL(file)}
+                    className="w-full h-24 object-cover rounded border"
+                  />
+                  <button
+                    onClick={() => removeNewImage(idx)}
                     className="absolute top-1 right-1 bg-black/60 text-white p-1 rounded"
                   >
                     <Trash2 size={14} />
@@ -168,18 +231,17 @@ export default function UserForm({
           </div>
         </div>
 
+        {/* ================= ACTION ================= */}
         <div className="mt-4 flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 border rounded">
             Hủy
           </button>
           <button
-            onClick={() => {
-              onSave(form);
-              onClose();
-            }}
-            className="px-4 py-2 bg-black text-white rounded"
+            onClick={handleSave}
+            disabled={loading}
+            className="px-4 py-2 bg-black text-white rounded disabled:opacity-60"
           >
-            Lưu
+            {loading ? "Đang lưu..." : "Lưu"}
           </button>
         </div>
       </div>
