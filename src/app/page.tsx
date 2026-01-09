@@ -1,6 +1,5 @@
 "use client";
 
-import InstallOrOpenButton from "@/components/main/InstallAppButton";
 import SplashScreen from "@/components/main/SplashScreen";
 import {
   House,
@@ -44,7 +43,6 @@ export default function Home() {
 
   return (
     <div className="relative w-screen h-screen bg-[#2B2D31] pt-[2vw] text-[3vw] select-none text-white">
-      <InstallOrOpenButton />
       {/* carousel banner */}
       {/* <div className="h-[28vw] m-auto mt-[1vh] w-[90vw] rounded-2xl bg-white"></div> */}
 

@@ -36,6 +36,7 @@ export const DASHBOARD_MENU: IDashboardMenu[] = [
   { name: "Đơn Hàng", icon: "DollarSign", href: "/admin/orders" },
   { name: "Kho Gas", icon: "Info", href: "/admin/ware-house" },
   { name: "Sản Phẩm", icon: "ShoppingBag", href: "/admin/products" },
+  { name: "Danh Mục Sản Phẩm", icon: "ShoppingBag", href: "/admin/categories" },
   { name: "Khách Hàng", icon: "Users", href: "/admin/users" },
 ];
 

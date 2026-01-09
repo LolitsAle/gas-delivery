@@ -6,25 +6,39 @@ datasource db {
   provider = "postgresql"
 }
 
+/* =========================
+   USER & AUTH
+========================= */
+
 model User {
   id             String   @id @default(uuid())
   nickname       String
   phoneNumber    String   @unique
   password       String
+
+  points         Int      @default(0)
+
   address        String?
   addressNote    String?
   houseImage     String[]
+
   role           Role     @default(USER)
   isVerified     Boolean  @default(false)
   sessionVersion Int      @default(1)
-  isActive      Boolean  @default(true)
+  isActive       Boolean  @default(true)
 
   updatedAt      DateTime @default(now()) @updatedAt
   createdAt      DateTime @default(now())
 
+  stoves         Stove[]
   orders         Order[]
+  carts          Cart[]
   refreshTokens  RefreshToken[]
 }
+
+/* =========================
+   REFRESH TOKEN
+========================= */
 
 model RefreshToken {
   id                   String   @id @default(uuid())
@@ -43,6 +57,10 @@ model RefreshToken {
   @@index([userId])
 }
 
+/* =========================
+   OTP
+========================= */
+
 model PhoneOtp {
   id        String   @id @default(uuid())
   phone     String
@@ -54,69 +72,206 @@ model PhoneOtp {
   @@index([phone])
 }
 
-model Product {
-  id           String      @id @default(uuid())
-  productName  String
-  currentPrice Int
-  quantity     Int
-  updatedAt    DateTime    @default(now())
-  createdAt    DateTime    @default(now())
+/* =========================
+   CATEGORY
+========================= */
 
-  orderItems   OrderItem[]
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  freeShip  Boolean  @default(false)
+
+  products  Product[]
 }
 
-model Order {
-  id         String        @id @default(uuid())
-  userId     String
-  totalPrice Int
-  status     OrderStatus   @default(WAITING)
-  updatedAt  DateTime      @default(now())
-  createdAt  DateTime      @default(now())
+/* =========================
+   PRODUCT
+========================= */
 
-  user       User          @relation(fields: [userId], references: [id])
+model Product {
+  id            String      @id @default(uuid())
+  productName   String
+  currentPrice  Int
+  pointValue    Int         @default(0)
+
+  categoryId    String
+  category      Category    @relation(fields: [categoryId], references: [id])
+
+  tags          ProductTag[]
+
+  updatedAt     DateTime    @default(now()) @updatedAt
+  createdAt     DateTime    @default(now())
+
+  orderItems    OrderItem[]
+  cartItems     CartItem[]
+  priceHistory  ProductPriceHistory[]
+}
+
+/* =========================
+   PRODUCT PRICE HISTORY
+========================= */
+
+model ProductPriceHistory {
+  id        String   @id @default(uuid())
+  productId String
+  price     Int
+  createdAt DateTime @default(now())
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+/* =========================
+   STOVE
+========================= */
+
+model Stove {
+  id        String   @id @default(uuid())
+  userId    String
+  address   String
+  gasType   GasType
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id])
+  orders    Order[]
+
+  @@index([userId])
+}
+
+/* =========================
+   CART
+========================= */
+
+model Cart {
+  id        String    @id @default(uuid())
+  userId    String
+  type      CartType @default(NORMAL)
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id])
+  items     CartItem[]
+
+  @@index([userId])
+}
+
+/* =========================
+   CART ITEM
+========================= */
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  productId String
+
+  quantity  Int
+  isFree    Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
+}
+
+/* =========================
+   ORDER
+========================= */
+
+model Order {
+  id         String      @id @default(uuid())
+  userId     String
+  stoveId    String?
+  type       OrderType   @default(NORMAL)
+
+  totalPrice Int
+  status     OrderStatus @default(WAITING)
+
+  updatedAt  DateTime    @default(now()) @updatedAt
+  createdAt  DateTime    @default(now())
+
+  user       User        @relation(fields: [userId], references: [id])
+  stove      Stove?      @relation(fields: [stoveId], references: [id])
+
   coupons    OrderCoupon[]
   items      OrderItem[]
 }
 
-model OrderItem {
-  id        String   @id @default(uuid())
-  orderId   String
-  productId String
-  quantity  Int
-  unitPrice Int
-  updatedAt DateTime @default(now())
-  createdAt DateTime @default(now())
+/* =========================
+   ORDER ITEM
+========================= */
 
-  order     Order    @relation(fields: [orderId], references: [id])
-  product   Product  @relation(fields: [productId], references: [id])
+model OrderItem {
+  id            String   @id @default(uuid())
+  orderId       String
+  productId     String
+
+  quantity      Int
+  unitPrice     Int
+  pointsEarned  Int      @default(0)
+  isFree        Boolean  @default(false)
+
+  updatedAt     DateTime @default(now()) @updatedAt
+  createdAt     DateTime @default(now())
+
+  order         Order    @relation(fields: [orderId], references: [id])
+  product       Product  @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
 }
+
+/* =========================
+   COUPON
+========================= */
 
 model Coupon {
   id             String        @id @default(uuid())
   code           String        @unique
   discountType   DiscountType
   discountAmount Int
+
   isActive       Boolean       @default(true)
   isPermanent    Boolean       @default(false)
   expireDate     DateTime?
   usableTimes    Int?
-  updatedAt      DateTime      @default(now())
+
+  updatedAt      DateTime      @default(now()) @updatedAt
   createdAt      DateTime      @default(now())
 
   orders         OrderCoupon[]
 }
 
+/* =========================
+   ORDER COUPON
+========================= */
+
 model OrderCoupon {
   id        String   @id @default(uuid())
   orderId   String
   couponId  String
+
   appliedAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
   createdAt DateTime @default(now())
 
   coupon    Coupon   @relation(fields: [couponId], references: [id])
   order     Order    @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([couponId])
 }
+
+/* =========================
+   ENUMS
+========================= */
 
 enum Role {
   USER
@@ -133,4 +288,23 @@ enum OrderStatus {
   CONFIRMED
   DELIVERED
   CANCELLED
+}
+
+enum OrderType {
+  NORMAL
+  EXCHANGE
+}
+
+enum CartType {
+  NORMAL
+  EXCHANGE
+}
+
+enum GasType {
+  GAS_12KG
+  GAS_25KG
+}
+
+enum ProductTag {
+  POINTS_EXCHANGABLE
 }

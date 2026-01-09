@@ -1,45 +1,84 @@
 "use client";
+
 import { createContext, useContext, useEffect, useState } from "react";
 
 type InstallPromptContextType = {
   deferredPrompt: BeforeInstallPromptEvent | null;
-  setDeferredPrompt: (e: BeforeInstallPromptEvent | null) => void;
+  canInstall: boolean;
   isStandalone: boolean;
-  setIsStandalone: (val: boolean) => void;
+  isIOS: boolean;
+  triggerInstall: () => Promise<void>;
 };
 
-const InstallPromptContext = createContext<InstallPromptContextType | null>(null);
+const InstallPromptContext = createContext<InstallPromptContextType | null>(
+  null
+);
 
-export function InstallPromptProvider({ children }: { children: React.ReactNode }) {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+export function InstallPromptProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
+  const [canInstall, setCanInstall] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    // Detect standalone mode
-    if (
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (navigator as any).standalone
-    ) {
-      setIsStandalone(true);
-    }
+    // Detect iOS
+    const ua = window.navigator.userAgent.toLowerCase();
+    const ios = /iphone|ipad|ipod/.test(ua) && !(window as any).MSStream;
+    setIsIOS(ios);
 
-    // Listen for install prompt
+    // Detect standalone
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true;
+    setIsStandalone(standalone);
+
+    // Android install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setCanInstall(true);
+    };
+
+    const handleAppInstalled = () => {
+      setIsStandalone(true);
+      setCanInstall(false);
+      setDeferredPrompt(null);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", () => setIsStandalone(true));
+    window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt
+      );
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 
+  const triggerInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+    setCanInstall(false);
+  };
+
   return (
     <InstallPromptContext.Provider
-      value={{ deferredPrompt, setDeferredPrompt, isStandalone, setIsStandalone }}
+      value={{
+        deferredPrompt,
+        canInstall,
+        isStandalone,
+        isIOS,
+        triggerInstall,
+      }}
     >
       {children}
     </InstallPromptContext.Provider>
@@ -48,6 +87,10 @@ export function InstallPromptProvider({ children }: { children: React.ReactNode 
 
 export const useInstallPrompt = () => {
   const ctx = useContext(InstallPromptContext);
-  if (!ctx) throw new Error("useInstallPrompt must be used inside InstallPromptProvider");
+  if (!ctx) {
+    throw new Error(
+      "useInstallPrompt must be used inside InstallPromptProvider"
+    );
+  }
   return ctx;
 };

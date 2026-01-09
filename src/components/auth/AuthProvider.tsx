@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { tokenStorage } from "@/lib/auth/token";
 
-const PUBLIC_ROUTES = ["/login", "/register", "/"];
+const PUBLIC_ROUTES = ["/login", "/register", "/", "/install-app"];
 
 export default function AuthProvider({
   children,

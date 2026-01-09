@@ -2,22 +2,22 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/withAuth";
+import { getId } from "@/lib/api/helper";
 
-type Params = {
-  params: {
-    id: string;
-  };
-};
+export const PATCH = withAuth(["ADMIN"], async (req, { params }) => {
+  const userId = getId(params.id);
 
-/* ======================================================
-   UPDATE USER (PATCH)
-====================================================== */
-export const PATCH = withAuth(["ADMIN"], async (req) => {
-  const { params } = req as any;
+  if (!userId) {
+    return NextResponse.json(
+      { message: "User id is required" },
+      { status: 400 }
+    );
+  }
+
   const body = await req.json();
 
   const user = await prisma.user.update({
-    where: { id: params.id },
+    where: { id: userId },
     data: {
       nickname: body.nickname,
       role: body.role,
@@ -32,25 +32,34 @@ export const PATCH = withAuth(["ADMIN"], async (req) => {
   return NextResponse.json({ user });
 });
 
-/* ======================================================
-   SOFT DELETE USER
-====================================================== */
-export const DELETE = withAuth(["ADMIN"], async (req) => {
-  const { params } = req as any;
+export const DELETE = withAuth(["ADMIN"], async (_req, { params }) => {
+  const userId = getId(params.id);
+
+  if (!userId) {
+    return NextResponse.json(
+      { message: "User id is required" },
+      { status: 400 }
+    );
+  }
 
   await prisma.user.update({
-    where: { id: params.id },
+    where: { id: userId },
     data: { isActive: false },
   });
 
   return NextResponse.json({ ok: true });
 });
 
-/* ======================================================
-   FULL UPDATE USER (PUT)
-====================================================== */
 export const PUT = withAuth(["ADMIN"], async (req, { params }) => {
-  const userId = await params.id;
+  const userId = getId(params.id);
+
+  if (!userId) {
+    return NextResponse.json(
+      { message: "User id is required" },
+      { status: 400 }
+    );
+  }
+
   const body = await req.json();
 
   const updatedUser = await prisma.user.update({
