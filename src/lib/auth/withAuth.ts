@@ -16,10 +16,7 @@ type AuthHandler = (
    withAuth Wrapper
 ========================= */
 export function withAuth(roles: string[], handler: AuthHandler) {
-  return async function (
-    req: Request,
-    ctx: any // 🔥 DO NOT TYPE THIS
-  ): Promise<Response> {
+  return async function (req: Request, ctx: any): Promise<Response> {
     try {
       const user = (await requireRole(req, roles)) as AuthUser;
 

@@ -31,8 +31,6 @@ export default function UserForm({
     houseImage: (user?.houseImage || []) as string[], // ảnh đã có
   });
 
-  console.log("USER HOUSE IMAGE:", user?.houseImage);
-
   const [newHouseImages, setNewHouseImages] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -95,8 +93,6 @@ export default function UserForm({
       if (newHouseImages.length) {
         uploadedImages = await Promise.all(newHouseImages.map(uploadImage));
       }
-
-      console.log("uploadedImages:", uploadedImages);
 
       await onSave({
         ...form,

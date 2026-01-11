@@ -131,7 +131,6 @@ export const DELETE = withAuth(["ADMIN"], async (req) => {
         { status: 400 }
       );
     }
-    console.log("body", body.id);
 
     await prisma.product.delete({
       where: { id: body.id },

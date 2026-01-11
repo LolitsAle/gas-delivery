@@ -80,6 +80,7 @@ model Category {
   id        String   @id @default(uuid())
   name      String   @unique
   freeShip  Boolean  @default(false)
+  bindable  Boolean @default(false)
 
   products  Product[]
 }
@@ -105,6 +106,7 @@ model Product {
   orderItems    OrderItem[]
   cartItems     CartItem[]
   priceHistory  ProductPriceHistory[]
+  stoves        Stove[]
 }
 
 /* =========================
@@ -127,18 +129,21 @@ model ProductPriceHistory {
 ========================= */
 
 model Stove {
-  id        String   @id @default(uuid())
-  userId    String
-  address   String
-  gasType   GasType
+  id         String   @id @default(uuid())
+  userId     String
+  productId  String   
+  address    String
+  note       String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
 
-  user      User     @relation(fields: [userId], references: [id])
-  orders    Order[]
+  user       User     @relation(fields: [userId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id])
+  orders     Order[]
 
   @@index([userId])
+  @@index([productId])
 }
 
 /* =========================
@@ -192,7 +197,8 @@ model Order {
   type       OrderType   @default(NORMAL)
 
   totalPrice Int
-  status     OrderStatus @default(WAITING)
+  status     OrderStatus @default(PENDING)
+  note        String?
 
   updatedAt  DateTime    @default(now()) @updatedAt
   createdAt  DateTime    @default(now())
@@ -284,9 +290,11 @@ enum DiscountType {
 }
 
 enum OrderStatus {
-  WAITING
+  PENDING
   CONFIRMED
-  DELIVERED
+  READY
+  DELIVERING
+  COMPLETED
   CANCELLED
 }
 
@@ -298,11 +306,6 @@ enum OrderType {
 enum CartType {
   NORMAL
   EXCHANGE
-}
-
-enum GasType {
-  GAS_12KG
-  GAS_25KG
 }
 
 enum ProductTag {

@@ -33,7 +33,6 @@ export default function UsersPage() {
   /* SEARCH */
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
-    console.log("users data:", users);
     return users.filter(
       (u) => u.phoneNumber.includes(q) || u.nickname.toLowerCase().includes(q)
     );

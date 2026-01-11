@@ -25,8 +25,6 @@ export async function sendSMS(
     sender,
   };
 
-  console.log("SMS payload:", payload);
-
   const auth = `Basic ${Buffer.from(`${SMS_ACCESS_TOKEN}:x`).toString(
     "base64"
   )}`;
@@ -47,7 +45,6 @@ export async function sendSMS(
     const data = response.data;
 
     if (data.status === "success") {
-      console.log("Send SMS success");
       return;
     }
 
