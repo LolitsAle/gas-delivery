@@ -5,6 +5,7 @@ import {
   House,
   Minus,
   PackageCheck,
+  PhoneCall,
   Plus,
   Receipt,
   RotateCw,
@@ -42,117 +43,131 @@ export default function Home() {
     }).format(value);
 
   return (
-    <div className="relative w-screen h-screen bg-[#2B2D31] pt-[2vw] text-[3vw] select-none text-white">
-      {/* carousel banner */}
-      {/* <div className="h-[28vw] m-auto mt-[1vh] w-[90vw] rounded-2xl bg-white"></div> */}
-
-      {/* order button */}
-      <div className="mt-[4vw] flex justify-end items-center w-full pr-[3vw]">
-        {" "}
+    <div className="relative w-screen h-screen bg-linear-to-b from-gas-green-500 to-white text-[3vw] select-none text-white">
+      {/* Header */}
+      <div className="w-full h-[22vh] relative">
+        {/* user summary */}
+        <div className="absolute bottom-[7vw] left-[7vw] w-[40vw] h-[18vw] rounded-md border border-white bg-white text-black p-[1vw] flex flex-col justify-center items-baseline">
+          <span className="font-bold">Ngô Thanh Sơn</span>
+          <span>Điểm: 69696</span>
+          <span>KH Thân thiết, Đối tác</span>
+        </div>
       </div>
-      <div className="mt-[1vw] w-screen flex">
-        <div className="basis-[40%] flex justify-center items-center z-20">
-          <button className="h-[25vw] aspect-square rounded-full text-white cursor-pointer outline-4 outline-none shadow-2xl">
-            <span
-              className="block h-[25vw] aspect-square rounded-full 
+
+      {/* body */}
+      <div className="bg-white w-full h-[78vh] rounded-2xl pt-[1vh]">
+        {/* order button */}
+        <div className="mt-[1vw] w-screen flex">
+          <div className="basis-[40%] flex justify-center items-center z-20">
+            <button className="h-[25vw] aspect-square rounded-full text-white cursor-pointer outline-4 outline-none shadow-2xl">
+              <span
+                className="block h-[25vw] aspect-square rounded-full 
                bg-[radial-gradient(circle_at_center,#FF9900,#FF9900,#FF9900)]
                active:bg-[radial-gradient(circle_at_center,#E47911,#E47911,#E47911)]"
-            >
-              <div className="flex flex-col gap-[1vw] justify-center items-center h-full w-full font-bold">
-                <PackageCheck />
-                Đặt Ngay
-              </div>
-            </span>
-          </button>
-        </div>
-        <div className="relative z-0 h-[29vw] flex-1 flex w-[60%] flex-col border-none border-2 bg-[#232428] -ml-[20.5vw] mr-[5vw] pl-[15vw] py-[2vw] rounded-tr-3xl rounded-br-3xl">
-          <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 bg-[#232428] h-[29vw] w-[29vw] rounded-full aspect-square"></div>
-          <div className="w-full mx-[2vw]">
-            <div className="flex justify-start items-center mt-[1vw] w-full">
-              <h2 className="w-[70%] overflow-hidden overflow-ellipsis text-nowrap text-white font-bold text-[4vw] flex items-center gap-[2vw]">
-                Saigon Petro{" "}
-                <div className="p-[1vw] rounded-sm bg-white">
-                  <RotateCw size="4vw" className="text-black cursor-pointer" />
+              >
+                <div className="flex flex-col gap-[1vw] justify-center items-center h-full w-full font-bold">
+                  <PackageCheck />
+                  Đặt Ngay
                 </div>
-              </h2>
-              <div className="w-[30%]">
-                <div className="w-full flex justify-center items-center pr-[4vw]">
-                  <div className="cursor-pointer">
-                    <Minus
-                      size="3vw"
-                      className="text-white"
-                      onClick={onGasQuantityDecrease}
+              </span>
+            </button>
+          </div>
+          <div className="relative z-0 h-[29vw] flex-1 flex w-[60%] flex-col border-none border-2 bg-[#232428] -ml-[20.5vw] mr-[5vw] pl-[15vw] py-[2vw] rounded-tr-3xl rounded-br-3xl">
+            <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 bg-[#232428] h-[29vw] w-[29vw] rounded-full aspect-square"></div>
+            <div className="w-full mx-[2vw]">
+              <div className="flex justify-start items-center mt-[1vw] w-full">
+                <h2 className="w-[70%] overflow-hidden overflow-ellipsis text-nowrap text-white font-bold text-[4vw] flex items-center gap-[2vw]">
+                  Saigon Petro{" "}
+                  <div className="p-[1vw] rounded-sm bg-white">
+                    <RotateCw
+                      size="4vw"
+                      className="text-black cursor-pointer"
                     />
                   </div>
-                  <input
-                    className="no-spinner w-[5vw] focus:outline-none focus:ring-0 text-center appearance-text text-white"
-                    type="number"
-                    value={gasQuantity}
-                    onChange={(e) =>
-                      onGasQuantityChange(parseInt(e.target.value))
-                    }
-                  />
-                  <div className="cursor-pointer">
-                    <Plus
-                      size="3vw"
-                      className="text-white"
-                      onClick={onGasQuantityIncrease}
+                </h2>
+                <div className="w-[30%]">
+                  <div className="w-full flex justify-center items-center pr-[4vw]">
+                    <div className="cursor-pointer">
+                      <Minus
+                        size="3vw"
+                        className="text-white"
+                        onClick={onGasQuantityDecrease}
+                      />
+                    </div>
+                    <input
+                      className="no-spinner w-[5vw] focus:outline-none focus:ring-0 text-center appearance-text text-white"
+                      type="number"
+                      value={gasQuantity}
+                      onChange={(e) =>
+                        onGasQuantityChange(parseInt(e.target.value))
+                      }
                     />
+                    <div className="cursor-pointer">
+                      <Plus
+                        size="3vw"
+                        className="text-white"
+                        onClick={onGasQuantityIncrease}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="flex flex-col gap-1 text-gray-800">
-              {/* Main discounted price */}
-              <div className="flex items-end gap-2">
-                <div className="flex flex-col">
-                  <span className="line-through text-gray-400 text-[2vw]">
-                    {formatVND(350000)}
-                  </span>
-                  <span className="text-[3vw] font-bold text-green-600">
-                    {formatVND(320000)}
+              <div className="flex flex-col gap-1 text-gray-800">
+                {/* Main discounted price */}
+                <div className="flex items-end gap-2">
+                  <div className="flex flex-col">
+                    <span className="line-through text-gray-400 text-[2vw]">
+                      {formatVND(350000)}
+                    </span>
+                    <span className="text-[3vw] font-bold text-green-600">
+                      {formatVND(320000)}
+                    </span>
+                  </div>
+                  <span className="bg-green-100 text-green-700 text-xs font-semibold px-1.5 py-0.5 rounded-md">
+                    -{10}k
                   </span>
                 </div>
-                <span className="bg-green-100 text-green-700 text-xs font-semibold px-1.5 py-0.5 rounded-md">
-                  -{10}k
-                </span>
               </div>
-            </div>
-            <div className="flex gap-[2vw] my-[3vw]">
-              <span className="text-white">Quà khuyến mãi</span>
-              <div className="h-[5vw] bg-white rounded-md px-[2vw] cursor-pointer text-black">
-                nước rửa chén NET
+              <div className="flex gap-[2vw] my-[3vw]">
+                <span className="text-white">Quà khuyến mãi</span>
+                <div className="h-[5vw] bg-white rounded-md px-[2vw] cursor-pointer text-black">
+                  nước rửa chén NET
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* services */}
+        {/* <div className="">
+          <h3>dịch vụ</h3>
+          <div>Sửa bếp</div>
+          <div>Sửa máy lọc nước</div>
+          <div>phụ tùng bếp</div>
+          <div>giao kèm</div>
+        </div> */}
       </div>
 
-      {/* services */}
-      {/* <div className="">
-        <h3>dịch vụ</h3>
-        <div>Sửa bếp</div>
-        <div>Sửa máy lọc nước</div>
-        <div>phụ tùng bếp</div>
-        <div>giao kèm</div>
-      </div> */}
-
+      {/* Direct Phone Call */}
+      <div className="fixed bottom-[30vw] right-[5vw] bg-red-600 p-[3vw] rounded-full">
+        <PhoneCall size="8vw" />
+      </div>
       {/* nav bar */}
-      <div className="fixed bottom-[4vw] left-1/2 -translate-x-1/2 w-[90vw] flex flex-row bg-[#232428] h-[20vw] rounded-xl text-[3vw] text-white">
+      <div className="fixed bottom-[4vw] left-1/2 -translate-x-1/2 w-[90vw] flex flex-row bg-gas-green-700 h-[20vw] rounded-xl text-[3.2vw] text-white">
         <div className="flex-1 flex gap-2 flex-col justify-center items-center">
-          <House size="4vw" className="text-white" />
-          <span>Trang chủ</span>
+          <House size="5vw" className="text-gas-orange-400" />
+          <span className="text-gas-orange-400 border-b-2">Trang chủ</span>
         </div>
         <div className="flex-1 flex gap-2 flex-col justify-center items-center">
-          <Receipt size="4vw" className="text-white" />
+          <Receipt size="5vw" className="text-[#F9FAFB]" />
           <span>Đơn Hàng</span>
         </div>
         <div className="flex-1 flex gap-2 flex-col justify-center items-center">
-          <Store size="4vw" className="text-white" />
+          <Store size="5vw" className="text-[#F9FAFB]" />
           <span>Cửa Hàng</span>
         </div>
         <div className="flex-1 flex gap-2 flex-col justify-center items-center">
-          <User size="4vw" className="text-white" />
+          <User size="5vw" className="text-[#F9FAFB]" />
           <span>Cá nhân</span>
         </div>
       </div>

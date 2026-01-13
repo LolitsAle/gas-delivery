@@ -7,9 +7,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    interval = setInterval(() => {
+    const interval = setInterval(() => {
       setProgress((old) => {
         if (old >= 100) {
           clearInterval(interval);
@@ -17,8 +15,8 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
           return 100;
         }
 
-        if (old < 90) return old + 7; // chạy nhanh đến 90
-        return old + 1; // từ 90 → 100 chậm hơn
+        if (old < 90) return old + 7;
+        return old + 1;
       });
     }, 80);
 
@@ -26,15 +24,15 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   }, [onFinish]);
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-black z-50">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gas-green-500">
       {/* Logo */}
       <motion.img
-        src="/icons/icon-512.png"
+        src="/images/logo-main.png"
         alt="App Logo"
-        initial={{ scale: 0.8, opacity: 0 }}
+        className="w-[50vw] mb-6"
+        initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="w-28 h-28 mb-6"
+        transition={{ duration: 0.5 }}
       />
 
       {/* Slogan */}
@@ -42,15 +40,15 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.6 }}
-        className="md:text-2xl sm:text-xs font-bold text-orange-300 mb-10 tracking-wide drop-shadow-md"
+        className="mb-6 text-center text-sm font-semibold tracking-wide text-gas-gray-50 md:text-2xl drop-shadow"
       >
-        Úy Tín - An toàn - Nhanh chóng
+        Uy tín • An toàn • Nhanh chóng
       </motion.h1>
 
       {/* Loading bar */}
-      <div className="w-72 h-2 bg-neutral-800 rounded-full overflow-hidden shadow">
+      <div className="h-2 w-72 overflow-hidden rounded-full bg-white/30 shadow-inner">
         <motion.div
-          className="h-full bg-orange-500"
+          className="h-full bg-gas-orange-500"
           initial={{ width: "0%" }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.1 }}
@@ -58,7 +56,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
       </div>
 
       {/* Loading % */}
-      <span className="mt-4 text-sm text-gray-300 font-medium">
+      <span className="mt-4 text-sm font-medium text-white/80">
         {progress}%
       </span>
     </div>
