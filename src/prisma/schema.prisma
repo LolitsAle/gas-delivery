@@ -12,6 +12,7 @@ datasource db {
 
 model User {
   id             String   @id @default(uuid())
+  name           String?
   nickname       String
   phoneNumber    String   @unique
   password       String
@@ -130,6 +131,7 @@ model ProductPriceHistory {
 
 model Stove {
   id         String   @id @default(uuid())
+  name       String
   userId     String
   productId  String   
   address    String

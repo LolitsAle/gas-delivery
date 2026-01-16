@@ -4,6 +4,7 @@ import React, { memo, useEffect, useState, useCallback, useMemo } from "react";
 import { Menu, User, LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { apiFetchAuth, apiLogoutClient } from "@/lib/api/apiClient";
+import { USER_STORAGE_KEY } from "@/constants/constants";
 
 interface UserInfo {
   id: string;
@@ -13,8 +14,6 @@ interface UserInfo {
 interface HeaderProps {
   onMenuClick?: () => void;
 }
-
-const USER_STORAGE_KEY = "user";
 
 function HeaderComponent({ onMenuClick }: HeaderProps) {
   const [user, setUser] = useState<UserInfo | null>(null);

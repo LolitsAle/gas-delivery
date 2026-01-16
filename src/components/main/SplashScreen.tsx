@@ -24,7 +24,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   }, [onFinish]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gas-green-500">
+    <div className="fixed inset-0 z-200 flex flex-col items-center justify-center bg-gas-green-500">
       {/* Logo */}
       <motion.img
         src="/images/logo-main.png"

@@ -41,8 +41,43 @@ export async function GET(req: Request) {
       phoneNumber: true,
       nickname: true,
       role: true,
+      points: true,
       createdAt: true,
       updatedAt: true,
+      address: true,
+      addressNote: true,
+      houseImage: true,
+
+      stoves: {
+        select: {
+          id: true,
+          address: true,
+          note: true,
+          createdAt: true,
+          updatedAt: true,
+          product: {
+            select: {
+              id: true,
+              productName: true,
+              currentPrice: true,
+            },
+          },
+        },
+      },
+      carts: {
+        select: {
+          items: {
+            select: {
+              id: true,
+              productId: true,
+              quantity: true,
+              isFree: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
+        },
+      },
     },
   });
 
