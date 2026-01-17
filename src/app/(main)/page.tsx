@@ -5,14 +5,16 @@ import OrderSection from "@/components/main/OrderSection";
 import PhoneCallPopup from "@/components/main/PhoneCallPopup";
 import SplashScreen from "@/components/main/SplashScreen";
 import { USER_STORAGE_KEY } from "@/constants/constants";
-import { apiFetchAuth } from "@/lib/api/apiClient";
-import { Sun, User } from "lucide-react";
+import { apiFetchAuthNoRedirect } from "@/lib/api/apiClient";
+import { Sun, User, Wrench } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export default function Home() {
   const [user, setUser] = useState<any | null>(null);
   const [isFetchingUser, setIsFetchingUser] = useState(true);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   /* Fetch user info */
   useEffect(() => {
@@ -24,12 +26,17 @@ export default function Home() {
 
     (async () => {
       try {
-        const data = await apiFetchAuth<{ user: any }>("/api/auth/me");
+        const data = await apiFetchAuthNoRedirect<{ user: any }>(
+          "/api/auth/me"
+        );
         if (!data?.user) return;
         setUser(data.user);
         setIsFetchingUser(false);
         localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
-      } catch {}
+      } catch {
+        setUser(null);
+        setIsFetchingUser(false);
+      }
     })();
   }, []);
 
@@ -41,18 +48,19 @@ export default function Home() {
       return (
         <>
           <span className="flex justify-center items-center gap-[2vw]">
-            <User size={"3vw"} /> <strong>{user.nickname}</strong>
+            <User size={"3vw"} />{" "}
+            <strong>{user.name ? user.name : "khách hàng"}</strong>
           </span>
-          <span className="flex justify-center items-center gap-[2vw] bg-gas-green-300 px-[1vw] rounded-2xl">
+          <span className="flex justify-center items-center gap-[2vw] bg-gas-green-300 pl-[1vw] pr-[2vw] rounded-2xl">
             <Sun size={"3vw"} /> {user.points}
           </span>
           {/* <span>render tags</span> */}
         </>
       );
     } else {
-      return <>Chưa đăng nhập</>;
+      return <div onClick={() => router.push("/login")}>Chưa đăng nhập</div>;
     }
-  }, [user]);
+  }, [user, isFetchingUser]);
 
   if (loading) {
     return <SplashScreen onFinish={() => setLoading(false)} />;
@@ -79,28 +87,35 @@ export default function Home() {
         </div>
       </div>
       {/* body */}
-      <div className="w-full h-[78vh] rounded-2xl pt-[3vh] z-10 absolute top-[22vh] left-0 bg-linear-to-br from-white via-green-50 to-green-100 animate-gradient">
+      <div className="w-full h-[78vh] rounded-2xl pt-[3vh] z-10 absolute top-[22vh] left-0 bg-linear-to-br from-white via-green-50 to-green-100 animate-gradient flex flex-col">
+        {/*  */}
         <OrderSection />
 
-        <ImageCarousel
-          images={[
-            "/images/carousel-1.avif",
-            "/images/carousel-2.avif",
-            "/images/carousel-3.avif",
-          ]}
-        />
-        {/* <div className="mt-[2vw] w-fill bg-gas-orange-800 mx-[5vw] h-[15vw] rounded-2xl shadow-md">
-          Quà khuyến mãi
-        </div> */}
-        {/* advertisement section */}
-        {/* services */}
-        {/* <div className="">
-          <h3>dịch vụ</h3>
-          <div>Sửa bếp</div>
-          <div>Sửa máy lọc nước</div>
-          <div>phụ tùng bếp</div>
-          <div>giao kèm</div>
-        </div> */}
+        {/* scrollable section */}
+        <div className="flex-1 overflow-y-auto pb-[30vw] overscroll-contain">
+          {/* services section */}
+          <div className="relative mx-[5vw] mt-[5vw] h-[8vw] font-bold text-[4vw] border-b-[1vw] border-blue-700">
+            <div className="absolute h-[8vw] left-0 bg-blue-700 text-white px-[2vw] py-[1vw] rounded-md">
+              Dịch vụ
+            </div>
+          </div>
+          <div className="pt-[6vw] grid grid-cols-4 gap-[2vw] mx-[5vw]">
+            <button className="flex flex-col items-center gap-[1.5vw] shadow-2xl py-[2vw] rounded-2xl active:bg-gas-gray-200">
+              <Wrench className="w-[7vw] h-[7vw] text-blue-700" />
+              <span className="text-[3.2vw] text-blue-800 text-center">
+                Sửa Bếp
+              </span>
+            </button>
+          </div>
+
+          {/* <ImageCarousel
+            images={[
+              "/images/carousel-1.avif",
+              "/images/carousel-2.avif",
+              "/images/carousel-3.avif",
+            ]}
+          /> */}
+        </div>
       </div>
 
       <PhoneCallPopup />

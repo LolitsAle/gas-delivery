@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { apiFetchPublic } from "@/lib/api/apiClient";
 import { tokenStorage } from "@/lib/auth/token";
 
@@ -11,7 +13,7 @@ export default function RegisterPage() {
   const router = useRouter();
 
   const [phone, setPhone] = useState("");
-  const [nickname, setNickname] = useState("");
+  const [name, setName] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [loading, setLoading] = useState(false);
@@ -23,20 +25,19 @@ export default function RegisterPage() {
     return "";
   }
 
-  function validateNickname(value: string) {
-    if (value === "") return "";
-    if (value.length < 2) return "Biệt danh quá ngắn";
+  function validatename(value: string) {
+    if (!value) return "Vui lòng nhập tên gọi";
+    if (value.length < 5) return "Tên gọi quá ngắn";
     return "";
   }
 
   /* ================= SEND OTP ================= */
-
   async function sendOtp() {
     const phoneError = validatePhone(phone);
-    const nicknameError = validateNickname(nickname);
+    const nameError = validatename(name);
 
-    if (phoneError || nicknameError) {
-      setError(phoneError || nicknameError);
+    if (phoneError || nameError) {
+      setError(phoneError || nameError);
       return;
     }
 
@@ -46,7 +47,7 @@ export default function RegisterPage() {
     try {
       await apiFetchPublic("/api/auth/register", {
         method: "POST",
-        body: { phone, nickname },
+        body: { phone, name },
       });
 
       setStep("otp");
@@ -58,33 +59,19 @@ export default function RegisterPage() {
   }
 
   /* ================= VERIFY OTP ================= */
-
   async function verifyOtp() {
-    if (!otp) {
-      setError("Vui lòng nhập OTP");
-      return;
-    }
+    if (!otp) return setError("Vui lòng nhập OTP");
 
     setLoading(true);
     setError("");
 
     try {
-      const data = await apiFetchPublic<{
-        user: any;
-        access_token: string;
-        refresh_token: string;
-      }>("/api/auth/verify-otp", {
+      const data = await apiFetchPublic<any>("/api/auth/verify-otp", {
         method: "POST",
-        body: {
-          phone,
-          otp,
-          nickname,
-          type: "REGISTER",
-        },
+        body: { phone, otp, name, type: "REGISTER" },
       });
 
       tokenStorage.setTokens(data.access_token, data.refresh_token);
-
       router.replace("/");
     } catch (e: any) {
       setError(e.message || "OTP không hợp lệ");
@@ -93,12 +80,26 @@ export default function RegisterPage() {
     }
   }
 
-  /* ================= UI ================= */
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lg">
-        <h1 className="mb-6 text-center text-2xl font-semibold">Đăng Ký</h1>
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-b from-gas-green-400 to-gas-green-600 p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+        {/* Logo */}
+        <div className="flex justify-center mb-4">
+          <Image
+            src="/images/logo-main.png"
+            alt="Logo"
+            width={96}
+            height={96}
+            priority
+          />
+        </div>
+
+        <h1 className="text-2xl font-semibold text-center text-gas-green-600 mb-1">
+          Đăng ký
+        </h1>
+        <p className="text-sm text-center text-gray-500 mb-6">
+          Tạo tài khoản mới chỉ trong vài bước ✨
+        </p>
 
         {step === "phone" && (
           <>
@@ -110,60 +111,71 @@ export default function RegisterPage() {
                 setPhone(e.target.value);
                 setError("");
               }}
-              className="mb-2 w-full rounded-lg border px-4 py-3"
+              className="w-full rounded-lg border px-4 py-3 mb-3 focus:outline-none focus:ring-2 focus:ring-gas-green-400"
             />
 
             <input
               type="text"
               placeholder="Biệt danh"
-              value={nickname}
+              value={name}
               onChange={(e) => {
-                setNickname(e.target.value);
+                setName(e.target.value);
                 setError("");
               }}
-              className="mb-2 w-full rounded-lg border px-4 py-3"
+              className="w-full rounded-lg border px-4 py-3 mb-3 focus:outline-none focus:ring-2 focus:ring-gas-green-400"
             />
-
-            {error && <p className="mb-3 text-sm text-red-500">{error}</p>}
 
             <button
               onClick={sendOtp}
               disabled={loading}
-              className="w-full rounded-lg bg-black py-3 text-white disabled:opacity-50"
+              className="w-full rounded-lg bg-gas-green-500 text-white py-3 font-medium hover:bg-gas-green-600 transition"
             >
-              {loading ? "Đang gửi OTP..." : "Gửi OTP"}
+              {loading ? "Đang gửi OTP..." : "Gửi mã OTP"}
             </button>
           </>
         )}
 
         {step === "otp" && (
           <>
-            <p className="mb-3 text-sm text-gray-600">
-              OTP đã được gửi đến <b>{phone}</b>
+            <p className="mb-3 text-sm text-gray-600 text-center">
+              Mã OTP đã được gửi đến <b>{phone}</b>
             </p>
 
             <input
               type="text"
               inputMode="numeric"
-              placeholder="Nhập OTP"
+              placeholder="Nhập mã OTP"
               value={otp}
               onChange={(e) => {
                 setOtp(e.target.value);
                 setError("");
               }}
-              className="mb-2 w-full rounded-lg border px-4 py-3 text-center tracking-widest"
+              className="w-full rounded-lg border px-4 py-3 mb-3 text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-gas-green-400"
             />
-
-            {error && <p className="mb-3 text-sm text-red-500">{error}</p>}
 
             <button
               onClick={verifyOtp}
               disabled={loading}
-              className="w-full rounded-lg bg-black py-3 text-white disabled:opacity-50"
+              className="w-full rounded-lg bg-gas-green-500 text-white py-3 font-medium hover:bg-gas-green-600 transition"
             >
-              {loading ? "Đang xác thực..." : "Xác thực OTP"}
+              {loading ? "Đang xác thực..." : "Xác thực & hoàn tất"}
             </button>
           </>
+        )}
+
+        {/* Back to login */}
+        <div className="mt-6 text-center text-sm">
+          <span className="text-gray-500">Đã có tài khoản? </span>
+          <Link
+            href="/login"
+            className="text-gas-green-600 font-medium hover:underline"
+          >
+            Đăng nhập
+          </Link>
+        </div>
+
+        {error && (
+          <p className="mt-4 text-center text-sm text-red-600">{error}</p>
         )}
       </div>
     </div>

@@ -39,6 +39,7 @@ export async function GET(req: Request) {
     select: {
       id: true,
       phoneNumber: true,
+      name: true,
       nickname: true,
       role: true,
       points: true,
@@ -47,11 +48,12 @@ export async function GET(req: Request) {
       address: true,
       addressNote: true,
       houseImage: true,
-
       stoves: {
         select: {
           id: true,
+          name: true,
           address: true,
+          productId: true,
           note: true,
           createdAt: true,
           updatedAt: true,
@@ -66,6 +68,7 @@ export async function GET(req: Request) {
       },
       carts: {
         select: {
+          id: true,
           items: {
             select: {
               id: true,

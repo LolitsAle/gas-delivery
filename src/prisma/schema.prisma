@@ -131,7 +131,7 @@ model ProductPriceHistory {
 
 model Stove {
   id         String   @id @default(uuid())
-  name       String
+  name       String   @default("")
   userId     String
   productId  String   
   address    String
@@ -208,7 +208,6 @@ model Order {
   user       User        @relation(fields: [userId], references: [id])
   stove      Stove?      @relation(fields: [stoveId], references: [id])
 
-  coupons    OrderCoupon[]
   items      OrderItem[]
 }
 
@@ -234,47 +233,6 @@ model OrderItem {
 
   @@index([orderId])
   @@index([productId])
-}
-
-/* =========================
-   COUPON
-========================= */
-
-model Coupon {
-  id             String        @id @default(uuid())
-  code           String        @unique
-  discountType   DiscountType
-  discountAmount Int
-
-  isActive       Boolean       @default(true)
-  isPermanent    Boolean       @default(false)
-  expireDate     DateTime?
-  usableTimes    Int?
-
-  updatedAt      DateTime      @default(now()) @updatedAt
-  createdAt      DateTime      @default(now())
-
-  orders         OrderCoupon[]
-}
-
-/* =========================
-   ORDER COUPON
-========================= */
-
-model OrderCoupon {
-  id        String   @id @default(uuid())
-  orderId   String
-  couponId  String
-
-  appliedAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-  createdAt DateTime @default(now())
-
-  coupon    Coupon   @relation(fields: [couponId], references: [id])
-  order     Order    @relation(fields: [orderId], references: [id])
-
-  @@index([orderId])
-  @@index([couponId])
 }
 
 /* =========================

@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiFetchPublic } from "@/lib/api/apiClient";
@@ -9,15 +11,13 @@ type LoginMode = "otp" | "password";
 
 const PHONE_REGEX = /^(?:\+84|0)(?:3|5|7|8|9)\d{8}$/;
 
-const LoginPage = () => {
+export default function LoginPage() {
   const router = useRouter();
 
   const [mode, setMode] = useState<LoginMode>("otp");
-
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
-
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -33,7 +33,6 @@ const LoginPage = () => {
   };
 
   /* ================= OTP LOGIN ================= */
-
   const sendOtp = async () => {
     const err = validatePhone();
     if (err) return setError(err);
@@ -46,7 +45,6 @@ const LoginPage = () => {
         method: "POST",
         body: { phone: phoneNumber },
       });
-
       setStep("otp");
     } catch (e: any) {
       setError(e.message || "Không thể gửi OTP");
@@ -62,21 +60,12 @@ const LoginPage = () => {
     setError("");
 
     try {
-      const data = await apiFetchPublic<{
-        user: any;
-        access_token: string;
-        refresh_token: string;
-      }>("/api/auth/verify-otp", {
+      const data = await apiFetchPublic<any>("/api/auth/verify-otp", {
         method: "POST",
-        body: {
-          phone: phoneNumber,
-          otp,
-          type: "LOGIN",
-        },
+        body: { phone: phoneNumber, otp, type: "LOGIN" },
       });
 
       tokenStorage.setTokens(data.access_token, data.refresh_token);
-
       handleLoginSuccess(data.user);
     } catch (e: any) {
       setError(e.message || "OTP không hợp lệ");
@@ -86,7 +75,6 @@ const LoginPage = () => {
   };
 
   /* ================= PASSWORD LOGIN ================= */
-
   const loginWithPassword = async () => {
     const err = validatePhone();
     if (err) return setError(err);
@@ -96,20 +84,12 @@ const LoginPage = () => {
     setError("");
 
     try {
-      const data = await apiFetchPublic<{
-        user: any;
-        access_token: string;
-        refresh_token: string;
-      }>("/api/auth/login-password", {
+      const data = await apiFetchPublic<any>("/api/auth/login-password", {
         method: "POST",
-        body: {
-          phoneNumber,
-          password,
-        },
+        body: { phoneNumber, password },
       });
 
       tokenStorage.setTokens(data.access_token, data.refresh_token);
-
       handleLoginSuccess(data.user);
     } catch (e: any) {
       setError(e.message || "Đăng nhập thất bại");
@@ -118,110 +98,138 @@ const LoginPage = () => {
     }
   };
 
-  /* ================= UI ================= */
-
   return (
-    <div className="p-4 max-w-md mx-auto">
-      <h1 className="text-xl font-semibold mb-4 text-center">Đăng nhập</h1>
-
-      <input
-        type="tel"
-        placeholder="Số điện thoại"
-        value={phoneNumber}
-        onChange={(e) => {
-          setPhoneNumber(e.target.value);
-          setError("");
-        }}
-        className="p-2 border rounded w-full mb-2"
-      />
-
-      {/* OTP MODE */}
-      {mode === "otp" && step === "phone" && (
-        <button
-          onClick={sendOtp}
-          disabled={loading}
-          className="bg-blue-600 text-white p-2 rounded w-full"
-        >
-          {loading ? "Đang gửi OTP..." : "Đăng nhập bằng OTP"}
-        </button>
-      )}
-
-      {mode === "otp" && step === "otp" && (
-        <>
-          <input
-            type="text"
-            placeholder="Nhập OTP"
-            value={otp}
-            onChange={(e) => {
-              setOtp(e.target.value);
-              setError("");
-            }}
-            className="p-2 border rounded w-full mb-2 text-center tracking-widest"
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-b from-gas-green-400 to-gas-green-600 p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+        {/* Logo */}
+        <div className="flex justify-center mb-4">
+          <Image
+            src="/images/logo-main.png"
+            alt="Logo"
+            width={96}
+            height={96}
+            priority
           />
+        </div>
 
+        <h1 className="text-2xl font-semibold text-center text-gas-green-600 mb-1">
+          Đăng nhập
+        </h1>
+        <p className="text-sm text-center text-gray-500 mb-6">
+          Chào mừng bạn quay lại 👋
+        </p>
+
+        {/* Phone */}
+        <input
+          type="tel"
+          placeholder="Số điện thoại"
+          value={phoneNumber}
+          onChange={(e) => {
+            setPhoneNumber(e.target.value);
+            setError("");
+          }}
+          className="w-full rounded-lg border px-4 py-3 mb-3 focus:outline-none focus:ring-2 focus:ring-gas-green-400"
+        />
+
+        {/* OTP MODE */}
+        {mode === "otp" && step === "phone" && (
           <button
-            onClick={verifyOtp}
+            onClick={sendOtp}
             disabled={loading}
-            className="bg-blue-600 text-white p-2 rounded w-full"
+            className="w-full rounded-lg bg-gas-green-500 text-white py-3 font-medium hover:bg-gas-green-600 transition"
           >
-            {loading ? "Đang xác thực..." : "Xác thực OTP"}
-          </button>
-        </>
-      )}
-
-      {/* PASSWORD MODE */}
-      {mode === "password" && (
-        <>
-          <input
-            type="password"
-            placeholder="Mật khẩu"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              setError("");
-            }}
-            className="p-2 border rounded w-full mb-2"
-          />
-
-          <button
-            onClick={loginWithPassword}
-            disabled={loading}
-            className="bg-blue-600 text-white p-2 rounded w-full"
-          >
-            {loading ? "Đang đăng nhập..." : "Đăng nhập bằng mật khẩu"}
-          </button>
-        </>
-      )}
-
-      {/* SWITCH MODE */}
-      <div className="mt-4 text-center">
-        {mode === "otp" ? (
-          <button
-            className="text-sm text-blue-600 underline"
-            onClick={() => {
-              setMode("password");
-              setStep("phone");
-              setOtp("");
-            }}
-          >
-            Dùng mật khẩu thay thế
-          </button>
-        ) : (
-          <button
-            className="text-sm text-blue-600 underline"
-            onClick={() => {
-              setMode("otp");
-              setPassword("");
-            }}
-          >
-            Quay lại đăng nhập bằng OTP
+            {loading ? "Đang gửi OTP..." : "Đăng nhập bằng OTP"}
           </button>
         )}
-      </div>
 
-      {error && <p className="text-red-600 mt-3 text-sm">{error}</p>}
+        {mode === "otp" && step === "otp" && (
+          <>
+            <input
+              type="text"
+              placeholder="Nhập mã OTP"
+              value={otp}
+              onChange={(e) => {
+                setOtp(e.target.value);
+                setError("");
+              }}
+              className="w-full rounded-lg border px-4 py-3 mb-3 text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-gas-green-400"
+            />
+
+            <button
+              onClick={verifyOtp}
+              disabled={loading}
+              className="w-full rounded-lg bg-gas-green-500 text-white py-3 font-medium hover:bg-gas-green-600 transition"
+            >
+              {loading ? "Đang xác thực..." : "Xác thực OTP"}
+            </button>
+          </>
+        )}
+
+        {/* PASSWORD MODE */}
+        {mode === "password" && (
+          <>
+            <input
+              type="password"
+              placeholder="Mật khẩu"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError("");
+              }}
+              className="w-full rounded-lg border px-4 py-3 mb-3 focus:outline-none focus:ring-2 focus:ring-gas-green-400"
+            />
+
+            <button
+              onClick={loginWithPassword}
+              disabled={loading}
+              className="w-full rounded-lg bg-gas-green-500 text-white py-3 font-medium hover:bg-gas-green-600 transition"
+            >
+              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+            </button>
+          </>
+        )}
+
+        {/* Switch mode */}
+        <div className="mt-4 text-center">
+          {mode === "otp" ? (
+            <button
+              onClick={() => {
+                setMode("password");
+                setStep("phone");
+                setOtp("");
+              }}
+              className="text-sm text-gas-green-600 hover:underline"
+            >
+              Dùng mật khẩu thay thế
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                setMode("otp");
+                setPassword("");
+              }}
+              className="text-sm text-gas-green-600 hover:underline"
+            >
+              Quay lại đăng nhập bằng OTP
+            </button>
+          )}
+        </div>
+
+        {/* Register link */}
+        <div className="mt-6 text-center text-sm">
+          <span className="text-gray-500">Chưa có tài khoản? </span>
+          <Link
+            href="/register"
+            className="text-gas-green-600 font-medium hover:underline"
+          >
+            Đăng ký ngay
+          </Link>
+        </div>
+
+        {error && (
+          <p className="mt-4 text-center text-sm text-red-600">{error}</p>
+        )}
+      </div>
     </div>
   );
-};
-
-export default LoginPage;
+}

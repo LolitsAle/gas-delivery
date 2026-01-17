@@ -37,13 +37,27 @@ export async function apiFetchPublic<T = any>(
 }
 
 /* ======================================================
-   2️⃣ AUTH API CLIENT (BEARER + AUTO REFRESH + LOCK)
+   2️⃣ AUTH API CLIENT (AUTO REDIRECT)
 ====================================================== */
 export async function apiFetchAuth<T = any>(
   url: string,
   options: ApiOptions = {}
 ): Promise<T> {
-  return requestWithRefresh<T>(url, options);
+  return requestWithRefreshCore<T>(url, options, {
+    redirectOnAuthFail: true,
+  });
+}
+
+/* ======================================================
+   3️⃣ AUTH API CLIENT (NO REDIRECT)
+====================================================== */
+export async function apiFetchAuthNoRedirect<T = any>(
+  url: string,
+  options: ApiOptions = {}
+): Promise<T> {
+  return requestWithRefreshCore<T>(url, options, {
+    redirectOnAuthFail: false,
+  });
 }
 
 /* ======================================================
@@ -52,11 +66,17 @@ export async function apiFetchAuth<T = any>(
 
 let refreshPromise: Promise<boolean> | null = null;
 
-async function requestWithRefresh<T>(
+type AuthBehavior = {
+  redirectOnAuthFail?: boolean;
+};
+
+async function requestWithRefreshCore<T>(
   url: string,
-  options: ApiOptions
+  options: ApiOptions,
+  behavior: AuthBehavior
 ): Promise<T> {
   const accessToken = tokenStorage.getAccess();
+
   const res = await fetch(url, {
     method: options.method || "GET",
     headers: {
@@ -72,9 +92,7 @@ async function requestWithRefresh<T>(
     data = await res.json();
   } catch {}
 
-  if (res.ok) {
-    return data as T;
-  }
+  if (res.ok) return data as T;
 
   if (res.status === 401) {
     // 🔒 Only one refresh request at a time
@@ -88,12 +106,19 @@ async function requestWithRefresh<T>(
 
     if (refreshed) {
       // 🔁 retry original request
-      return requestWithRefresh<T>(url, options);
+      return requestWithRefreshCore<T>(url, options, behavior);
     }
 
-    // ❌ Refresh failed → logout
-    clearTokens();
-    throw new Error("Phiên đăng nhập đã hết hạn");
+    // ❌ Refresh failed
+    tokenStorage.clear();
+
+    if (behavior.redirectOnAuthFail !== false) {
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    }
+
+    throw new Error("AUTH_EXPIRED");
   }
 
   throw new Error(data?.message || "Request failed");
@@ -127,14 +152,6 @@ async function refreshTokenAction(): Promise<boolean> {
     return true;
   } catch {
     return false;
-  }
-}
-
-function clearTokens() {
-  tokenStorage.clear();
-
-  if (typeof window !== "undefined") {
-    window.location.href = "/login";
   }
 }
 

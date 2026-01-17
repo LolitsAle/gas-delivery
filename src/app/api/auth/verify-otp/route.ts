@@ -11,12 +11,12 @@ export async function POST(req: Request) {
   const {
     phone,
     otp,
-    nickname,
+    name,
     type,
   }: {
     phone: string;
     otp: string;
-    nickname?: string;
+    name?: string;
     type: "REGISTER" | "LOGIN" | "VERIFY_OTP_ONLY";
   } = await req.json();
 
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     if (user) {
       return Response.json(
         { message: "Số điện thoại đã tồn tại" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -60,7 +60,8 @@ export async function POST(req: Request) {
       data: {
         phoneNumber: phone,
         password: "",
-        nickname: nickname || `User${phone.slice(-4)}`,
+        name: name,
+        nickname: `User${phone.slice(-4)}`,
       },
     });
   }
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
   if (type === "LOGIN" && !user) {
     return Response.json(
       { message: "Tài khoản không tồn tại" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
       role: user!.role,
       sessionVersion: user!.sessionVersion,
     },
-    ACCESS_TOKEN_EXPIRES
+    ACCESS_TOKEN_EXPIRES,
   );
 
   const refresh_token = generateRefreshToken();
@@ -105,6 +106,6 @@ export async function POST(req: Request) {
       refresh_token,
       expires_in: ACCESS_TOKEN_EXPIRES,
     },
-    { status: 200 }
+    { status: 200 },
   );
 }
