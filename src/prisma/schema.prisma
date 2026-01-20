@@ -11,30 +11,31 @@ datasource db {
 ========================= */
 
 model User {
-  id             String   @id @default(uuid())
-  name           String?
-  nickname       String
-  phoneNumber    String   @unique
-  password       String
+  id              String   @id @default(uuid())
+  name            String?
+  nickname        String
+  phoneNumber     String   @unique
+  password        String
 
-  points         Int      @default(0)
+  points          Int      @default(0)
 
-  address        String?
-  addressNote    String?
-  houseImage     String[]
+  address         String?
+  addressNote     String?
+  houseImage      String[]
+  houseImageCount Int      @default(0)
 
-  role           Role     @default(USER)
-  isVerified     Boolean  @default(false)
-  sessionVersion Int      @default(1)
-  isActive       Boolean  @default(true)
+  role            Role     @default(USER)
+  isVerified      Boolean  @default(false)
+  sessionVersion  Int      @default(1)
+  isActive        Boolean  @default(true)
 
-  updatedAt      DateTime @default(now()) @updatedAt
-  createdAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
 
-  stoves         Stove[]
-  orders         Order[]
-  carts          Cart[]
-  refreshTokens  RefreshToken[]
+  stoves          Stove[]
+  cart            Cart?
+  orders          Order[]
+  refreshTokens   RefreshToken[]
 }
 
 /* =========================
@@ -42,16 +43,16 @@ model User {
 ========================= */
 
 model RefreshToken {
-  id                   String   @id @default(uuid())
-  userId               String
-  tokenHash            String   @unique
-  replacedByTokenHash  String?
+  id                  String   @id @default(uuid())
+  userId              String
+  tokenHash           String   @unique
+  replacedByTokenHash String?
 
-  revoked              Boolean  @default(false)
-  expiresAt            DateTime
-  lastUsedAt           DateTime?
+  revoked             Boolean  @default(false)
+  expiresAt           DateTime
+  lastUsedAt          DateTime?
 
-  createdAt            DateTime @default(now())
+  createdAt           DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -78,10 +79,10 @@ model PhoneOtp {
 ========================= */
 
 model Category {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  freeShip  Boolean  @default(false)
-  bindable  Boolean @default(false)
+  id        String        @id @default(uuid())
+  name      String        @unique
+
+  tags      ProductTag[]
 
   products  Product[]
 }
@@ -91,99 +92,90 @@ model Category {
 ========================= */
 
 model Product {
-  id            String      @id @default(uuid())
-  productName   String
-  currentPrice  Int
-  pointValue    Int         @default(0)
+  id           String        @id @default(uuid())
+  productName  String
+  currentPrice Int
+  pointValue   Int           @default(0)
 
-  categoryId    String
-  category      Category    @relation(fields: [categoryId], references: [id])
+  categoryId   String
+  category     Category      @relation(fields: [categoryId], references: [id])
 
-  tags          ProductTag[]
+  tags         ProductTag[]  
 
-  updatedAt     DateTime    @default(now()) @updatedAt
-  createdAt     DateTime    @default(now())
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now()) @updatedAt
 
-  orderItems    OrderItem[]
-  cartItems     CartItem[]
-  priceHistory  ProductPriceHistory[]
-  stoves        Stove[]
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+  stoves       Stove[]
 }
 
-/* =========================
-   PRODUCT PRICE HISTORY
-========================= */
-
-model ProductPriceHistory {
-  id        String   @id @default(uuid())
-  productId String
-  price     Int
-  createdAt DateTime @default(now())
-
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([productId])
-}
 
 /* =========================
    STOVE
 ========================= */
 
 model Stove {
-  id         String   @id @default(uuid())
-  name       String   @default("")
-  userId     String
-  productId  String   
-  address    String
-  note       String?
+  id        String   @id @default(uuid())
+  name      String   @default("")
+  userId    String
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
+  productId String?  // gas đang bind (có thể chưa bind)
+  address   String
+  note      String?
 
-  user       User     @relation(fields: [userId], references: [id])
-  product    Product  @relation(fields: [productId], references: [id])
-  orders     Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id])
+  product   Product? @relation(fields: [productId], references: [id])
+  orders    Order[]
+  carts     Cart[]
 
   @@index([userId])
-  @@index([productId])
 }
 
 /* =========================
-   CART
+   CART (1 USER = 1 CART)
 ========================= */
 
 model Cart {
   id        String    @id @default(uuid())
-  userId    String
-  type      CartType @default(NORMAL)
-  isActive  Boolean  @default(true)
+  userId    String    @unique
+
+  stoveId   String?   // có thể chưa chọn bếp
+  type      CartType  @default(NORMAL)
+  isActive  Boolean   @default(true)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @default(now()) @updatedAt
 
   user      User      @relation(fields: [userId], references: [id])
-  items     CartItem[]
+  stove     Stove?    @relation(fields: [stoveId], references: [id])
 
-  @@index([userId])
+  items     CartItem[]
 }
+
 
 /* =========================
    CART ITEM
 ========================= */
 
 model CartItem {
-  id        String   @id @default(uuid())
-  cartId    String
-  productId String
+  id           String       @id @default(uuid())
+  cartId       String
+  productId    String
 
-  quantity  Int
-  isFree    Boolean  @default(false)
+  quantity     Int
+  type         CartItemType
+  payByPoints  Boolean      @default(false)
+  earnPoints   Boolean      @default(true)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @default(now()) @updatedAt
 
-  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product   Product  @relation(fields: [productId], references: [id])
+  cart         Cart         @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product      Product      @relation(fields: [productId], references: [id])
 
   @@unique([cartId, productId])
 }
@@ -193,22 +185,25 @@ model CartItem {
 ========================= */
 
 model Order {
-  id         String      @id @default(uuid())
-  userId     String
-  stoveId    String?
-  type       OrderType   @default(NORMAL)
+  id             String      @id @default(uuid())
+  userId         String
+  stoveId        String
+  type           OrderType   @default(NORMAL)
 
-  totalPrice Int
-  status     OrderStatus @default(PENDING)
-  note        String?
+  subtotal       Int
+  discountAmount Int         @default(0)
+  shipFee        Int         @default(0)
+  totalPrice     Int
 
-  updatedAt  DateTime    @default(now()) @updatedAt
-  createdAt  DateTime    @default(now())
+  status         OrderStatus @default(PENDING)
+  note           String?
 
-  user       User        @relation(fields: [userId], references: [id])
-  stove      Stove?      @relation(fields: [stoveId], references: [id])
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @default(now()) @updatedAt
 
-  items      OrderItem[]
+  user           User        @relation(fields: [userId], references: [id])
+  stove          Stove       @relation(fields: [stoveId], references: [id])
+  items          OrderItem[]
 }
 
 /* =========================
@@ -216,23 +211,24 @@ model Order {
 ========================= */
 
 model OrderItem {
-  id            String   @id @default(uuid())
-  orderId       String
-  productId     String
+  id           String        @id @default(uuid())
+  orderId      String
+  productId    String
 
-  quantity      Int
-  unitPrice     Int
-  pointsEarned  Int      @default(0)
-  isFree        Boolean  @default(false)
+  quantity     Int
+  unitPrice   Int
 
-  updatedAt     DateTime @default(now()) @updatedAt
-  createdAt     DateTime @default(now())
+  type         OrderItemType
+  payByPoints Boolean       @default(false)
+  earnPoints  Boolean       @default(true)
 
-  order         Order    @relation(fields: [orderId], references: [id])
-  product       Product  @relation(fields: [productId], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @default(now()) @updatedAt
+
+  order        Order        @relation(fields: [orderId], references: [id])
+  product      Product     @relation(fields: [productId], references: [id])
 
   @@index([orderId])
-  @@index([productId])
 }
 
 /* =========================
@@ -244,14 +240,10 @@ enum Role {
   ADMIN
 }
 
-enum DiscountType {
-  PERCENTAGE
-  FIXED
-}
-
 enum OrderStatus {
   PENDING
   CONFIRMED
+  WAITING_CUSTOMER_CONFIRM
   READY
   DELIVERING
   COMPLETED
@@ -268,6 +260,22 @@ enum CartType {
   EXCHANGE
 }
 
+enum CartItemType {
+  PRODUCT     
+  SERVICE     
+  PART        
+}
+
+enum OrderItemType {
+  PRODUCT
+  SERVICE
+  PART
+}
+
 enum ProductTag {
-  POINTS_EXCHANGABLE
+  BINDABLE              // sản phẩm cốt lõi (gas)
+  POINT_EARNABLE        // được tích điểm
+  POINT_EXCHANGABLE     // mua bằng điểm
+  FREE_SHIP             // miễn ship
+  PROMO_ELIGIBLE        // tham gia campaign
 }

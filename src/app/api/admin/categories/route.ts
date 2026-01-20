@@ -34,14 +34,14 @@ export const POST = withAuth(["ADMIN"], async (req, ctx) => {
     if (!body.name) {
       return NextResponse.json(
         { message: "Category name is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const category = await prisma.category.create({
       data: {
         name: body.name.trim(),
-        freeShip: body.freeShip ?? false,
+        tags: body.tags ? body.tags : [],
       },
     });
 
@@ -62,7 +62,7 @@ export const PUT = withAuth(["ADMIN"], async (req) => {
     if (!body.id) {
       return NextResponse.json(
         { message: "Category id is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -70,7 +70,7 @@ export const PUT = withAuth(["ADMIN"], async (req) => {
       where: { id: body.id },
       data: {
         name: body.name,
-        freeShip: body.freeShip,
+        tags: body.tags ? body.tags : [],
       },
     });
 
@@ -92,7 +92,7 @@ export const DELETE = withAuth(["ADMIN"], async (req) => {
     if (!id) {
       return NextResponse.json(
         { message: "Category id is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -103,7 +103,7 @@ export const DELETE = withAuth(["ADMIN"], async (req) => {
     if (productCount > 0) {
       return NextResponse.json(
         { message: "Cannot delete category with products" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

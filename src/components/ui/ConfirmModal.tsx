@@ -38,7 +38,7 @@ export default function ConfirmModal({
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="btn-primary bg-red-600 hover:bg-red-700"
+            className="btn-primary bg-red-500 hover:bg-red-500 p-[2vw] rounded-md"
           >
             {loading ? "Đang xử lý..." : confirmText}
           </button>

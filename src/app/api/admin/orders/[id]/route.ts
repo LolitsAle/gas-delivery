@@ -29,7 +29,7 @@ export const PUT = withAuth(["ADMIN", "STAFF"], async (req, ctx) => {
     if (!order) {
       return NextResponse.json(
         { message: "Đơn hàng không tồn tại" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -134,7 +134,7 @@ export const PUT = withAuth(["ADMIN", "STAFF"], async (req, ctx) => {
 
     return NextResponse.json(
       { message: err.message || "Không thể cập nhật đơn hàng" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 });
@@ -160,7 +160,7 @@ export const DELETE = withAuth(["ADMIN"], async (_req, ctx) => {
     if (!order) {
       return NextResponse.json(
         { message: "Đơn hàng không tồn tại" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -170,7 +170,7 @@ export const DELETE = withAuth(["ADMIN"], async (_req, ctx) => {
     if (["DELIVERING", "COMPLETED"].includes(order.status)) {
       return NextResponse.json(
         { message: "Không thể xóa đơn hàng đang giao hoặc đã hoàn thành" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -191,14 +191,14 @@ export const DELETE = withAuth(["ADMIN"], async (_req, ctx) => {
 
     return NextResponse.json(
       { message: "Đã xóa đơn hàng thành công" },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (err: any) {
     console.error("[DELETE_ORDER]", err);
 
     return NextResponse.json(
       { message: err.message || "Không thể xóa đơn hàng" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 });

@@ -7,10 +7,12 @@ import {
 } from "lucide-react";
 import React, { memo, useState } from "react";
 
-interface Props {}
+interface Props {
+  user: any | null;
+}
 
 function OrderSection(props: Props) {
-  const {} = props;
+  const { user } = props;
   const [gasQuantity, setGasQuantity] = useState(1);
 
   const onGasQuantityChange = (value: number) => {

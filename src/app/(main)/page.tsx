@@ -27,7 +27,7 @@ export default function Home() {
     (async () => {
       try {
         const data = await apiFetchAuthNoRedirect<{ user: any }>(
-          "/api/auth/me"
+          "/api/auth/me",
         );
         if (!data?.user) return;
         setUser(data.user);
@@ -89,7 +89,7 @@ export default function Home() {
       {/* body */}
       <div className="w-full h-[78vh] rounded-2xl pt-[3vh] z-10 absolute top-[22vh] left-0 bg-linear-to-br from-white via-green-50 to-green-100 animate-gradient flex flex-col">
         {/*  */}
-        <OrderSection />
+        <OrderSection user={user} />
 
         {/* scrollable section */}
         <div className="flex-1 overflow-y-auto pb-[30vw] overscroll-contain">

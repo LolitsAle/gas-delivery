@@ -20,7 +20,11 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [creating, setCreating] = useState(false);
 
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(typeof window !== "undefined" && window.innerWidth < 768);
+  }, []);
 
   /* FETCH */
   useEffect(() => {
@@ -34,7 +38,7 @@ export default function UsersPage() {
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
     return users.filter(
-      (u) => u.phoneNumber.includes(q) || u.nickname.toLowerCase().includes(q)
+      (u) => u.phoneNumber.includes(q) || u.nickname.toLowerCase().includes(q),
     );
   }, [query, users]);
 

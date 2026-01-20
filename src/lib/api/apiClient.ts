@@ -1,5 +1,4 @@
 // apiClient.ts
-
 import { tokenStorage } from "@/lib/auth/token";
 
 export type ApiOptions = {
@@ -13,15 +12,21 @@ export type ApiOptions = {
 ====================================================== */
 export async function apiFetchPublic<T = any>(
   url: string,
-  options: ApiOptions = {}
+  options: ApiOptions = {},
 ): Promise<T> {
+  const isFormData = options.body instanceof FormData;
+
   const res = await fetch(url, {
     method: options.method || "GET",
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...options.headers,
     },
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body: options.body
+      ? isFormData
+        ? options.body
+        : JSON.stringify(options.body)
+      : undefined,
   });
 
   let data: any = null;
@@ -41,7 +46,7 @@ export async function apiFetchPublic<T = any>(
 ====================================================== */
 export async function apiFetchAuth<T = any>(
   url: string,
-  options: ApiOptions = {}
+  options: ApiOptions = {},
 ): Promise<T> {
   return requestWithRefreshCore<T>(url, options, {
     redirectOnAuthFail: true,
@@ -53,7 +58,7 @@ export async function apiFetchAuth<T = any>(
 ====================================================== */
 export async function apiFetchAuthNoRedirect<T = any>(
   url: string,
-  options: ApiOptions = {}
+  options: ApiOptions = {},
 ): Promise<T> {
   return requestWithRefreshCore<T>(url, options, {
     redirectOnAuthFail: false,
@@ -73,18 +78,29 @@ type AuthBehavior = {
 async function requestWithRefreshCore<T>(
   url: string,
   options: ApiOptions,
-  behavior: AuthBehavior
+  behavior: AuthBehavior,
 ): Promise<T> {
   const accessToken = tokenStorage.getAccess();
+  const isFormData = options.body instanceof FormData;
+
+  const headers = new Headers(options.headers || {});
+
+  if (!isFormData) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
 
   const res = await fetch(url, {
     method: options.method || "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...options.headers,
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    headers,
+    body: options.body
+      ? isFormData
+        ? options.body
+        : JSON.stringify(options.body)
+      : undefined,
   });
 
   let data: any = null;
@@ -95,7 +111,6 @@ async function requestWithRefreshCore<T>(
   if (res.ok) return data as T;
 
   if (res.status === 401) {
-    // 🔒 Only one refresh request at a time
     if (!refreshPromise) {
       refreshPromise = refreshTokenAction().finally(() => {
         refreshPromise = null;
@@ -105,11 +120,9 @@ async function requestWithRefreshCore<T>(
     const refreshed = await refreshPromise;
 
     if (refreshed) {
-      // 🔁 retry original request
       return requestWithRefreshCore<T>(url, options, behavior);
     }
 
-    // ❌ Refresh failed
     tokenStorage.clear();
 
     if (behavior.redirectOnAuthFail !== false) {
@@ -144,16 +157,18 @@ async function refreshTokenAction(): Promise<boolean> {
     if (!res.ok) return false;
 
     const data = await res.json();
-
     if (!data?.access_token) return false;
 
     tokenStorage.setTokens(data.access_token, data.refresh_token);
-
     return true;
   } catch {
     return false;
   }
 }
+
+/* ======================================================
+   Logout
+====================================================== */
 
 export function apiLogoutClient() {
   const refreshToken = tokenStorage.getRefresh();
@@ -164,9 +179,7 @@ export function apiLogoutClient() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        refresh_token: refreshToken,
-      }),
+      body: JSON.stringify({ refresh_token: refreshToken }),
     }).catch(() => {});
   }
 
