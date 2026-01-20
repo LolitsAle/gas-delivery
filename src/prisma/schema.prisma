@@ -6,62 +6,66 @@ datasource db {
   provider = "postgresql"
 }
 
-/* =========================
-   USER & AUTH
-========================= */
+/**
+ * =========================
+ * USER & AUTH
+ * =========================
+ */
 
 model User {
-  id              String   @id @default(uuid())
-  name            String?
-  nickname        String
-  phoneNumber     String   @unique
-  password        String
+  id          String  @id @default(uuid())
+  name        String?
+  nickname    String
+  phoneNumber String  @unique
+  password    String
 
-  points          Int      @default(0)
+  points Int @default(0)
 
-  address         String?
-  addressNote     String?
-  houseImage      String[]
-  houseImageCount Int      @default(0)
+  address     String?
+  addressNote String?
 
-  role            Role     @default(USER)
-  isVerified      Boolean  @default(false)
-  sessionVersion  Int      @default(1)
-  isActive        Boolean  @default(true)
+  role           Role    @default(USER)
+  isVerified     Boolean @default(false)
+  sessionVersion Int     @default(1)
+  isActive       Boolean @default(true)
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now()) @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-  stoves          Stove[]
-  cart            Cart?
-  orders          Order[]
-  refreshTokens   RefreshToken[]
+  stoves        Stove[]
+  cart          Cart?
+  orders        Order[]
+  refreshTokens RefreshToken[]
 }
 
-/* =========================
-   REFRESH TOKEN
-========================= */
+/**
+ * =========================
+ * REFRESH TOKEN
+ * =========================
+ */
 
 model RefreshToken {
-  id                  String   @id @default(uuid())
+  id                  String  @id @default(uuid())
   userId              String
-  tokenHash           String   @unique
+  tokenHash           String  @unique
   replacedByTokenHash String?
 
-  revoked             Boolean  @default(false)
-  expiresAt           DateTime
-  lastUsedAt          DateTime?
+  revoked    Boolean   @default(false)
+  expiresAt  DateTime
+  lastUsedAt DateTime?
 
-  createdAt           DateTime @default(now())
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
-/* =========================
-   OTP
-========================= */
+/**
+ * =========================
+ * OTP
+ * =========================
+ */
 
 model PhoneOtp {
   id        String   @id @default(uuid())
@@ -74,166 +78,247 @@ model PhoneOtp {
   @@index([phone])
 }
 
-/* =========================
-   CATEGORY
-========================= */
+/**
+ * =========================
+ * CATEGORY
+ * =========================
+ */
 
 model Category {
-  id        String        @id @default(uuid())
-  name      String        @unique
+  id   String @id @default(uuid())
+  name String @unique
 
-  tags      ProductTag[]
+  tags ProductTag[]
 
-  products  Product[]
+  products Product[]
 }
 
-/* =========================
-   PRODUCT
-========================= */
+/**
+ * =========================
+ * PRODUCT
+ * =========================
+ */
 
 model Product {
-  id           String        @id @default(uuid())
+  id           String @id @default(uuid())
   productName  String
   currentPrice Int
-  pointValue   Int           @default(0)
+  pointValue   Int    @default(0)
 
-  categoryId   String
-  category     Category      @relation(fields: [categoryId], references: [id])
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
 
-  tags         ProductTag[]  
-
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @default(now()) @updatedAt
-
-  cartItems    CartItem[]
-  orderItems   OrderItem[]
-  stoves       Stove[]
-}
-
-
-/* =========================
-   STOVE
-========================= */
-
-model Stove {
-  id        String   @id @default(uuid())
-  name      String   @default("")
-  userId    String
-
-  productId String?  // gas đang bind (có thể chưa bind)
-  address   String
-  note      String?
+  tags ProductTag[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  user      User     @relation(fields: [userId], references: [id])
-  product   Product? @relation(fields: [productId], references: [id])
-  orders    Order[]
-  carts     Cart[]
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+  stoves     Stove[]
+}
+
+/**
+ * =========================
+ * STOVE
+ * =========================
+ */
+
+model Stove {
+  id     String @id @default(uuid())
+  name   String @default("")
+  userId String
+
+  productId       String? // gas đang bind (có thể chưa bind)
+  address         String
+  note            String?
+  houseImage      String[]
+  houseImageCount Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
+  orders  Order[]
+  carts   Cart[]
 
   @@index([userId])
 }
 
-/* =========================
-   CART (1 USER = 1 CART)
-========================= */
+/**
+ * =========================
+ * CART (1 USER = 1 CART)
+ * =========================
+ */
 
 model Cart {
-  id        String    @id @default(uuid())
-  userId    String    @unique
+  id     String @id @default(uuid())
+  userId String @unique
 
-  stoveId   String?   // có thể chưa chọn bếp
-  type      CartType  @default(NORMAL)
-  isActive  Boolean   @default(true)
+  stoveId  String? // có thể chưa chọn bếp
+  type     CartType @default(NORMAL)
+  isActive Boolean  @default(true)
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now()) @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-  user      User      @relation(fields: [userId], references: [id])
-  stove     Stove?    @relation(fields: [stoveId], references: [id])
+  user  User   @relation(fields: [userId], references: [id])
+  stove Stove? @relation(fields: [stoveId], references: [id])
 
-  items     CartItem[]
+  items CartItem[]
 }
 
-
-/* =========================
-   CART ITEM
-========================= */
+/**
+ * =========================
+ * CART ITEM
+ * =========================
+ */
 
 model CartItem {
-  id           String       @id @default(uuid())
-  cartId       String
-  productId    String
+  id        String @id @default(uuid())
+  cartId    String
+  productId String
 
-  quantity     Int
-  type         CartItemType
-  payByPoints  Boolean      @default(false)
-  earnPoints   Boolean      @default(true)
+  quantity    Int
+  type        CartItemType
+  payByPoints Boolean      @default(false)
+  earnPoints  Boolean      @default(true)
 
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @default(now()) @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-  cart         Cart         @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product      Product      @relation(fields: [productId], references: [id])
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
 
   @@unique([cartId, productId])
 }
 
-/* =========================
-   ORDER
-========================= */
+/**
+ * =========================
+ * ORDER
+ * =========================
+ */
 
 model Order {
-  id             String      @id @default(uuid())
-  userId         String
-  stoveId        String
-  type           OrderType   @default(NORMAL)
+  id      String    @id @default(uuid())
+  userId  String
+  stoveId String
+  type    OrderType @default(NORMAL)
 
   subtotal       Int
-  discountAmount Int         @default(0)
-  shipFee        Int         @default(0)
+  discountAmount Int @default(0)
+  shipFee        Int @default(0)
   totalPrice     Int
 
-  status         OrderStatus @default(PENDING)
-  note           String?
+  status OrderStatus @default(PENDING)
+  note   String?
 
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @default(now()) @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-  user           User        @relation(fields: [userId], references: [id])
-  stove          Stove       @relation(fields: [stoveId], references: [id])
-  items          OrderItem[]
+  user       User             @relation(fields: [userId], references: [id])
+  stove      Stove            @relation(fields: [stoveId], references: [id])
+  items      OrderItem[]
+  promotions OrderPromotion[]
 }
 
-/* =========================
-   ORDER ITEM
-========================= */
+/**
+ * =========================
+ * ORDER ITEM
+ * =========================
+ */
 
 model OrderItem {
-  id           String        @id @default(uuid())
-  orderId      String
-  productId    String
+  id        String @id @default(uuid())
+  orderId   String
+  productId String
 
-  quantity     Int
-  unitPrice   Int
+  quantity  Int
+  unitPrice Int
 
-  type         OrderItemType
+  type        OrderItemType
   payByPoints Boolean       @default(false)
   earnPoints  Boolean       @default(true)
 
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @default(now()) @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-  order        Order        @relation(fields: [orderId], references: [id])
-  product      Product     @relation(fields: [productId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 
   @@index([orderId])
 }
 
-/* =========================
-   ENUMS
-========================= */
+/**
+ * =========================
+ * PROMOTION
+ * =========================
+ */
+model Promotion {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+
+  startAt  DateTime
+  endAt    DateTime
+  isActive Boolean  @default(true)
+
+  priority Int @default(0) // xử lý khi nhiều promo cùng lúc
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  conditions PromotionCondition[]
+  actions    PromotionAction[]
+  orders     OrderPromotion[]
+}
+
+model PromotionCondition {
+  id          String @id @default(uuid())
+  promotionId String
+
+  type  PromotionConditionType
+  value String? // JSON string hoặc scalar
+
+  promotion Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+
+  @@index([promotionId])
+}
+
+model PromotionAction {
+  id          String @id @default(uuid())
+  promotionId String
+
+  type        PromotionActionType
+  value       Int? // % hoặc số tiền
+  maxDiscount Int?
+
+  promotion Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+
+  @@index([promotionId])
+}
+
+model OrderPromotion {
+  id          String @id @default(uuid())
+  orderId     String
+  promotionId String
+
+  discountAmount Int     @default(0)
+  freeShip       Boolean @default(false)
+  bonusPoint     Int     @default(0)
+
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  promotion Promotion @relation(fields: [promotionId], references: [id])
+
+  @@index([orderId])
+}
+
+/**
+ * =========================
+ * ENUMS
+ * =========================
+ */
 
 enum Role {
   USER
@@ -261,9 +346,9 @@ enum CartType {
 }
 
 enum CartItemType {
-  PRODUCT     
-  SERVICE     
-  PART        
+  PRODUCT
+  SERVICE
+  PART
 }
 
 enum OrderItemType {
@@ -273,9 +358,23 @@ enum OrderItemType {
 }
 
 enum ProductTag {
-  BINDABLE              // sản phẩm cốt lõi (gas)
-  POINT_EARNABLE        // được tích điểm
-  POINT_EXCHANGABLE     // mua bằng điểm
-  FREE_SHIP             // miễn ship
-  PROMO_ELIGIBLE        // tham gia campaign
+  BINDABLE // sản phẩm cốt lõi (gas)
+  POINT_EARNABLE // được tích điểm
+  POINT_EXCHANGABLE // mua bằng điểm
+  FREE_SHIP // miễn ship
+  PROMO_ELIGIBLE // tham gia campaign
+}
+
+enum PromotionConditionType {
+  PRODUCT_TAG
+  CATEGORY
+  MIN_SUBTOTAL
+  ORDER_TYPE
+}
+
+enum PromotionActionType {
+  DISCOUNT_PERCENT
+  DISCOUNT_AMOUNT
+  FREE_SHIP
+  BONUS_POINT
 }
