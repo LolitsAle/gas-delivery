@@ -5,7 +5,7 @@ import { Search, Eye, Trash } from "lucide-react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import OrderModal from "./components/OrderModal";
 import { Order } from "./constants";
-import ConfirmModal from "@/components/ui/ConfirmModal";
+import ConfirmModal from "@/components/main/ConfirmModal";
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -34,7 +34,7 @@ export default function AdminOrdersPage() {
     params.set("limit", limit.toString());
 
     apiFetchAuth<{ orders: Order[]; total: number }>(
-      `/api/admin/orders?${params.toString()}`
+      `/api/admin/orders?${params.toString()}`,
     ).then((res) => {
       setOrders(res.orders);
       setTotal(res.total);
@@ -263,7 +263,7 @@ export default function AdminOrdersPage() {
           title="Xóa đơn hàng"
           description={`Bạn có chắc chắn muốn xóa đơn ${orderToDelete.id.slice(
             0,
-            8
+            8,
           )}? Hành động này không thể hoàn tác.`}
           confirmText="Xóa đơn"
           cancelText="Hủy"

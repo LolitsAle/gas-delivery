@@ -7,7 +7,6 @@ export interface User {
   address?: string;
   addressNote?: string;
   isActive?: boolean;
-  houseImage?: string[];
 }
 
 export const ROLE_COLOR: Record<User["role"], string> = {

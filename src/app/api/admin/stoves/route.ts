@@ -23,7 +23,7 @@ export const GET = withAuth(["ADMIN", "STAFF"], async (req) => {
         id: true,
         address: true,
         note: true,
-        productId: true, // 🔥 cần nếu sau này bind product
+        productId: true,
         product: {
           select: {
             id: true,
@@ -38,7 +38,7 @@ export const GET = withAuth(["ADMIN", "STAFF"], async (req) => {
     console.error("[GET_STOVES]", err);
     return NextResponse.json(
       { message: "Không thể tải danh sách bếp" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 });

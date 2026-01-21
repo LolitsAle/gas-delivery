@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { apiFetchAuthNoRedirect } from "@/lib/api/apiClient";
 import { Stove, User } from "@/app/(main)/user/page";
-import ConfirmModal from "../ui/ConfirmModal";
+import ConfirmModal from "../main/ConfirmModal";
 
 type Props = {
   user: User;

@@ -4,13 +4,15 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/withAuth";
 import { getId } from "@/lib/api/helper";
 
-export const PATCH = withAuth(["ADMIN"], async (req, { params }) => {
+/* ======================================================
+   UPDATE USER (EDIT FORM)
+====================================================== */
+export const PUT = withAuth(["ADMIN"], async (req, { params }) => {
   const userId = getId(params.id);
-
   if (!userId) {
     return NextResponse.json(
       { message: "User id is required" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -19,26 +21,91 @@ export const PATCH = withAuth(["ADMIN"], async (req, { params }) => {
   const user = await prisma.user.update({
     where: { id: userId },
     data: {
-      nickname: body.nickname,
-      role: body.role,
-      isVerified: body.isVerified,
-      address: body.address,
-      addressNote: body.addressNote,
-      houseImage: body.houseImage,
-      isActive: body.isActive,
+      ...(body.nickname !== undefined && { nickname: body.nickname }),
+      ...(body.address !== undefined && { address: body.address }),
+      ...(body.addressNote !== undefined && { addressNote: body.addressNote }),
+      ...(body.role !== undefined && { role: body.role }),
+      ...(body.isActive !== undefined && { isActive: body.isActive }),
+      ...(body.isVerified !== undefined && { isVerified: body.isVerified }),
+    },
+    select: {
+      id: true,
+      phoneNumber: true,
+      nickname: true,
+      role: true,
+      isVerified: true,
+      isActive: true,
+      points: true,
+      address: true,
+      addressNote: true,
+      createdAt: true,
+      updatedAt: true,
+      stoves: {
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          productId: true,
+          product: {
+            select: {
+              id: true,
+              productName: true,
+              currentPrice: true,
+              pointValue: true,
+              tags: true,
+            },
+          },
+        },
+      },
     },
   });
 
   return NextResponse.json({ user });
 });
 
-export const DELETE = withAuth(["ADMIN"], async (_req, { params }) => {
+/* ======================================================
+   QUICK ACTION (PATCH)
+   - toggle active
+   - verify user
+====================================================== */
+export const PATCH = withAuth(["ADMIN"], async (req, { params }) => {
   const userId = getId(params.id);
-
   if (!userId) {
     return NextResponse.json(
       { message: "User id is required" },
-      { status: 400 }
+      { status: 400 },
+    );
+  }
+
+  const body = await req.json();
+
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...(typeof body.isActive === "boolean" && { isActive: body.isActive }),
+      ...(typeof body.isVerified === "boolean" && {
+        isVerified: body.isVerified,
+      }),
+    },
+    select: {
+      id: true,
+      isActive: true,
+      isVerified: true,
+    },
+  });
+
+  return NextResponse.json({ user });
+});
+
+/* ======================================================
+   DELETE USER (SOFT DELETE)
+====================================================== */
+export const DELETE = withAuth(["ADMIN"], async (_req, { params }) => {
+  const userId = getId(params.id);
+  if (!userId) {
+    return NextResponse.json(
+      { message: "User id is required" },
+      { status: 400 },
     );
   }
 
@@ -48,31 +115,4 @@ export const DELETE = withAuth(["ADMIN"], async (_req, { params }) => {
   });
 
   return NextResponse.json({ ok: true });
-});
-
-export const PUT = withAuth(["ADMIN"], async (req, { params }) => {
-  const userId = getId(params.id);
-
-  if (!userId) {
-    return NextResponse.json(
-      { message: "User id is required" },
-      { status: 400 }
-    );
-  }
-
-  const body = await req.json();
-
-  const updatedUser = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      nickname: body.nickname,
-      address: body.address,
-      addressNote: body.addressNote,
-      houseImage: body.houseImage,
-      role: body.role,
-      isActive: body.isActive,
-    },
-  });
-
-  return NextResponse.json({ user: updatedUser });
 });

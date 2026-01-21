@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
-import ConfirmModal from "@/components/ui/ConfirmModal";
+import ConfirmModal from "@/components/main/ConfirmModal";
 
 interface Category {
   id: string;
@@ -30,7 +30,7 @@ export default function AdminCategoriesPage() {
       (res) => {
         setCategories(res.categories);
         setLoading(false);
-      }
+      },
     );
   }, []);
 
@@ -51,7 +51,7 @@ export default function AdminCategoriesPage() {
       {
         method: "POST",
         body: data,
-      }
+      },
     );
     setCategories((prev) => [res.category, ...prev]);
     setCreating(false);
@@ -63,7 +63,7 @@ export default function AdminCategoriesPage() {
       {
         method: "PUT",
         body: { id, ...data },
-      }
+      },
     );
     setCategories((prev) => prev.map((c) => (c.id === id ? res.category : c)));
     setEditing(null);

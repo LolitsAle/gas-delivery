@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return NextResponse.json(
       { message: "Người dùng chưa đăng nhập" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
   } catch {
     return NextResponse.json(
       { message: "Token không hợp lệ hoặc đã hết hạn" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -47,7 +47,6 @@ export async function GET(req: Request) {
       updatedAt: true,
       address: true,
       addressNote: true,
-      houseImage: true,
       stoves: {
         select: {
           id: true,
@@ -66,7 +65,7 @@ export async function GET(req: Request) {
           },
         },
       },
-      carts: {
+      cart: {
         select: {
           id: true,
           items: {
@@ -74,7 +73,18 @@ export async function GET(req: Request) {
               id: true,
               productId: true,
               quantity: true,
-              isFree: true,
+              type: true,
+              payByPoints: true,
+              earnPoints: true,
+              product: {
+                select: {
+                  id: true,
+                  productName: true,
+                  currentPrice: true,
+                  pointValue: true,
+                  tags: true,
+                },
+              },
               createdAt: true,
               updatedAt: true,
             },
@@ -87,7 +97,7 @@ export async function GET(req: Request) {
   if (!user) {
     return NextResponse.json(
       { message: "Người dùng không tồn tại" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 

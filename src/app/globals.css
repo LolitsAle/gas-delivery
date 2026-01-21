@@ -55,3 +55,12 @@
   --color-border: var(--color-gas-gray-200);
   --color-ring: var(--color-gas-green-400);
 }
+
+* {
+  caret-color: transparent;
+}
+input,
+textarea,
+[contenteditable="true"] {
+  caret-color: auto;
+}
