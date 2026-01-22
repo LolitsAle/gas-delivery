@@ -52,8 +52,8 @@ export default function UserPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 space-y-6 pb-[30vw]">
       <UserBasicInfo user={user} onChange={updateUser} />
-      <UserHouseImage user={user} onChange={updateUser} />
-      <UserStove user={user} onChange={updateUser} />
+      {/* <UserHouseImage user={user} onChange={updateUser} />
+      <UserStove user={user} onChange={updateUser} /> */}
     </div>
   );
 }

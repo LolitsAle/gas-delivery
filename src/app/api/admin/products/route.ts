@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
-import { buildTags } from "@/lib/utils";
 
 export const GET = withAuth(["ADMIN"], async (req) => {
   const { searchParams } = new URL(req.url);
@@ -38,7 +37,7 @@ export const POST = withAuth(["ADMIN"], async (req) => {
   if (!productName || !currentPrice || !categoryId) {
     return NextResponse.json(
       { message: "Missing required fields" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -48,12 +47,12 @@ export const POST = withAuth(["ADMIN"], async (req) => {
       currentPrice,
       pointValue,
       categoryId,
-      tags: buildTags(pointValue),
-      priceHistory: {
-        create: {
-          price: currentPrice,
-        },
-      },
+      tags: [],
+      // priceHistory: {
+      //   create: {
+      //     price: currentPrice,
+      //   },
+      // },
     },
     include: {
       category: true,
@@ -72,7 +71,7 @@ export const PUT = withAuth(["ADMIN"], async (req) => {
     if (!id) {
       return NextResponse.json(
         { message: "Product id is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -83,7 +82,7 @@ export const PUT = withAuth(["ADMIN"], async (req) => {
     if (!existing) {
       return NextResponse.json(
         { message: "Product not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -101,14 +100,7 @@ export const PUT = withAuth(["ADMIN"], async (req) => {
         currentPrice,
         pointValue,
         categoryId,
-        tags: buildTags(finalPointValue),
-        ...(priceChanged && {
-          priceHistory: {
-            create: {
-              price: currentPrice,
-            },
-          },
-        }),
+        tags: [],
       },
       include: {
         category: true, // ✅ IMPORTANT
@@ -128,7 +120,7 @@ export const DELETE = withAuth(["ADMIN"], async (req) => {
     if (!body.id) {
       return NextResponse.json(
         { message: "Product id is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

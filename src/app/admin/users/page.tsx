@@ -1,19 +1,43 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import AdminPagination from "@/components/admin/AdminPagination";
-import {
-  ActionMenu,
-  ActionMenuItem,
-  AdminCard,
-  AdminTable,
-  AdminTableCell,
-  AdminTableRow,
-  StatusBadge,
-} from "@/components/admin/Commons";
+import { AdminCard, StatusBadge } from "@/components/admin/Commons";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import { User } from "@prisma/client";
 import UserForm from "@/components/admin/forms/UserForm";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { MoreVertical, Plus } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import UserStovesDialog from "./UserStoveDialog";
 
 export interface UserWithStoves extends User {
   stoves: any[];
@@ -21,7 +45,7 @@ export interface UserWithStoves extends User {
 
 interface Props {}
 
-function Page2(props: Props) {
+function Page(props: Props) {
   const {} = props;
   const [query] = useState("");
   const [limit] = useState(5);
@@ -154,32 +178,36 @@ function Page2(props: Props) {
     <div className="space-y-4">
       {/* Search & Filter – Mobile first */}
       <div className="flex items-center gap-2">
-        <input
+        <Input
           placeholder="Tên / SĐT"
-          className="h-10 flex-1 rounded-xl border px-3 text-sm"
+          className="h-10 flex-1 rounded-md text-sm"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        <select
-          className="h-10 w-[90px] rounded-xl border px-2 text-sm"
+        <Select
           value={status}
-          onChange={(e) => setStatus(e.target.value as any)}
+          onValueChange={(value) => setStatus(value as any)}
         >
-          <option value="ALL">All</option>
-          <option value="ACTIVE">Đang hoạt động</option>
-          <option value="INACTIVE">Đã bị khoá</option>
-        </select>
+          <SelectTrigger className="h-10 w-22.5 rounded-md text-sm">
+            <SelectValue placeholder="All" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Tất cả</SelectItem>
+            <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
+            <SelectItem value="INACTIVE">Đã bị khoá</SelectItem>
+          </SelectContent>
+        </Select>
 
-        <button
+        <Button
+          size="icon"
+          className="h-10 w-10 rounded-md"
           onClick={() => setCreating(true)}
-          className="h-10 w-10 rounded-xl bg-black text-white flex items-center justify-center"
           aria-label="Tạo user"
         >
-          +
-        </button>
+          <Plus className="h-4 w-4" />
+        </Button>
       </div>
-
       {/* Mobile – Card */}
       <div className="md:hidden space-y-3">
         {paged.map((u) => (
@@ -199,14 +227,33 @@ function Page2(props: Props) {
               </div>
             }
             actions={
-              <ActionMenu>
-                <ActionMenuItem onClick={() => setEditingUser(u)}>
-                  Chỉnh sửa
-                </ActionMenuItem>
-                <ActionMenuItem danger onClick={() => deleteUser(u)}>
-                  Khoá user
-                </ActionMenuItem>
-              </ActionMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    aria-label="Mở menu"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent align="end" sideOffset={6}>
+                  <DropdownMenuItem onClick={() => setEditingUser(u)}>
+                    Chỉnh sửa
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setEditStove(u)}>
+                    Quản lý bếp
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-red-600 focus:text-red-600"
+                    onClick={() => deleteUser(u)}
+                  >
+                    Khoá user
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             }
           >
             {/* Row 2: Address + Points */}
@@ -237,51 +284,157 @@ function Page2(props: Props) {
           </AdminCard>
         ))}
       </div>
-
       {/* Desktop – Table */}
-      <AdminTable
-        headers={["User", "Phone", "Address", "Stoves", "Points", "Status", ""]}
-      >
-        {paged.map((u) => (
-          <AdminTableRow key={u.id}>
-            <AdminTableCell>{u.nickname}</AdminTableCell>
-            <AdminTableCell>{u.phoneNumber}</AdminTableCell>
-            <AdminTableCell>
-              <div className="text-sm">{u.address || "-"}</div>
-              {u.addressNote && (
-                <div className="text-xs text-gray-500">{u.addressNote}</div>
-              )}
-            </AdminTableCell>
-            <AdminTableCell>{u.stoves.length}</AdminTableCell>
-            <AdminTableCell>{u.points}</AdminTableCell>
-            <AdminTableCell>
-              <div className="flex gap-2">
-                <StatusBadge status={u.isActive ? "ACTIVE" : "INACTIVE"} />
-                <StatusBadge status={u.isVerified ? "VERIFIED" : "PENDING"} />
-              </div>
-            </AdminTableCell>
-            <AdminTableCell>
-              <ActionMenu>
-                <ActionMenuItem onClick={() => setEditingUser(u)}>
-                  Chỉnh sửa
-                </ActionMenuItem>
-                <ActionMenuItem onClick={() => setEditStove(u)}>
-                  Quản lý bếp
-                </ActionMenuItem>
-                <ActionMenuItem danger onClick={() => deleteUser(u)}>
-                  Khoá user
-                </ActionMenuItem>
-              </ActionMenu>
-            </AdminTableCell>
-          </AdminTableRow>
-        ))}
-      </AdminTable>
-      <AdminPagination
-        page={page}
-        totalPages={totalPages}
-        onPageChange={setPage}
-      />
+      <div className="hidden md:block w-full overflow-x-auto">
+        <div className="rounded-lg border bg-white shadow-sm">
+          <Table className="w-full table-fixed">
+            <TableHeader className="bg-muted/50">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Tên
+                </TableHead>
+                <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Số điện thoại
+                </TableHead>
+                <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Địa chỉ
+                </TableHead>
+                <TableHead className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  SL Bếp
+                </TableHead>
+                <TableHead className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Điểm
+                </TableHead>
+                <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Tình trạng
+                </TableHead>
+                <TableHead className="px-4 py-3 text-right" />
+              </TableRow>
+            </TableHeader>
 
+            {/* BODY */}
+            <TableBody>
+              {paged.map((u) => (
+                <TableRow
+                  key={u.id}
+                  className="hover:bg-muted/40 transition-colors"
+                >
+                  <TableCell className="px-4 py-3 font-medium">
+                    {u.nickname}
+                  </TableCell>
+
+                  <TableCell className="px-4 py-3 text-sm text-muted-foreground">
+                    {u.phoneNumber}
+                  </TableCell>
+
+                  <TableCell className="px-4 py-3 max-w-65">
+                    <div className="truncate text-sm">{u.address || "-"}</div>
+                    {u.addressNote && (
+                      <div className="truncate text-xs text-muted-foreground">
+                        {u.addressNote}
+                      </div>
+                    )}
+                  </TableCell>
+
+                  <TableCell className="px-4 py-3 text-center text-sm">
+                    {u.stoves.length}
+                  </TableCell>
+
+                  <TableCell className="px-4 py-3 text-center text-sm">
+                    {u.points}
+                  </TableCell>
+
+                  <TableCell className="px-4 py-3">
+                    <div className="flex gap-2 flex-wrap">
+                      <StatusBadge
+                        status={u.isActive ? "ACTIVE" : "INACTIVE"}
+                      />
+                      <StatusBadge
+                        status={u.isVerified ? "VERIFIED" : "PENDING"}
+                      />
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="px-4 py-3 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          aria-label="Mở menu"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+
+                      <DropdownMenuContent align="end" sideOffset={6}>
+                        <DropdownMenuItem onClick={() => setEditingUser(u)}>
+                          Chỉnh sửa
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setEditStove(u)}>
+                          Quản lý bếp
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-600 focus:text-red-600"
+                          onClick={() => deleteUser(u)}
+                        >
+                          Khoá user
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+      <Pagination className="mt-4">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                if (page > 1) setPage(page - 1);
+              }}
+              className={page === 1 ? "pointer-events-none opacity-50" : ""}
+            />
+          </PaginationItem>
+
+          {Array.from({ length: totalPages }).map((_, i) => {
+            const p = i + 1;
+
+            return (
+              <PaginationItem key={p}>
+                <PaginationLink
+                  href="#"
+                  isActive={p === page}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setPage(p);
+                  }}
+                >
+                  {p}
+                </PaginationLink>
+              </PaginationItem>
+            );
+          })}
+          <PaginationItem>
+            <PaginationNext
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                if (page < totalPages) setPage(page + 1);
+              }}
+              className={
+                page === totalPages ? "pointer-events-none opacity-50" : ""
+              }
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
       {/* CREATE USER */}
       {creating && (
         <UserForm
@@ -294,7 +447,6 @@ function Page2(props: Props) {
           }}
         />
       )}
-
       {/* UPDATE USER */}
       {editingUser && (
         <UserForm
@@ -308,8 +460,13 @@ function Page2(props: Props) {
           }}
         />
       )}
+
+      {/* MANAGE STOVES */}
+      {editStove && (
+        <UserStovesDialog user={editStove} onClose={() => setEditStove(null)} />
+      )}
     </div>
   );
 }
 
-export default Page2;
+export default Page;
