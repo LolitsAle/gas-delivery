@@ -60,7 +60,7 @@ export default function Home() {
     } else {
       return <div onClick={() => router.push("/login")}>Chưa đăng nhập</div>;
     }
-  }, [user, isFetchingUser]);
+  }, [user, isFetchingUser, router]);
 
   if (loading) {
     return <SplashScreen onFinish={() => setLoading(false)} />;

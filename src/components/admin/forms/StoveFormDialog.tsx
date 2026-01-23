@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { Stove } from "@prisma/client";
 import { r2Url } from "@/lib/helper/helpers";
 import { DialogDescription } from "@radix-ui/react-dialog";
+import Image from "next/image";
 
 const MAX_IMAGES = 5;
 
@@ -129,7 +130,8 @@ export default function StoveFormDialog({
                 {/* Existing images */}
                 {existingImages.map((img) => (
                   <div key={img} className="relative">
-                    <img
+                    <Image
+                      alt=""
                       src={r2Url(img)}
                       className="h-24 w-full rounded-md object-cover"
                     />
@@ -146,7 +148,8 @@ export default function StoveFormDialog({
                 {/* New images preview */}
                 {newImages.map((file, i) => (
                   <div key={i} className="relative">
-                    <img
+                    <Image
+                      alt=""
                       src={URL.createObjectURL(file)}
                       className="h-24 w-full rounded-md object-cover"
                     />

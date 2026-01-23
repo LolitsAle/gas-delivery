@@ -2,7 +2,7 @@ import { CONTACT_PHONES } from "@/constants/constants";
 import { PhoneCall } from "lucide-react";
 import React, { useState } from "react";
 
-export default () => {
+const PhoneCallPopup = () => {
   const [openPhoneCall, setOpenPhoneCall] = useState(false);
   return (
     <>
@@ -36,3 +36,5 @@ export default () => {
     </>
   );
 };
+
+export default PhoneCallPopup;

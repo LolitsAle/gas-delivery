@@ -63,7 +63,7 @@ function HeaderComponent({ onMenuClick }: HeaderProps) {
     try {
       await apiLogoutClient();
     } catch {}
-  }, [router]);
+  }, []);
 
   const getCurrentPathName = useMemo(() => {
     switch (pathname) {

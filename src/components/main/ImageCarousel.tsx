@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 interface Props {
@@ -30,12 +30,15 @@ export default function ImageCarousel({ images }: Props) {
   const [[index, direction], setIndex] = useState<[number, number]>([0, 0]);
   const isDragging = useRef(false);
 
-  const paginate = (newDirection: number) => {
-    setIndex(([prev]) => [
-      (prev + newDirection + images.length) % images.length,
-      newDirection,
-    ]);
-  };
+  const paginate = useCallback(
+    (newDirection: number) => {
+      setIndex(([prev]) => [
+        (prev + newDirection + images.length) % images.length,
+        newDirection,
+      ]);
+    },
+    [images.length],
+  );
 
   /* 🔁 Auto play */
   useEffect(() => {
@@ -48,7 +51,7 @@ export default function ImageCarousel({ images }: Props) {
     }, AUTO_PLAY_INTERVAL);
 
     return () => clearInterval(timer);
-  }, [images.length]);
+  }, [images.length, paginate]);
 
   return (
     <div className="relative w-fill h-[36vw] mt-[5vw] overflow-hidden rounded-xl mx-[5vw]">

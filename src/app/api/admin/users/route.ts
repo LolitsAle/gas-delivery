@@ -89,7 +89,7 @@ export const POST = withAuth(["ADMIN"], async (req) => {
       data: {
         phoneNumber: body.phoneNumber,
         nickname: body.nickname,
-        password: body.password || "",
+        passwordHash: body.password || "",
         role: body.role ?? "USER",
         isVerified: body.isVerified ?? false,
         isActive: body.isActive ?? true,

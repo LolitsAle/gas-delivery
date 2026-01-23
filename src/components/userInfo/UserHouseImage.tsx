@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { User } from "@/app/(main)/user/page";
 import { apiFetchAuthNoRedirect } from "@/lib/api/apiClient";
+import Image from "next/image";
 
 type Props = {
   user: User;
@@ -104,7 +105,11 @@ export default function UserHouseImage({ user, onChange }: Props) {
       <div className="grid grid-cols-3 gap-2">
         {user.houseImage.map((img) => (
           <div key={img} className="relative">
-            <img src={img} className="h-24 w-full rounded-xl object-cover" />
+            <Image
+              alt=""
+              src={img}
+              className="h-24 w-full rounded-xl object-cover"
+            />
 
             <button
               onClick={() => removeImage(img)}

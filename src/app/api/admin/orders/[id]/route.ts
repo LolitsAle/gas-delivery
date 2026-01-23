@@ -42,7 +42,7 @@ export const PUT = withAuth(["ADMIN", "STAFF"], async (req, ctx) => {
       /* ---------- STOVE ---------- */
       if (body.stove) {
         if (body.stove.stoveId === null) {
-          stoveId = null;
+          stoveId = "";
         } else if (body.stove.stoveId) {
           const stove = await tx.stove.findFirst({
             where: {
@@ -101,12 +101,12 @@ export const PUT = withAuth(["ADMIN", "STAFF"], async (req, ctx) => {
         });
 
         // create new items
-        await tx.orderItem.createMany({
-          data: newItems.map((i) => ({
-            ...i,
-            orderId: order.id,
-          })),
-        });
+        // await tx.orderItem.createMany({
+        //   data: newItems.map((i) => ({
+        //     ...i,
+        //     orderId: order.id,
+        //   })),
+        // });
       }
 
       /* ---------- UPDATE ORDER ---------- */

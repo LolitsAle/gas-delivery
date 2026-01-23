@@ -36,7 +36,7 @@ export default function UserPage() {
       return;
     }
     setUser(JSON.parse(raw));
-  }, []);
+  }, [router]);
 
   const updateUser = (partial: Partial<User>) => {
     setUser((prev) => {

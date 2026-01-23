@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     if (!phoneNumber || !password) {
       return Response.json(
         { message: "Thiếu số điện thoại hoặc mật khẩu" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -29,11 +29,11 @@ export async function POST(req: Request) {
           message: "Số điện thoại chưa đăng ký. Vui lòng đăng ký tài khoản.",
           code: "USER_NOT_FOUND",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
-    const valid = await verifyPassword(password, user.password);
+    const valid = await verifyPassword(password, user.passwordHash);
     if (!valid) {
       return Response.json({ message: "Mật khẩu không đúng" }, { status: 401 });
     }
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     if (!user.isVerified) {
       return Response.json(
         { message: "Số điện thoại chưa được xác minh" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -51,14 +51,14 @@ export async function POST(req: Request) {
         role: user.role,
         sessionVersion: user.sessionVersion,
       },
-      ACCESS_TOKEN_EXPIRES
+      ACCESS_TOKEN_EXPIRES,
     );
 
     const refreshToken = generateRefreshToken();
     const refreshTokenHash = hashToken(refreshToken);
 
     const refreshExpiresAt = new Date(
-      Date.now() + REFRESH_TOKEN_EXPIRES * 1000
+      Date.now() + REFRESH_TOKEN_EXPIRES * 1000,
     );
 
     await prisma.refreshToken.create({
@@ -81,13 +81,13 @@ export async function POST(req: Request) {
         refresh_token: refreshToken,
         expires_in: ACCESS_TOKEN_EXPIRES,
       }),
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Login error:", error);
     return Response.json(
       { message: "Có lỗi xảy ra khi đăng nhập" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

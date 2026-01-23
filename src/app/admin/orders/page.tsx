@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Search, Eye, Trash } from "lucide-react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import OrderModal from "./components/OrderModal";
@@ -26,7 +26,7 @@ export default function AdminOrdersPage() {
   /* =====================
      FETCH ORDERS
   ====================== */
-  const fetchOrders = () => {
+  const fetchOrders = useCallback(() => {
     const params = new URLSearchParams();
     if (query) params.set("search", query);
     if (status !== "all") params.set("status", status);
@@ -40,11 +40,11 @@ export default function AdminOrdersPage() {
       setTotal(res.total);
       setLoading(false);
     });
-  };
+  }, [limit, page, query, status]);
 
   useEffect(() => {
     fetchOrders();
-  }, [query, status, page]);
+  }, [query, status, page, fetchOrders]);
 
   const totalOrders = useMemo(() => orders.length, [orders]);
 

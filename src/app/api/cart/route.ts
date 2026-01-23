@@ -54,7 +54,7 @@ export const GET = withAuth(["USER"], async (req, { user }) => {
   if (stove) {
     // Check if cart already has ANY gas 12kg product
     const hasGas12kg = cart.items.some(
-      (item) => item.product.category.name === "gas 12kg"
+      (item) => item.product.category.name === "gas 12kg",
     );
 
     if (!hasGas12kg) {
@@ -70,29 +70,29 @@ export const GET = withAuth(["USER"], async (req, { user }) => {
         },
       });
 
-      if (defaultGas12kg) {
-        await prisma.cartItem.create({
-          data: {
-            cartId: cart.id,
-            productId: defaultGas12kg.id,
-            quantity: 1,
-          },
-        });
+      // if (defaultGas12kg) {
+      //   await prisma.cartItem.create({
+      //     data: {
+      //       cartId: cart.id,
+      //       productId: defaultGas12kg.id,
+      //       quantity: 1,
+      //     },
+      //   });
 
-        // Reload cart
-        cart = await prisma.cart.findUnique({
-          where: { id: cart.id },
-          include: {
-            items: {
-              include: {
-                product: {
-                  include: { category: true },
-                },
-              },
-            },
-          },
-        });
-      }
+      //   // Reload cart
+      //   cart = await prisma.cart.findUnique({
+      //     where: { id: cart.id },
+      //     include: {
+      //       items: {
+      //         include: {
+      //           product: {
+      //             include: { category: true },
+      //           },
+      //         },
+      //       },
+      //     },
+      //   });
+      // }
     }
   }
 

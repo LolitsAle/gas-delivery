@@ -18,14 +18,14 @@ export async function POST(req: Request) {
     } catch {
       return Response.json(
         { message: "Access token không hợp lệ hoặc đã hết hạn" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     if (!payload?.sub) {
       return Response.json(
         { message: "Access token không hợp lệ" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     if (!oldPassword || !newPassword) {
       return Response.json(
         { message: "Thiếu mật khẩu cũ hoặc mới" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,15 +44,15 @@ export async function POST(req: Request) {
     if (!user) {
       return Response.json(
         { message: "Người dùng không tồn tại" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
-    const valid = await verifyPassword(oldPassword, user.password);
+    const valid = await verifyPassword(oldPassword, user.passwordHash);
     if (!valid) {
       return Response.json(
         { message: "Mật khẩu cũ không đúng" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        password: hashedNewPassword,
+        passwordHash: hashedNewPassword,
         sessionVersion: { increment: 1 },
       },
     });
@@ -80,14 +80,14 @@ export async function POST(req: Request) {
         message:
           "Đổi mật khẩu thành công. Vui lòng đăng nhập lại để lấy token mới.",
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("Change password error:", error);
 
     return Response.json(
       { message: "Có lỗi xảy ra khi đổi mật khẩu" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

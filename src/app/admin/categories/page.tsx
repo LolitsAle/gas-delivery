@@ -167,7 +167,7 @@ export default function AdminCategoriesPage() {
         />
       )}
 
-      {deleting && (
+      {/* {deleting && (
         <ConfirmModal
           title="Xóa danh mục"
           description={`Bạn có chắc chắn muốn xóa "${deleting.name}"?`}
@@ -176,7 +176,7 @@ export default function AdminCategoriesPage() {
           onConfirm={confirmDeleteCategory}
           loading={deletingLoading}
         />
-      )}
+      )} */}
     </div>
   );
 }

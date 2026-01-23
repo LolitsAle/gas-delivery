@@ -12,39 +12,39 @@ export async function GET(req: Request) {
     if (bindableParam === "true") bindableFilter = true;
     if (bindableParam === "false") bindableFilter = false;
 
-    const products = await prisma.product.findMany({
-      where:
-        bindableFilter === undefined
-          ? undefined
-          : {
-              category: {
-                bindable: bindableFilter,
-              },
-            },
-      select: {
-        id: true,
-        productName: true,
-        currentPrice: true,
-        pointValue: true,
-        category: {
-          select: {
-            id: true,
-            name: true,
-            bindable: true,
-          },
-        },
-      },
-      orderBy: {
-        productName: "asc",
-      },
-    });
+    // const products = await prisma.product.findMany({
+    //   where:
+    //     bindableFilter === undefined
+    //       ? undefined
+    //       : {
+    //           category: {
+    //             bindable: bindableFilter,
+    //           },
+    //         },
+    //   select: {
+    //     id: true,
+    //     productName: true,
+    //     currentPrice: true,
+    //     pointValue: true,
+    //     category: {
+    //       select: {
+    //         id: true,
+    //         name: true,
+    //         bindable: true,
+    //       },
+    //     },
+    //   },
+    //   orderBy: {
+    //     productName: "asc",
+    //   },
+    // });
 
-    return NextResponse.json(products);
+    return NextResponse.json({});
   } catch (error) {
     console.error("[GET_PRODUCTS]", error);
     return NextResponse.json(
       { message: "Failed to fetch products" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

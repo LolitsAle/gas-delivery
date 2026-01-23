@@ -106,7 +106,7 @@ export const POST = withAuth(["ADMIN", "STAFF"], async (req, ctx) => {
     if (!body.items || body.items.length === 0) {
       return NextResponse.json(
         { message: "Đơn hàng phải có ít nhất 1 sản phẩm" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -120,7 +120,7 @@ export const POST = withAuth(["ADMIN", "STAFF"], async (req, ctx) => {
     if (!user) {
       return NextResponse.json(
         { message: "Khách hàng không tồn tại" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -145,7 +145,7 @@ export const POST = withAuth(["ADMIN", "STAFF"], async (req, ctx) => {
       const productMap = new Map(products.map((p) => [p.id, p]));
 
       /* ---------- FIND BINDABLE PRODUCT ---------- */
-      const bindableProduct = products.find((p) => p.category.bindable);
+      // const bindableProduct = products.find((p) => p.category.bindable);
 
       /* ---------- STOVE ---------- */
       let stoveId: string;
@@ -165,16 +165,16 @@ export const POST = withAuth(["ADMIN", "STAFF"], async (req, ctx) => {
         stoveId = stove.id;
       } else {
         // 🔥 AUTO CREATE STOVE → REQUIRE BINDABLE PRODUCT
-        if (!bindableProduct) {
-          throw new Error(
-            "Đơn hàng phải có ít nhất 1 sản phẩm thuộc nhóm có thể gắn với bếp"
-          );
-        }
+        // if (!bindableProduct) {
+        //   throw new Error(
+        //     "Đơn hàng phải có ít nhất 1 sản phẩm thuộc nhóm có thể gắn với bếp"
+        //   );
+        // }
 
         const newStove = await tx.stove.create({
           data: {
             userId: user.id,
-            productId: bindableProduct.id,
+            // productId: bindableProduct.id,
             address: body.stove?.address || user.address || "Chưa có địa chỉ",
             note: body.stove?.note,
           },
@@ -203,31 +203,31 @@ export const POST = withAuth(["ADMIN", "STAFF"], async (req, ctx) => {
       });
 
       /* ---------- CREATE ORDER ---------- */
-      const order = await tx.order.create({
-        data: {
-          userId: user.id,
-          stoveId,
-          status: OrderStatus.CONFIRMED, // ✅ admin/staff luôn confirmed
-          totalPrice,
-          // note: body.note,
-          items: {
-            createMany: {
-              data: orderItemsData,
-            },
-          },
-        },
-        include: {
-          items: {
-            include: {
-              product: true,
-            },
-          },
-          user: true,
-          stove: true,
-        },
-      });
+      // const order = await tx.order.create({
+      //   data: {
+      //     userId: user.id,
+      //     stoveId,
+      //     status: OrderStatus.CONFIRMED, // ✅ admin/staff luôn confirmed
+      //     totalPrice,
+      //     // note: body.note,
+      //     // items: {
+      //     //   createMany: {
+      //     //     data: orderItemsData,
+      //     //   },
+      //     // },
+      //   },
+      //   include: {
+      //     items: {
+      //       include: {
+      //         product: true,
+      //       },
+      //     },
+      //     user: true,
+      //     stove: true,
+      //   },
+      // });
 
-      return order;
+      // return order;
     });
 
     return NextResponse.json({ order }, { status: 201 });
@@ -238,7 +238,7 @@ export const POST = withAuth(["ADMIN", "STAFF"], async (req, ctx) => {
       {
         message: err.message || "Không thể tạo đơn hàng",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 });
