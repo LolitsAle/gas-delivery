@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     user = await prisma.user.create({
       data: {
         phoneNumber: phone,
-        password: "",
+        passwordHash: "",
         name: name,
         nickname: `User${phone.slice(-4)}`,
       },

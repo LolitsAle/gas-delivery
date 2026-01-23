@@ -258,7 +258,7 @@ export default function AdminOrdersPage() {
       {/* =====================
           DELETE CONFIRM
       ====================== */}
-      {orderToDelete && (
+      {/* {orderToDelete && (
         <ConfirmModal
           title="Xóa đơn hàng"
           description={`Bạn có chắc chắn muốn xóa đơn ${orderToDelete.id.slice(
@@ -271,7 +271,7 @@ export default function AdminOrdersPage() {
           onCancel={() => !deleting && setOrderToDelete(null)}
           onConfirm={executeDeleteOrder}
         />
-      )}
+      )} */}
     </div>
   );
 }

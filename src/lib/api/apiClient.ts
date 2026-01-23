@@ -2,7 +2,7 @@
 import { tokenStorage } from "@/lib/auth/token";
 
 export type ApiOptions = {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   body?: any;
   headers?: HeadersInit;
 };

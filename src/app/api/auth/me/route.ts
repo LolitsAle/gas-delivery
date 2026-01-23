@@ -50,19 +50,6 @@ export async function GET(req: Request) {
       stoves: {
         select: {
           id: true,
-          name: true,
-          address: true,
-          productId: true,
-          note: true,
-          createdAt: true,
-          updatedAt: true,
-          product: {
-            select: {
-              id: true,
-              productName: true,
-              currentPrice: true,
-            },
-          },
         },
       },
       cart: {

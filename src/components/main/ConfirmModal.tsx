@@ -1,14 +1,17 @@
-import React from "react";
+"use client";
 
-export default function ConfirmModal({
-  title = "Xác nhận",
-  description,
-  confirmText = "Xóa",
-  cancelText = "Hủy",
-  onConfirm,
-  onCancel,
-  loading = false,
-}: {
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+
+type Props = {
+  open: boolean;
   title?: string;
   description?: string;
   confirmText?: string;
@@ -16,34 +19,36 @@ export default function ConfirmModal({
   loading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
-}) {
+};
+
+export default function ConfirmModal({
+  open,
+  title = "Xác nhận",
+  description,
+  confirmText = "Xóa",
+  cancelText = "Hủy",
+  loading = false,
+  onConfirm,
+  onCancel,
+}: Props) {
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-4 w-full max-w-sm space-y-4">
-        <div className="font-semibold text-lg">{title}</div>
+    <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {description && <DialogDescription>{description}</DialogDescription>}
+        </DialogHeader>
 
-        {description && (
-          <div className="text-sm text-gray-600">{description}</div>
-        )}
-
-        <div className="flex justify-end gap-2 pt-2">
-          <button
-            onClick={onCancel}
-            disabled={loading}
-            className="btn-secondary"
-          >
+        <DialogFooter className="gap-2 sm:justify-end">
+          <Button variant="secondary" onClick={onCancel} disabled={loading}>
             {cancelText}
-          </button>
+          </Button>
 
-          <button
-            onClick={onConfirm}
-            disabled={loading}
-            className="btn-primary bg-red-500 hover:bg-red-500 p-[2vw] rounded-md"
-          >
+          <Button variant="destructive" onClick={onConfirm} disabled={loading}>
             {loading ? "Đang xử lý..." : confirmText}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

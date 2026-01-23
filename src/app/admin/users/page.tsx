@@ -37,7 +37,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import UserStovesDialog from "./UserStoveDialog";
+import UserStovesDialog from "../../../components/admin/forms/UserStoveDialog";
 
 export interface UserWithStoves extends User {
   stoves: any[];
@@ -61,6 +61,7 @@ function Page(props: Props) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [page, setPage] = useState(1);
+  const [triggerUserRefresh, setTriggerUserRefresh] = useState(false);
 
   const pageSize = 5;
 
@@ -83,7 +84,7 @@ function Page(props: Props) {
         setTotal(res.total);
       })
       .finally(() => setLoading(false));
-  }, [page, limit, query, status]);
+  }, [page, limit, query, status, triggerUserRefresh]);
 
   /* Reset page khi filter/search đổi */
   useEffect(() => {
@@ -170,9 +171,9 @@ function Page(props: Props) {
   const totalPages = Math.ceil(filtered.length / pageSize);
   const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  if (loading) {
-    return <div className="text-sm text-gray-500">Đang tải dữ liệu...</div>;
-  }
+  // if (loading) {
+  //   return <div className="text-sm text-gray-500">Đang tải dữ liệu...</div>;
+  // }
 
   return (
     <div className="space-y-4">
@@ -463,7 +464,11 @@ function Page(props: Props) {
 
       {/* MANAGE STOVES */}
       {editStove && (
-        <UserStovesDialog user={editStove} onClose={() => setEditStove(null)} />
+        <UserStovesDialog
+          user={editStove}
+          onClose={() => setEditStove(null)}
+          refreshUser={setTriggerUserRefresh}
+        />
       )}
     </div>
   );

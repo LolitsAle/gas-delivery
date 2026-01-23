@@ -228,17 +228,21 @@ export default function UserStove({ user, onChange }: Props) {
       )}
 
       {/* ================= CONFIRM DELETE ================= */}
-      {confirmDeleteId && (
+      {/* {confirmDeleteId && (
         <ConfirmModal
-          title="Xóa bếp"
-          description="Bạn có chắc chắn muốn xóa bếp này không?"
-          confirmText="Xóa"
+          open={!!orderToDelete}
+          title="Xóa đơn hàng"
+          description={`Bạn có chắc chắn muốn xóa đơn ${orderToDelete?.id.slice(
+            0,
+            8,
+          )}? Hành động này không thể hoàn tác.`}
+          confirmText="Xóa đơn"
           cancelText="Hủy"
-          loading={loadingDelete}
-          onCancel={() => setConfirmDeleteId(null)}
-          onConfirm={confirmDelete}
+          loading={deleting}
+          onCancel={() => !deleting && setOrderToDelete(null)}
+          onConfirm={executeDeleteOrder}
         />
-      )}
+      )} */}
     </>
   );
 }

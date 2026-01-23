@@ -1,5 +1,4 @@
 import { PrismaClient, Role } from "@prisma/client";
-import bcrypt from "bcryptjs";
 
 export async function seedAdminUser(prisma: PrismaClient) {
   const phone = "0348480033";
@@ -20,7 +19,7 @@ export async function seedAdminUser(prisma: PrismaClient) {
     data: {
       phoneNumber: phone,
       nickname: "Admin",
-      password: "",
+      passwordHash: "",
       role: Role.ADMIN,
       isVerified: true,
     },

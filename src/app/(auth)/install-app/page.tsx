@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Smartphone, Share2, PlusSquare, CheckCircle } from "lucide-react";
 import { useInstallPrompt } from "@/components/context/installPromptContext";
 

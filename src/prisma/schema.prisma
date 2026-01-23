@@ -13,11 +13,13 @@ datasource db {
  */
 
 model User {
-  id          String  @id @default(uuid())
-  name        String?
-  nickname    String
-  phoneNumber String  @unique
-  password    String
+  id           String  @id @default(uuid())
+  name         String?
+  nickname     String
+  phoneNumber  String  @unique
+  passwordHash String
+
+  avatarUrl String?
 
   points Int @default(0)
 
@@ -32,10 +34,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  stoves        Stove[]
-  cart          Cart?
-  orders        Order[]
-  refreshTokens RefreshToken[]
+  stoves          Stove[]
+  cart            Cart?
+  ordersAsClient  Order[]        @relation("ClientRelation")
+  ordersAsShipper Order[]        @relation("ShipperRelation")
+  refreshTokens   RefreshToken[]
 }
 
 /**
@@ -75,7 +78,7 @@ model PhoneOtp {
   attempts  Int      @default(0)
   createdAt DateTime @default(now())
 
-  @@index([phone])
+  @@index([phone, code])
 }
 
 /**
@@ -100,10 +103,11 @@ model Category {
  */
 
 model Product {
-  id           String @id @default(uuid())
-  productName  String
-  currentPrice Int
-  pointValue   Int    @default(0)
+  id              String  @id @default(uuid())
+  productName     String
+  currentPrice    Int
+  pointValue      Int     @default(0)
+  previewImageUrl String?
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
@@ -207,9 +211,14 @@ model Order {
   type    OrderType @default(NORMAL)
 
   subtotal       Int
-  discountAmount Int @default(0)
-  shipFee        Int @default(0)
+  discountAmount Int     @default(0)
+  shipFee        Int     @default(0)
   totalPrice     Int
+  shipperId      String? // ✅ THÊM: nullable
+
+  confirmedAt     DateTime?
+  deliveredAt     DateTime?
+  cancelledReason String?
 
   status OrderStatus @default(PENDING)
   note   String?
@@ -217,7 +226,8 @@ model Order {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  user       User             @relation(fields: [userId], references: [id])
+  user       User             @relation("ClientRelation", fields: [userId], references: [id])
+  shipper    User?            @relation("ShipperRelation", fields: [shipperId], references: [id])
   stove      Stove            @relation(fields: [stoveId], references: [id])
   items      OrderItem[]
   promotions OrderPromotion[]
