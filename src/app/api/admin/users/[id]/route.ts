@@ -22,6 +22,7 @@ export const PUT = withAuth(["ADMIN"], async (req, { params }) => {
     where: { id: userId },
     data: {
       ...(body.nickname !== undefined && { nickname: body.nickname }),
+      ...(body.name !== undefined && { name: body.name }),
       ...(body.address !== undefined && { address: body.address }),
       ...(body.addressNote !== undefined && { addressNote: body.addressNote }),
       ...(body.role !== undefined && { role: body.role }),
@@ -32,6 +33,7 @@ export const PUT = withAuth(["ADMIN"], async (req, { params }) => {
       id: true,
       phoneNumber: true,
       nickname: true,
+      name: true,
       role: true,
       isVerified: true,
       isActive: true,

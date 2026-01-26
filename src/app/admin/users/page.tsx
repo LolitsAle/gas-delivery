@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { AdminCard, StatusBadge } from "@/components/admin/Commons";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import { User } from "@prisma/client";
-import UserForm from "@/components/admin/forms/UserForm";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -37,7 +36,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import UserStovesDialog from "../../../components/admin/forms/UserStoveDialog";
+import CreateUserDrawer from "@/components/admin/forms/CreateUserDrawer";
+import EditUserDrawer from "@/components/admin/forms/EditUserDrawer";
 
 export interface UserWithStoves extends User {
   stoves: any[];
@@ -53,7 +53,6 @@ function Page(props: Props) {
 
   const [editingUser, setEditingUser] = useState<UserWithStoves | null>(null);
   const [creating, setCreating] = useState(false);
-  const [editStove, setEditStove] = useState<UserWithStoves | null>(null);
 
   const [users, setUsers] = useState<UserWithStoves[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +63,8 @@ function Page(props: Props) {
   const [triggerUserRefresh, setTriggerUserRefresh] = useState(false);
 
   const pageSize = 5;
+
+  const refreshUser = () => setTriggerUserRefresh((p) => !p);
 
   useEffect(() => {
     setLoading(true);
@@ -76,12 +77,12 @@ function Page(props: Props) {
     if (query) params.set("search", query);
     if (status !== "ALL") params.set("status", status);
 
-    apiFetchAuth<{ users: UserWithStoves[]; total: number }>(
+    apiFetchAuth<{ users: UserWithStoves[]; meta: any }>(
       `/api/admin/users?${params.toString()}`,
     )
       .then((res) => {
         setUsers(res.users);
-        setTotal(res.total);
+        setTotal(res.meta.total);
       })
       .finally(() => setLoading(false));
   }, [page, limit, query, status, triggerUserRefresh]);
@@ -117,13 +118,11 @@ function Page(props: Props) {
   async function deleteUser(user: UserWithStoves) {
     const snapshot = users;
 
-    setUsers((prev) => prev.filter((u) => u.id !== user.id));
-    setTotal((t) => t - 1);
-
     try {
       await apiFetchAuth(`/api/admin/users/${user.id}`, {
         method: "DELETE",
       });
+      refreshUser();
     } catch {
       setUsers(snapshot);
       setTotal((t) => t + 1);
@@ -168,8 +167,7 @@ function Page(props: Props) {
   });
 
   /* PAGINATION */
-  const totalPages = Math.ceil(filtered.length / pageSize);
-  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const totalPages = Math.ceil(total / pageSize);
 
   // if (loading) {
   //   return <div className="text-sm text-gray-500">Đang tải dữ liệu...</div>;
@@ -211,7 +209,7 @@ function Page(props: Props) {
       </div>
       {/* Mobile – Card */}
       <div className="md:hidden space-y-3">
-        {paged.map((u) => (
+        {filtered.map((u) => (
           <AdminCard
             key={u.id}
             title={
@@ -243,9 +241,6 @@ function Page(props: Props) {
                 <DropdownMenuContent align="end" sideOffset={6}>
                   <DropdownMenuItem onClick={() => setEditingUser(u)}>
                     Chỉnh sửa
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setEditStove(u)}>
-                    Quản lý bếp
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-red-600 focus:text-red-600"
@@ -315,7 +310,7 @@ function Page(props: Props) {
 
             {/* BODY */}
             <TableBody>
-              {paged.map((u) => (
+              {filtered.map((u) => (
                 <TableRow
                   key={u.id}
                   className="hover:bg-muted/40 transition-colors"
@@ -372,9 +367,6 @@ function Page(props: Props) {
                       <DropdownMenuContent align="end" sideOffset={6}>
                         <DropdownMenuItem onClick={() => setEditingUser(u)}>
                           Chỉnh sửa
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditStove(u)}>
-                          Quản lý bếp
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-red-600 focus:text-red-600"
@@ -436,40 +428,25 @@ function Page(props: Props) {
           </PaginationItem>
         </PaginationContent>
       </Pagination>
-      {/* CREATE USER */}
-      {creating && (
-        <UserForm
-          title="Tạo người dùng mới"
-          mobile={false}
-          onClose={() => setCreating(false)}
-          onSave={async (data) => {
-            await createUser(data);
-            setCreating(false);
-          }}
-        />
-      )}
-      {/* UPDATE USER */}
-      {editingUser && (
-        <UserForm
-          title="Chỉnh sửa người dùng"
-          user={editingUser}
-          mobile={false}
-          onClose={() => setEditingUser(null)}
-          onSave={async (data) => {
-            await updateUser(editingUser.id, data);
-            setEditingUser(null);
-          }}
-        />
-      )}
 
-      {/* MANAGE STOVES */}
-      {editStove && (
-        <UserStovesDialog
-          user={editStove}
-          onClose={() => setEditStove(null)}
-          refreshUser={setTriggerUserRefresh}
-        />
-      )}
+      <CreateUserDrawer
+        open={creating}
+        onClose={() => setCreating(false)}
+        onCreate={async (data) => {
+          await createUser(data);
+          setCreating(false);
+        }}
+      />
+
+      <EditUserDrawer
+        open={!!editingUser}
+        user={editingUser!}
+        onClose={() => setEditingUser(null)}
+        onSave={async (data) => {
+          await updateUser(editingUser!.id, data);
+          setEditingUser(null);
+        }}
+      />
     </div>
   );
 }

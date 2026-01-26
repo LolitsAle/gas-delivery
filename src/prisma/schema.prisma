@@ -139,6 +139,12 @@ model Stove {
   houseImage      String[]
   houseImageCount Int      @default(0)
 
+  // thói quen đặt gas
+  defaultProductQuantity Int @default(1)
+
+  defaultPromoChoice    PromoChoiceType?
+  defaultPromoProductId String? // nếu chọn quà hiện vật
+
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
@@ -184,18 +190,21 @@ model CartItem {
   cartId    String
   productId String
 
-  quantity    Int
-  type        CartItemType
-  payByPoints Boolean      @default(false)
-  earnPoints  Boolean      @default(true)
+  quantity Int
+  type     CartItemType
+
+  parentItemId String?
+  parentItem   CartItem?  @relation("CartItemParent", fields: [parentItemId], references: [id])
+  children     CartItem[] @relation("CartItemParent")
+
+  payByPoints Boolean @default(false)
+  earnPoints  Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
   cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
-
-  @@unique([cartId, productId])
 }
 
 /**
@@ -247,17 +256,20 @@ model OrderItem {
   quantity  Int
   unitPrice Int
 
-  type        OrderItemType
-  payByPoints Boolean       @default(false)
-  earnPoints  Boolean       @default(true)
+  type OrderItemType
+
+  parentItemId String?
+  parentItem   OrderItem?  @relation("OrderItemParent", fields: [parentItemId], references: [id])
+  children     OrderItem[] @relation("OrderItemParent")
+
+  payByPoints Boolean @default(false)
+  earnPoints  Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
   order   Order   @relation(fields: [orderId], references: [id])
   product Product @relation(fields: [productId], references: [id])
-
-  @@index([orderId])
 }
 
 /**
@@ -356,15 +368,17 @@ enum CartType {
 }
 
 enum CartItemType {
-  PRODUCT
-  SERVICE
-  PART
+  GAS // sản phẩm chính từ stove bind
+  NORMAL_PRODUCT // mua thêm ngoài gas
+  PROMO_BONUS // quà khuyến mãi đi kèm gas
+  POINT_EXCHANGE // quà đổi bằng điểm
 }
 
 enum OrderItemType {
-  PRODUCT
-  SERVICE
-  PART
+  GAS
+  NORMAL_PRODUCT
+  PROMO_BONUS
+  POINT_EXCHANGE
 }
 
 enum ProductTag {
@@ -387,4 +401,10 @@ enum PromotionActionType {
   DISCOUNT_AMOUNT
   FREE_SHIP
   BONUS_POINT
+}
+
+enum PromoChoiceType {
+  GIFT_PRODUCT // chọn quà hiện vật
+  DISCOUNT_CASH // giảm 10k
+  BONUS_POINT // +1000 điểm
 }

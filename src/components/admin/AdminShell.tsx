@@ -12,6 +12,7 @@ import {
   Mail,
   Users,
   Info,
+  Gift,
 } from "lucide-react";
 
 export const DASHBOARD_MENU_ICONS = {
@@ -23,6 +24,7 @@ export const DASHBOARD_MENU_ICONS = {
   Mail,
   Users,
   Info,
+  Gift,
 } as const;
 
 export interface IDashboardMenu {
@@ -32,12 +34,26 @@ export interface IDashboardMenu {
 }
 
 export const DASHBOARD_MENU: IDashboardMenu[] = [
-  { name: "Trang Chủ", icon: "House", href: "/admin" },
-  { name: "Đơn Hàng", icon: "DollarSign", href: "/admin/orders" },
-  { name: "Kho Gas", icon: "Info", href: "/admin/ware-house" },
-  { name: "Sản Phẩm", icon: "ShoppingBag", href: "/admin/products" },
-  { name: "Danh Mục Sản Phẩm", icon: "ShoppingBag", href: "/admin/categories" },
+  { name: "Dashboard", icon: "House", href: "/admin" },
+
+  // ===== VẬN HÀNH =====
+  { name: "Đơn Hàng", icon: "ShoppingCart", href: "/admin/orders" },
+  { name: "Shipper", icon: "Users", href: "/admin/shippers" },
+
+  // ===== KHÁCH HÀNG =====
   { name: "Khách Hàng", icon: "Users", href: "/admin/users" },
+  { name: "Bếp Khách Hàng", icon: "Info", href: "/admin/stoves" },
+
+  // ===== HÀNG HÓA =====
+  { name: "Sản Phẩm", icon: "ShoppingBag", href: "/admin/products" },
+  { name: "Danh Mục", icon: "ShoppingBag", href: "/admin/categories" },
+
+  // ===== ĐIỂM & KHUYẾN MÃI =====
+  { name: "Khuyến Mãi", icon: "DollarSign", href: "/admin/promotions" },
+  { name: "Shop Quà Tặng", icon: "Gift", href: "/admin/reward-shop" },
+
+  // ===== HỆ THỐNG =====
+  { name: "Cài Đặt Hệ Thống", icon: "Settings", href: "/admin/settings" },
 ];
 
 export default function AdminShell({

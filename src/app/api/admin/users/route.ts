@@ -40,6 +40,7 @@ export const GET = withAuth(["ADMIN"], async (req) => {
         id: true,
         phoneNumber: true,
         nickname: true,
+        name: true,
         role: true,
         isVerified: true,
         isActive: true,
@@ -89,6 +90,7 @@ export const POST = withAuth(["ADMIN"], async (req) => {
       data: {
         phoneNumber: body.phoneNumber,
         nickname: body.nickname,
+        name: body.name,
         passwordHash: body.password || "",
         role: body.role ?? "USER",
         isVerified: body.isVerified ?? false,
@@ -100,6 +102,7 @@ export const POST = withAuth(["ADMIN"], async (req) => {
         id: true,
         phoneNumber: true,
         nickname: true,
+        name: true,
         role: true,
         isVerified: true,
         isActive: true,
