@@ -1,5 +1,6 @@
 "use client";
 
+import { CurrentUserProvider } from "@/components/context/CurrentUserContext";
 import BottomNavBar from "@/components/main/BottomNavBar";
 import { UnsupportedScreen } from "@/components/main/UnsupportedScreen";
 import { useUnsupportedScreen } from "@/lib/hooks/useUnsupportedScreen";
@@ -13,7 +14,7 @@ const Layout = ({
   return (
     <>
       {unsupported && <UnsupportedScreen />}
-      {children}
+      <CurrentUserProvider>{children}</CurrentUserProvider>
       <BottomNavBar />
     </>
   );

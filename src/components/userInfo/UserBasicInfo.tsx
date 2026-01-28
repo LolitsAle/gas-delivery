@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
-import { User } from "@/app/(main)/user/page";
+import {
+  showToastLoading,
+  updateToastError,
+  updateToastSuccess,
+} from "@/lib/helper/toast";
+import { User } from "@prisma/client";
 
 type Props = {
   user: User;
@@ -13,8 +18,9 @@ export default function UserBasicInfo({ user, onChange }: Props) {
   const [loading, setLoading] = useState(false);
 
   const saveBasicInfoToApi = async () => {
+    const tloading = showToastLoading("Đang lưu thông tin");
+    setLoading(true);
     try {
-      setLoading(true);
       const payload = {
         name: user.name ?? null,
         address: user.address ?? null,
@@ -25,8 +31,10 @@ export default function UserBasicInfo({ user, onChange }: Props) {
         method: "POST",
         body: payload,
       });
-
+      updateToastSuccess(tloading, "Lưu thông tin thành công!");
       onChange(res);
+    } catch (err) {
+      updateToastError(tloading, "Lưu thông tin thất bại!");
     } finally {
       setLoading(false);
     }

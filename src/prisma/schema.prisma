@@ -136,7 +136,7 @@ model Stove {
   productId       String? // gas đang bind (có thể chưa bind)
   address         String
   note            String?
-  houseImage      String[]
+  houseImage      String[] @default([])
   houseImageCount Int      @default(0)
 
   // thói quen đặt gas

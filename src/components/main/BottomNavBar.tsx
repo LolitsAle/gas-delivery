@@ -47,14 +47,14 @@ function BottomNavBar() {
             <Icon
               size="5vw"
               className={clsx(
-                isActive ? "text-gas-orange-400" : "text-[#F9FAFB]"
+                isActive ? "text-gas-orange-400" : "text-[#F9FAFB]",
               )}
             />
             <span
               className={clsx(
                 "transition",
                 isActive &&
-                  "text-gas-orange-400 border-b-2 border-gas-orange-400"
+                  "text-gas-orange-400 border-b-2 border-gas-orange-400",
               )}
             >
               {item.name}

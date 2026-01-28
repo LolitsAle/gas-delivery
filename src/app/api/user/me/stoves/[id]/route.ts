@@ -13,6 +13,14 @@ export const PUT = withAuth(
   ["USER", "STAFF", "ADMIN"],
   async (req, { user, params }) => {
     const { id } = params as Params["params"];
+
+    if (!id) {
+      return NextResponse.json(
+        { message: "Missing stove id" },
+        { status: 400 },
+      );
+    }
+
     const body = await req.json();
 
     const stove = await prisma.stove.findUnique({
@@ -27,10 +35,23 @@ export const PUT = withAuth(
     const updated = await prisma.stove.update({
       where: { id },
       data: {
-        name: body.name ?? undefined,
-        address: body.address ?? undefined,
-        note: body.note ?? undefined,
-        productId: body.productId ?? undefined,
+        ...(body.name !== undefined && { name: body.name }),
+        ...(body.address !== undefined && { address: body.address }),
+        ...(body.note !== undefined && { note: body.note }),
+        ...(body.productId !== undefined && { productId: body.productId }),
+        ...(body.houseImage !== undefined && {
+          houseImage: body.houseImage,
+          houseImageCount: body.houseImage.length,
+        }),
+        ...(body.defaultProductQuantity !== undefined && {
+          defaultProductQuantity: body.defaultProductQuantity,
+        }),
+        ...(body.defaultPromoChoice !== undefined && {
+          defaultPromoChoice: body.defaultPromoChoice,
+        }),
+        ...(body.defaultPromoProductId !== undefined && {
+          defaultPromoProductId: body.defaultPromoProductId,
+        }),
       },
       include: {
         product: {

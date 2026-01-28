@@ -166,12 +166,7 @@ function Page(props: Props) {
     return matchSearch && matchStatus;
   });
 
-  /* PAGINATION */
   const totalPages = Math.ceil(total / pageSize);
-
-  // if (loading) {
-  //   return <div className="text-sm text-gray-500">Đang tải dữ liệu...</div>;
-  // }
 
   return (
     <div className="space-y-4">

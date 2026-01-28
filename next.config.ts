@@ -10,6 +10,15 @@ const withPWA = nextPWA({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL || "",
+        pathname: "/**",
+      },
+    ],
+  },
 };
 
 export default withPWA(nextConfig);

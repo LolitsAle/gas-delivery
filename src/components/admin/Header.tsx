@@ -9,6 +9,7 @@ import { USER_STORAGE_KEY } from "@/constants/constants";
 interface UserInfo {
   id: string;
   nickname: string;
+  role: "ADMIN" | "USER" | "STAFF";
 }
 
 interface HeaderProps {
@@ -25,6 +26,7 @@ function HeaderComponent({ onMenuClick }: HeaderProps) {
   useEffect(() => {
     const cached = localStorage.getItem(USER_STORAGE_KEY);
     if (cached) {
+      if (JSON.parse(cached).role !== "ADMIN") router.replace("/");
       setUser(JSON.parse(cached));
       return;
     }
@@ -34,11 +36,13 @@ function HeaderComponent({ onMenuClick }: HeaderProps) {
         const data = await apiFetchAuth<{ user: UserInfo }>("/api/auth/me");
 
         if (!data?.user) return;
+        if (data?.user?.role !== "ADMIN") router.replace("/");
 
         setUser(data.user);
         localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
       } catch {}
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* Close dropdown on route change */

@@ -1,59 +1,63 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCurrentUser } from "@/components/context/CurrentUserContext";
+
 import UserBasicInfo from "@/components/userInfo/UserBasicInfo";
-import UserHouseImage from "@/components/userInfo/UserHouseImage";
-import UserStove from "@/components/userInfo/UserStove";
-
-export type Stove = {
-  id: string;
-  name: string;
-  productId: string;
-  address: string;
-  note?: string | null;
-};
-
-export type User = {
-  id: string;
-  name?: string | null;
-  nickname: string;
-  points: number;
-  address?: string | null;
-  addressNote?: string | null;
-  houseImage: string[];
-  stoves: Stove[];
-};
+import UserStovesInfo from "@/components/userInfo/UserStovesInfo";
 
 export default function UserPage() {
-  const [user, setUser] = useState<User | null>(null);
+  const { currentUser, isFetchingUser, setCurrentUser } = useCurrentUser();
   const router = useRouter();
 
   useEffect(() => {
-    const raw = localStorage.getItem("user");
-    if (!raw) {
+    if (!isFetchingUser && !currentUser) {
       router.push("/login");
-      return;
     }
-    setUser(JSON.parse(raw));
-  }, [router]);
+  }, [currentUser, isFetchingUser, router]);
 
-  const updateUser = (partial: Partial<User>) => {
-    setUser((prev) => {
-      if (!prev) return prev;
-      const updated = { ...prev, ...partial };
-      localStorage.setItem("user", JSON.stringify(updated));
-      return updated;
-    });
+  const updateUser = (partial: any) => {
+    if (!currentUser) return;
+    setCurrentUser({ ...currentUser, ...partial });
   };
 
-  if (!user) return <div className="p-4">Loading...</div>;
+  if (isFetchingUser || !currentUser) {
+    return null;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 space-y-6 pb-[30vw]">
-      <UserBasicInfo user={user} onChange={updateUser} />
-      {/* <UserHouseImage user={user} onChange={updateUser} />
-      <UserStove user={user} onChange={updateUser} /> */}
+    <div className="min-h-screen p-4 pb-[30vw] bg-gas-green-50">
+      <Tabs defaultValue="profile" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-[3vw] shadow">
+          <TabsTrigger
+            className="data-[state=active]:bg-gas-green-600 data-[state=active]:text-white transition-all"
+            value="profile"
+          >
+            Thông tin
+          </TabsTrigger>
+          <TabsTrigger
+            className="data-[state=active]:bg-gas-green-600 data-[state=active]:text-white transition-all duration-100"
+            value="stoves"
+          >
+            Bếp của bạn
+          </TabsTrigger>
+        </TabsList>
+
+        {/* TAB 1 — PROFILE */}
+        <TabsContent value="profile" className="space-y-6">
+          <UserBasicInfo user={currentUser} onChange={updateUser} />
+        </TabsContent>
+
+        {/* TAB 2 — STOVES */}
+        <TabsContent value="stoves" className="space-y-6">
+          <UserStovesInfo
+            stoves={(currentUser as any).stoves || []}
+            onChange={() => {}}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
