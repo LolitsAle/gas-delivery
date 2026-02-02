@@ -17,6 +17,12 @@ const nextConfig: NextConfig = {
         hostname: process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL || "",
         pathname: "/**",
       },
+      // NOTE: Reomove this on production
+      {
+        protocol: "https",
+        hostname: "dummyimage.com",
+        pathname: "/**",
+      },
     ],
   },
 };

@@ -8,6 +8,7 @@ import {
   updateToastSuccess,
 } from "@/lib/helper/toast";
 import { User } from "@prisma/client";
+import { FieldCustomed } from "../common/FieldCustom";
 
 type Props = {
   user: User;
@@ -53,23 +54,22 @@ export default function UserBasicInfo({ user, onChange }: Props) {
 
       {/* Editable */}
       <div className="bg-white rounded-2xl p-4 shadow space-y-4">
-        <input
-          className="w-full border rounded-xl p-2"
-          placeholder="Tên gọi"
+        <FieldCustomed
+          id="name"
+          label="Tên gọi"
           value={user.name ?? ""}
           onChange={(e) => onChange({ name: e.target.value })}
         />
-
-        <input
-          className="w-full border rounded-xl p-2"
-          placeholder="Địa chỉ"
+        <FieldCustomed
+          id="address"
+          label="Địa chỉ"
           value={user.address ?? ""}
           onChange={(e) => onChange({ address: e.target.value })}
         />
-
-        <textarea
-          className="w-full border rounded-xl p-2"
-          placeholder="Ghi chú"
+        <FieldCustomed
+          as="textarea"
+          id="note"
+          label="Ghi chú"
           value={user.addressNote ?? ""}
           onChange={(e) => onChange({ addressNote: e.target.value })}
         />

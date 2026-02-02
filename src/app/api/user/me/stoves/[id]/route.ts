@@ -74,21 +74,71 @@ export const PUT = withAuth(
 export const DELETE = withAuth(
   ["USER", "STAFF", "ADMIN"],
   async (req, { user, params }) => {
-    const { id } = params as Params["params"];
+    try {
+      const { id } = params as Params["params"];
+      const authHeader = req.headers.get("authorization");
 
-    const stove = await prisma.stove.findUnique({
-      where: { id },
-      select: { userId: true },
-    });
+      if (!id) {
+        return NextResponse.json(
+          { message: "Missing stove id" },
+          { status: 400 },
+        );
+      }
 
-    if (!stove || stove.userId !== user.id) {
-      return NextResponse.json({ message: "Stove not found" }, { status: 404 });
+      const stove = await prisma.stove.findUnique({
+        where: { id },
+        select: {
+          userId: true,
+          houseImage: true,
+        },
+      });
+
+      if (!stove || stove.userId !== user.id) {
+        return NextResponse.json(
+          { message: "Stove not found" },
+          { status: 404 },
+        );
+      }
+
+      const stoveCount = await prisma.stove.count({
+        where: { userId: user.id },
+      });
+
+      if (stoveCount <= 1) {
+        return NextResponse.json(
+          {
+            message: "Bạn phải có ít nhất 1 bếp. Không thể xoá bếp cuối cùng.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const imageKeys: string[] = stove.houseImage ?? [];
+
+      await prisma.stove.delete({
+        where: { id },
+      });
+
+      try {
+        await Promise.all(
+          imageKeys.map((key) =>
+            fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/upload/delete`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(authHeader ? { Authorization: authHeader } : {}),
+              },
+              body: JSON.stringify({ key }),
+            }),
+          ),
+        );
+      } catch (err) {
+        console.error("Failed to delete R2 images:", err);
+      }
+
+      return NextResponse.json({ success: true });
+    } catch (error) {
+      return NextResponse.json({ status: 500 });
     }
-
-    await prisma.stove.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({ success: true });
   },
 );

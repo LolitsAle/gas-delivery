@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Stove } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +46,7 @@ const formDefault = {
 
 export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
   const isEdit = !!stove;
+  const hasLoadedProductsRef = useRef(false);
   const { refreshUser } = useCurrentUser();
 
   const [bindableProducts, setBindableProducts] = useState<any[]>([]);
@@ -70,17 +71,29 @@ export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
 
   /* ================= LOAD PRODUCTS ================= */
   useEffect(() => {
+    if (!open) return;
+    if (hasLoadedProductsRef.current) return;
+
+    hasLoadedProductsRef.current = true;
+    setLoadingProducts(true);
+
     (async () => {
       try {
-        const bind = await apiFetchPublic("/api/products?tags=BINDABLE");
-        const promo = await apiFetchPublic("/api/products?tags=PROMO_ELIGIBLE");
+        const [bind, promo] = await Promise.all([
+          apiFetchPublic("/api/products?tags=BINDABLE"),
+          apiFetchPublic("/api/products?tags=PROMO_ELIGIBLE"),
+        ]);
+
         setBindableProducts(Array.isArray(bind) ? bind : []);
         setPromoProducts(Array.isArray(promo) ? promo : []);
+      } catch (err) {
+        showToastError("Không thể tải dữ liệu sản phẩm!");
+        console.error("Load products failed", err);
       } finally {
         setLoadingProducts(false);
       }
     })();
-  }, []);
+  }, [open]);
 
   const submit = async () => {
     if (!form.name?.trim() || !form.address?.trim() || !form.productId) {
@@ -94,8 +107,6 @@ export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
 
     try {
       let stoveId = stove?.id;
-
-      /* STEP 1 — CREATE STOVE FIRST IF NEW */
       if (!isEdit) {
         const created = await apiFetchAuth(`/api/user/me/stoves`, {
           method: "POST",
@@ -103,10 +114,7 @@ export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
         });
         stoveId = created.id;
       }
-
-      /* STEP 2 — UPLOAD NEW IMAGES */
       let uploadedKeys: string[] = [];
-
       if (form.newHouseImages.length > 0) {
         const presignRes = await apiFetchAuth("/api/upload/presign", {
           method: "POST",
@@ -133,8 +141,6 @@ export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
 
         uploadedKeys = uploads.map((u: any) => u.key);
       }
-
-      /* STEP 3 — DELETE REMOVED IMAGES ✅ FIXED */
       if (form.removedHouseImages.length > 0) {
         await Promise.all(
           form.removedHouseImages.map((key: string) =>
@@ -145,11 +151,7 @@ export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
           ),
         );
       }
-
-      /* STEP 4 — FINAL IMAGE LIST */
       const finalKeys = [...form.houseImages, ...uploadedKeys];
-
-      /* STEP 5 — UPDATE STOVE */
       await apiFetchAuth(`/api/user/me/stoves/${stoveId}`, {
         method: "PUT",
         body: {

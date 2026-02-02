@@ -117,9 +117,99 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  cartItems  CartItem[]
-  orderItems OrderItem[]
-  stoves     Stove[]
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  boundStoves Stove[]     @relation("StoveGasProduct")
+  promoStoves Stove[]     @relation("StovePromoProduct")
+}
+
+/**
+ * =========================
+ * SERVICE (DỊCH VỤ)
+ * =========================
+ */
+
+model Service {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+
+  basePrice Int     @default(0) // có thể = 0 (free)
+  isActive  Boolean @default(true)
+
+  category ServiceCategory
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  cartItems  CartServiceItem[]
+  orderItems OrderServiceItem[]
+}
+
+enum ServiceCategory {
+  REPAIR // sửa bếp
+  INSPECTION // kiểm tra rò rỉ
+  CLEANING // vệ sinh
+  INSTALLATION // lắp đặt
+}
+
+/**
+ * =========================
+ * CART SERVICE ITEM
+ * =========================
+ */
+
+model CartServiceItem {
+  id        String @id @default(uuid())
+  cartId    String
+  serviceId String
+  stoveId   String
+
+  quantity Int @default(1)
+  price    Int // snapshot giá lúc thêm vào cart
+
+  note String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id])
+  stove   Stove   @relation(fields: [stoveId], references: [id])
+
+  @@index([cartId])
+  @@index([stoveId])
+}
+
+/**
+ * =========================
+ * ORDER SERVICE ITEM
+ * =========================
+ */
+
+model OrderServiceItem {
+  id        String @id @default(uuid())
+  orderId   String
+  serviceId String
+  stoveId   String
+
+  serviceName String // snapshot
+  unitPrice   Int
+  quantity    Int
+
+  note String?
+
+  status ServiceStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id])
+  stove   Stove   @relation(fields: [stoveId], references: [id])
+
+  @@index([orderId])
+  @@index([stoveId])
 }
 
 /**
@@ -148,10 +238,13 @@ model Stove {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  user    User     @relation(fields: [userId], references: [id])
-  product Product? @relation(fields: [productId], references: [id])
-  orders  Order[]
-  carts   Cart[]
+  user              User               @relation(fields: [userId], references: [id])
+  product           Product?           @relation("StoveGasProduct", fields: [productId], references: [id])
+  promoProduct      Product?           @relation("StovePromoProduct", fields: [defaultPromoProductId], references: [id])
+  orders            Order[]
+  carts             Cart[]
+  cartServiceItems  CartServiceItem[]
+  orderServiceItems OrderServiceItem[]
 
   @@index([userId])
 }
@@ -166,7 +259,7 @@ model Cart {
   id     String @id @default(uuid())
   userId String @unique
 
-  stoveId  String? // có thể chưa chọn bếp
+  stoveId  String?
   type     CartType @default(NORMAL)
   isActive Boolean  @default(true)
 
@@ -176,7 +269,8 @@ model Cart {
   user  User   @relation(fields: [userId], references: [id])
   stove Stove? @relation(fields: [stoveId], references: [id])
 
-  items CartItem[]
+  items        CartItem[]
+  serviceItems CartServiceItem[]
 }
 
 /**
@@ -235,11 +329,12 @@ model Order {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  user       User             @relation("ClientRelation", fields: [userId], references: [id])
-  shipper    User?            @relation("ShipperRelation", fields: [shipperId], references: [id])
-  stove      Stove            @relation(fields: [stoveId], references: [id])
-  items      OrderItem[]
-  promotions OrderPromotion[]
+  user         User               @relation("ClientRelation", fields: [userId], references: [id])
+  shipper      User?              @relation("ShipperRelation", fields: [shipperId], references: [id])
+  stove        Stove              @relation(fields: [stoveId], references: [id])
+  items        OrderItem[]
+  promotions   OrderPromotion[]
+  serviceItems OrderServiceItem[]
 }
 
 /**
@@ -407,4 +502,12 @@ enum PromoChoiceType {
   GIFT_PRODUCT // chọn quà hiện vật
   DISCOUNT_CASH // giảm 10k
   BONUS_POINT // +1000 điểm
+}
+
+enum ServiceStatus {
+  PENDING
+  CHECKING
+  FIXING
+  DONE
+  CANNOT_FIX
 }

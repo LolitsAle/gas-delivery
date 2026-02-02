@@ -90,6 +90,16 @@ export async function GET(req: Request) {
             houseImage: true,
             houseImageCount: true,
             productId: true,
+            promoProduct: {
+              select: {
+                id: true,
+                productName: true,
+                currentPrice: true,
+                pointValue: true,
+                previewImageUrl: true,
+                tags: true,
+              },
+            },
             product: {
               select: {
                 id: true,
@@ -105,6 +115,7 @@ export async function GET(req: Request) {
         cart: {
           select: {
             id: true,
+            stoveId: true,
             items: {
               select: {
                 id: true,

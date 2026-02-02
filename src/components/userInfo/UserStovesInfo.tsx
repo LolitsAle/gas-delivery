@@ -6,8 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import StoveFormDrawer from "./StoveFormDrawer";
+import { showToastError, showToastSuccess } from "@/lib/helper/toast";
+import { apiFetchAuth } from "@/lib/api/apiClient";
+import { useCurrentUser } from "../context/CurrentUserContext";
 
-interface StoveWithProduct extends Stove {
+export interface StoveWithProduct extends Stove {
   product: Product;
 }
 
@@ -19,6 +22,7 @@ interface Props {
 export default function UserStovesInfo({ stoves, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<StoveWithProduct | null>(null);
+  const { refreshUser } = useCurrentUser();
 
   const openCreate = () => {
     setEditing(null);
@@ -30,15 +34,34 @@ export default function UserStovesInfo({ stoves, onChange }: Props) {
     setOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    // 🔒 Rule: phải còn ít nhất 1 bếp
+    if (stoves.length <= 1) {
+      showToastError("Bạn phải có ít nhất 1 bếp");
+      return;
+    }
+
     const ok = confirm("Xóa bếp này? Hành động không thể hoàn tác.");
     if (!ok) return;
 
-    onChange(stoves.filter((s) => s.id !== id));
+    try {
+      await apiFetchAuth(`/api/user/me/stoves/${id}`, {
+        method: "DELETE",
+      });
 
-    if (editing?.id === id) {
-      setOpen(false);
-      setEditing(null);
+      // Update UI sau khi server thành công
+      const updated = stoves.filter((s) => s.id !== id);
+      onChange(updated);
+
+      if (editing?.id === id) {
+        setOpen(false);
+        setEditing(null);
+      }
+
+      showToastSuccess("Đã xoá bếp thành công");
+      refreshUser();
+    } catch (err: any) {
+      showToastError(err?.message || "Không thể xoá bếp");
     }
   };
 
@@ -49,7 +72,7 @@ export default function UserStovesInfo({ stoves, onChange }: Props) {
         <Button
           size="sm"
           onClick={openCreate}
-          className="w-full bg-gas-orange-700 text-white"
+          className="w-full bg-gas-green-500 text-white"
         >
           <Plus className="w-[5vw] h-[5vw] font-bold" /> Thêm bếp
         </Button>
@@ -68,7 +91,7 @@ export default function UserStovesInfo({ stoves, onChange }: Props) {
         {stoves.map((stove) => (
           <Card key={stove.id}>
             <CardHeader
-              className="flex flex-row items-center justify-between pb-2 bg-gas-orange-400 rounded-t-lg"
+              className="flex flex-row items-center justify-between pb-2 bg-gas-green-400 rounded-t-lg"
               actions={
                 <div className="flex items-center justify-center gap-[2vw]">
                   <Button
@@ -80,10 +103,11 @@ export default function UserStovesInfo({ stoves, onChange }: Props) {
                     <Pencil className="w-4 h-4" />
                   </Button>
                   <Button
-                    className="shadow rounded-lg bg-red-600 text-white"
+                    className="shadow rounded-lg bg-gas-orange-700 text-white"
                     size="icon"
                     variant="ghost"
                     onClick={() => handleDelete(stove.id)}
+                    disabled={stoves.length === 1}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -99,7 +123,7 @@ export default function UserStovesInfo({ stoves, onChange }: Props) {
               {stove.note && (
                 <p className="text-muted-foreground">🗺️: {stove.note}</p>
               )}
-              <div className="bg-gas-orange-100 p-[2vw] w-full rounded-md font-bold">
+              <div className="bg-gas-green-100 p-[2vw] w-full rounded-md font-bold">
                 📦{" "}
                 {stove?.product?.productName
                   ? stove?.product?.productName
