@@ -37,6 +37,16 @@ export async function GET(req: Request) {
   const userId = payload.userId;
 
   const user = await prisma.$transaction(async (tx) => {
+    // 🔹 Get user first (needed for stove defaults)
+    const baseUser = await tx.user.findUnique({
+      where: { id: userId },
+      select: {
+        address: true,
+        addressNote: true,
+      },
+    });
+
+    if (!baseUser) return null;
     // 1️⃣ đảm bảo cart tồn tại
     const existingCart = await tx.cart.findUnique({
       where: { userId },
@@ -59,8 +69,8 @@ export async function GET(req: Request) {
         data: {
           userId,
           name: "Nhà chính",
-          address: user?.address || "",
-          note: user?.addressNote || "",
+          address: baseUser?.address || "",
+          note: baseUser?.addressNote || "",
           defaultProductQuantity: 1,
         },
       });

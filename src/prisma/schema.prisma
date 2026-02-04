@@ -108,6 +108,7 @@ model Product {
   currentPrice    Int
   pointValue      Int     @default(0)
   previewImageUrl String?
+  description     String  @default("")
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
