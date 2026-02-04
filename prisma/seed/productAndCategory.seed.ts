@@ -13,7 +13,6 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
       { name: "Quà khuyến mãi", tags: [ProductTag.PROMO_ELIGIBLE] },
       { name: "Hàng gia dụng", tags: [ProductTag.POINT_EARNABLE] },
       { name: "Đổi điểm", tags: [ProductTag.POINT_EXCHANGABLE] },
-      { name: "Dịch vụ", tags: [] },
     ],
     skipDuplicates: true,
   });
@@ -29,15 +28,15 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
   const products = [
     // ===== GAS (BINDABLE) =====
     {
-      productName: "Gas Petrolimex 12kg",
+      productName: "Gas H 12kg",
       price: 450000,
     },
     {
-      productName: "Gas VT-Gas 12kg",
+      productName: "Gas SaiGon Petrol 12kg",
       price: 440000,
     },
     {
-      productName: "Gas Shell 12kg",
+      productName: "Gas Total 12kg",
       price: 460000,
     },
 
@@ -45,14 +44,17 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
     {
       productName: "Nước rửa chén 750ml",
       price: 0,
+      pointValue: 1000,
     },
     {
       productName: "Chai dầu ăn 1L",
       price: 0,
+      pointValue: 1000,
     },
     {
       productName: "Đường gói 500g",
       price: 0,
+      pointValue: 1000,
     },
 
     // ===== HÀNG GIA DỤNG MUA THÊM =====
@@ -80,12 +82,6 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
       productName: "Bình nước giữ nhiệt",
       price: 0,
       pointValue: 2000,
-    },
-
-    // ===== DỊCH VỤ =====
-    {
-      productName: "Kiểm tra rò rỉ gas tại nhà",
-      price: 50000,
     },
   ];
 
@@ -115,11 +111,6 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
     else if (p.pointValue) {
       categoryName = "Đổi điểm";
       tags = [ProductTag.POINT_EXCHANGABLE, ProductTag.FREE_SHIP];
-    }
-    // DỊCH VỤ
-    else if (p.productName.includes("Kiểm tra")) {
-      categoryName = "Dịch vụ";
-      tags = [];
     }
     // GIA DỤNG
     else {
