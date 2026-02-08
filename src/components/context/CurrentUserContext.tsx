@@ -3,14 +3,32 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { apiFetchAuthNoRedirect } from "@/lib/api/apiClient";
 import { USER_STORAGE_KEY } from "@/constants/constants";
-import { User } from "@prisma/client";
+import { Cart, CartItem, Product, Stove, User } from "@prisma/client";
 
 type UserContextType = {
-  currentUser: User | null;
+  currentUser: UserInfoFullContext | null;
   isFetchingUser: boolean;
   refreshUser: () => Promise<void>;
-  setCurrentUser: (u: User | null) => void;
+  setCurrentUser: (u: UserInfoFullContext | null) => void;
 };
+
+export interface StoveWithProducts extends Stove {
+  product: Product | null;
+  promoProduct: Product | null;
+}
+
+export interface CartItemsWithProduct extends CartItem {
+  product: Product;
+}
+
+export interface CartWithItems extends Cart {
+  items: CartItemsWithProduct[];
+}
+
+export interface UserInfoFullContext extends User {
+  cart: CartWithItems | null;
+  stoves: StoveWithProducts[];
+}
 
 const UserContext = createContext<UserContextType | null>(null);
 
@@ -19,7 +37,9 @@ export function CurrentUserProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserInfoFullContext | null>(
+    null,
+  );
   const [isFetchingUser, setIsFetchingUser] = useState(true);
   const refreshingRef = useRef(false);
 
@@ -28,7 +48,9 @@ export function CurrentUserProvider({
     refreshingRef.current = true;
 
     try {
-      const data = await apiFetchAuthNoRedirect<{ user: User }>("/api/auth/me");
+      const data = await apiFetchAuthNoRedirect<{ user: UserInfoFullContext }>(
+        "/api/auth/me",
+      );
 
       if (!data?.user) throw new Error();
 

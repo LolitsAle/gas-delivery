@@ -1,138 +1,124 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-
-type CartItem = {
-  id: string;
-  quantity: number;
-  payByPoints: boolean;
-  type: string;
-  product: {
-    id: string;
-    productName: string;
-    currentPrice: number;
-    pointValue: number;
-    tags: string[];
-  };
-};
+import {
+  CartItemsWithProduct,
+  useCurrentUser,
+} from "@/components/context/CurrentUserContext";
+import ProductImage from "../store/ProductImage";
+import CartSummary from "./CartSummary";
+import StoveSummary from "./StoveSummary";
 
 export default function CartPage() {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [userPoints, setUserPoints] = useState(0);
+  const { currentUser } = useCurrentUser();
 
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    setUserPoints(user.points || 0);
-    setItems(user.cart?.items || []);
-  }, []);
+  const items: CartItemsWithProduct[] = useMemo(() => {
+    return currentUser?.cart?.items ?? [];
+  }, [currentUser]);
 
-  const togglePointUsage = (id: string) => {
-    setItems((prev) =>
-      prev.map((i) =>
-        i.id === id ? { ...i, payByPoints: !i.payByPoints } : i,
-      ),
+  const stove = useMemo(() => {
+    if (!currentUser?.cart?.stoveId) return null;
+    return (
+      currentUser.stoves.find((s) => s.id === currentUser?.cart?.stoveId) ??
+      null
     );
-  };
+  }, [currentUser]);
 
-  /* 🧮 TÍNH TỔNG */
-  const { totalMoney, totalPoints } = useMemo(() => {
+  const normalItems = useMemo(() => {
+    if (!stove?.productId) return items;
+    return items.filter((i) => i.productId !== stove.productId);
+  }, [items, stove]);
+
+  const {
+    totalMoney,
+    totalPointsUse,
+    totalPointsEarn,
+    discountCash,
+    bonusPoints,
+  } = useMemo(() => {
     let money = 0;
-    let points = 0;
+    let pointUse = 0;
+    let pointEarn = 0;
+    let discount = 0;
+    let bonus = 0;
 
     items.forEach((i) => {
+      if (!i.product) return;
+
       if (i.payByPoints) {
-        points += i.product.pointValue * i.quantity;
+        pointUse += (i.product.pointValue ?? 0) * i.quantity;
       } else {
-        money += i.product.currentPrice * i.quantity;
+        money += (i.product.currentPrice ?? 0) * i.quantity;
+      }
+
+      if (i.earnPoints) {
+        pointEarn += 1000;
       }
     });
 
-    return { totalMoney: money, totalPoints: points };
-  }, [items]);
+    if (stove?.defaultPromoChoice === "DISCOUNT_CASH") discount = 10000;
+    if (stove?.defaultPromoChoice === "BONUS_POINT") bonus = 1000;
+
+    return {
+      totalMoney: Math.max(money - discount, 0),
+      totalPointsUse: pointUse,
+      totalPointsEarn: pointEarn + bonus,
+      discountCash: discount,
+      bonusPoints: bonus,
+    };
+  }, [items, stove]);
+
+  const userPoints = currentUser?.points ?? 0;
+  const finalPointBalance = userPoints + totalPointsEarn - totalPointsUse;
+  const notEnoughPoints = finalPointBalance < 0;
 
   return (
-    <div className="min-h-screen bg-white px-[5vw] py-[4vw] space-y-4">
-      <h1 className="text-xl font-bold">Giỏ hàng của bạn</h1>
+    <div className="bg-gas-green-50 overflow-hidden flex flex-col h-screen">
+      <div className="shrink-0">
+        <CartSummary
+          userPoints={userPoints}
+          totalMoney={totalMoney}
+          totalPointsUse={totalPointsUse}
+          totalPointsEarn={totalPointsEarn}
+          discountCash={discountCash}
+          notEnoughPoints={notEnoughPoints}
+        />
+      </div>
+      <div className="bg-white p-[5vw] overflow-auto flex-1 pb-[30vw]">
+        <StoveSummary stove={stove} cartItems={items} />
 
-      {/* LIST */}
-      <div className="space-y-3">
-        {items.map((item) => {
-          const canUsePoints = item.product.tags.includes("POINT_EXCHANGABLE");
+        <div className="space-y-3">
+          {normalItems.map((item) => {
+            if (!item.product) return null;
 
-          return (
-            <Card key={item.id} className="rounded-xl shadow-sm">
-              <CardContent className="p-4 space-y-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-semibold">{item.product.productName}</p>
-                    <p className="text-sm text-gray-400">SL: {item.quantity}</p>
-                  </div>
-
-                  {/* GIÁ */}
-                  <div className="text-right">
-                    {item.payByPoints ? (
-                      <p className="font-bold text-gas-orange-600">
-                        {item.product.pointValue} ⭐
-                      </p>
-                    ) : (
-                      <p className="font-bold">
-                        {item.product.currentPrice.toLocaleString()}đ
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* SWITCH DÙNG ĐIỂM */}
-                {canUsePoints && (
-                  <div className="flex justify-between items-center pt-2 border-t">
-                    <span className="text-sm">Dùng điểm</span>
-                    <Switch
-                      checked={item.payByPoints}
-                      onCheckedChange={() => togglePointUsage(item.id)}
+            return (
+              <Card key={item.id} className="rounded-xl">
+                <CardContent className="p-3 flex gap-3">
+                  <div className="w-[10vw]">
+                    <ProductImage
+                      src={item.product.previewImageUrl || ""}
+                      alt={item.product.productName}
                     />
                   </div>
-                )}
 
-                {item.type === "PROMO_BONUS" && (
-                  <Badge className="bg-green-100 text-green-700 border-green-200">
-                    Quà tặng kèm
-                  </Badge>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+                  <div className="flex-1">
+                    <p className="font-semibold">{item.product.productName}</p>
+                    <p className="text-sm text-gray-500">
+                      {(item.product.currentPrice ?? 0).toLocaleString()}đ
+                    </p>
+
+                    <div className="flex justify-between items-center mt-2">
+                      <span>SL: {item.quantity}</span>
+                      <button className="text-red-500 text-sm">Xóa</button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
-
-      {/* TỔNG */}
-      <Card className="rounded-2xl shadow-md border-2 border-black/5">
-        <CardContent className="p-4 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Tổng tiền</span>
-            <span className="font-bold">{totalMoney.toLocaleString()}đ</span>
-          </div>
-
-          <div className="flex justify-between text-sm">
-            <span>Tổng điểm dùng</span>
-            <span className="font-bold text-gas-orange-600">
-              {totalPoints} ⭐
-            </span>
-          </div>
-
-          <div className="flex justify-between text-sm pt-2 border-t">
-            <span>Điểm hiện có</span>
-            <span>{userPoints} ⭐</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* BUTTON THANH TOÁN */}
-      <button className="w-full py-4 rounded-2xl bg-gas-green-600 text-white font-bold text-lg mt-2">
-        Xác nhận đặt hàng
-      </button>
     </div>
   );
 }

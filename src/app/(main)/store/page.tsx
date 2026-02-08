@@ -1,3 +1,4 @@
+// app/(main)/store/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -12,11 +13,12 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import ProductImage from "./ProductImage";
-import { apiFetchPublic } from "@/lib/api/apiClient";
+import { apiFetchAuth, apiFetchPublic } from "@/lib/api/apiClient";
 import { ShoppingBasket } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES_LIST_KEY, PRODUCTS_LIST_KEY } from "@/constants/constants";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import { useCurrentUser } from "@/components/context/CurrentUserContext";
 
 type Product = {
   id: string;
@@ -41,17 +43,54 @@ export default function ShopPage() {
   const [loadingProducts, setLoadingProducts] = useState(true);
 
   const [modePoint, setModePoint] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>();
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState("default");
   const router = useRouter();
+  const { currentUser, refreshUser } = useCurrentUser();
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [openDrawer, setOpenDrawer] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+
+  const buyNow = async (product: Product) => {
+    await setCartItemQuantity(product, quantity);
+    router.push("/cart");
+  };
 
   const openProductDrawer = (p: Product) => {
     setSelectedProduct(p);
     setOpenDrawer(true);
+
+    const existing = currentUser?.cart?.items?.find(
+      (i) =>
+        i.productId === p.id &&
+        i.payByPoints === modePoint &&
+        i.type === (modePoint ? "POINT_EXCHANGE" : "NORMAL_PRODUCT"),
+    );
+
+    setQuantity(existing?.quantity ?? 0);
+  };
+
+  const setCartItemQuantity = async (product: Product, qty: number) => {
+    try {
+      await apiFetchAuth("/api/user/me/cart", {
+        method: "PATCH",
+        body: {
+          items: [
+            {
+              productId: product.id,
+              quantity: qty,
+              payByPoints: modePoint,
+              type: modePoint ? "POINT_EXCHANGE" : "NORMAL_PRODUCT",
+            },
+          ],
+        },
+      });
+
+      await refreshUser();
+    } catch (err) {
+      console.error("Update cart failed", err);
+    }
   };
 
   /* LOAD PRODUCTS */
@@ -63,7 +102,7 @@ export default function ShopPage() {
           setAllProducts(JSON.parse(cached));
           setLoadingProducts(false);
         }
-        const data = await apiFetchPublic("/api/products");
+        const data = await apiFetchPublic("/api/products?excludeBindable=true");
         const mapped: Product[] = data.map((p: any) => ({
           id: p.id,
           name: p.productName,
@@ -94,7 +133,10 @@ export default function ShopPage() {
         if (cached) {
           setCategories(JSON.parse(cached));
         }
-        const res = await apiFetchPublic("/api/categories", { method: "GET" });
+        const res = await apiFetchPublic(
+          "/api/categories?excludeBindable=true",
+          { method: "GET" },
+        );
 
         setCategories(res);
         localStorage.setItem(CATEGORIES_LIST_KEY, JSON.stringify(res));
@@ -106,29 +148,18 @@ export default function ShopPage() {
     loadCategories();
   }, []);
 
-  /* LOAD USER */
-  useEffect(() => {
-    const user = localStorage.getItem("user");
-    if (user) setCurrentUser(JSON.parse(user));
-    else router.push("/");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  /* 🔥 FILTER + SORT LOGIC */
   const products = useMemo(() => {
     let list = [...allProducts];
-
-    // 🎁 MODE ĐIỂM → chỉ lấy sản phẩm PROMO_ELIGIBLE
     if (modePoint) {
-      list = list.filter((p) => p.tags.includes("PROMO_ELIGIBLE"));
+      list = list.filter(
+        (p) =>
+          p.tags.includes("PROMO_ELIGIBLE") ||
+          p.tags.includes("POINT_EXCHANGABLE"),
+      );
     }
-
-    // 📂 FILTER CATEGORY
     if (category !== "all") {
       list = list.filter((p) => p.categoryId === category);
     }
-
-    // 💰 SORT
     if (sort !== "default") {
       list.sort((a, b) => {
         const aPrice = modePoint ? a.pointPrice : a.price;
@@ -136,7 +167,6 @@ export default function ShopPage() {
         return sort === "asc" ? aPrice - bPrice : bPrice - aPrice;
       });
     }
-
     return list;
   }, [allProducts, category, sort, modePoint]);
 
@@ -156,7 +186,6 @@ export default function ShopPage() {
 
   return (
     <div className={`min-h-screen h-screen flex flex-col bg-white ${ui.text}`}>
-      {/* HEADER */}
       <div
         className={`flex items-end justify-between py-[2.5vw] px-[5vw] shrink-0 ${ui.soft}`}
       >
@@ -192,8 +221,6 @@ export default function ShopPage() {
           />
         </div>
       </div>
-
-      {/* 🔥 CATEGORY TABS */}
       <div
         className={`flex gap-2 overflow-x-auto px-[5vw] py-1 shrink-0 no-scrollbar ${ui.soft}`}
       >
@@ -214,8 +241,6 @@ export default function ShopPage() {
           </button>
         ))}
       </div>
-
-      {/* SORT */}
       <div className="px-[5vw] shrink-0 flex justify-baseline items-center gap-[2vw] my-[3vw]">
         <span>Sắp xếp theo:</span>
         <Select value={sort} onValueChange={setSort}>
@@ -229,8 +254,6 @@ export default function ShopPage() {
           </SelectContent>
         </Select>
       </div>
-
-      {/* PRODUCT GRID */}
       <div className="flex-1 overflow-auto px-[2vw] no-scrollbar">
         <div className="grid grid-cols-2 gap-2 mb-[30vw]">
           {loadingProducts ? (
@@ -278,13 +301,11 @@ export default function ShopPage() {
           )}
         </div>
       </div>
-
       <Drawer open={openDrawer} onOpenChange={setOpenDrawer}>
         <DrawerContent className="rounded-t-2xl ">
           <div className="hidden">
             <DrawerTitle>Chi tiết sản phẩm</DrawerTitle>
           </div>
-
           {selectedProduct && (
             <div className="px-[5vw] pb-[6vw] space-y-4 mt-[5vw]">
               <div className="flex gap-4">
@@ -294,18 +315,15 @@ export default function ShopPage() {
                     alt={selectedProduct.name}
                   />
                 </div>
-
                 <div className="flex-1 space-y-1">
                   <h2 className="text-lg font-bold leading-tight">
                     {selectedProduct.name}
                   </h2>
-
                   <p className={`text-xl font-extrabold ${ui.text}`}>
                     {modePoint
                       ? `${selectedProduct.pointPrice} ⭐`
                       : `${selectedProduct.price.toLocaleString()}đ`}
                   </p>
-
                   <Badge
                     className={`${ui.soft} ${ui.text} border ${ui.border}`}
                   >
@@ -317,14 +335,69 @@ export default function ShopPage() {
                 Sản phẩm chất lượng cao, dùng an toàn cho gia đình. Thiết kế phù
                 hợp với nhu cầu sử dụng hằng ngày.
               </p>
-
+              <div className="flex items-center justify-between border rounded-xl px-4 py-2">
+                <span className="text-sm font-medium">Số lượng</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setQuantity((q) => Math.max(0, q - 1))}
+                    className="w-8 h-8 rounded-full border text-lg"
+                  >
+                    −
+                  </button>
+                  <span className="text-lg font-bold w-6 text-center">
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => setQuantity((q) => q + 1)}
+                    className="w-8 h-8 rounded-full border text-lg"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              {selectedProduct && quantity > 0 && (
+                <div
+                  className={`rounded-xl px-4 py-3 border ${ui.border} ${ui.soft}`}
+                >
+                  <div className="flex justify-between text-sm">
+                    <span>Tạm tính</span>
+                    <span className="font-bold">
+                      {modePoint
+                        ? `${selectedProduct.pointPrice * quantity} ⭐`
+                        : `${(selectedProduct.price * quantity).toLocaleString()}đ`}
+                    </span>
+                  </div>
+                </div>
+              )}
+              {(() => {
+                const existing = currentUser?.cart?.items?.find(
+                  (i) =>
+                    i.productId === selectedProduct.id &&
+                    i.payByPoints === modePoint &&
+                    i.type ===
+                      (modePoint ? "POINT_EXCHANGE" : "NORMAL_PRODUCT"),
+                );
+                if (!existing) return null;
+                return (
+                  <div className="text-xs text-green-600 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    Sản phẩm đã có trong giỏ: <b>{existing.quantity}</b>
+                  </div>
+                );
+              })()}
               <div className="flex gap-2 pt-2">
                 <button
-                  className={`flex-2 py-3 rounded-xl font-semibold text-white ${ui.primary} active:scale-95 transition`}
+                  onClick={() =>
+                    selectedProduct &&
+                    setCartItemQuantity(selectedProduct, quantity)
+                  }
+                  className={`flex-2 py-3 rounded-xl font-semibold text-white ${ui.primary}`}
                 >
-                  Thêm giỏ
+                  {quantity === 0 ? "Xóa khỏi giỏ" : "Thêm vào giỏ"}
                 </button>
-                <button className="flex-2 py-3 rounded-xl font-semibold border border-black/10 bg-blue-400 text-white active:scale-95 transition">
+                <button
+                  onClick={() => selectedProduct && buyNow(selectedProduct)}
+                  className="flex-2 py-3 rounded-xl font-semibold bg-blue-400 text-white"
+                >
                   Mua ngay
                 </button>
                 <button

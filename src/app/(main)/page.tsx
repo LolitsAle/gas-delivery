@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 export default function Home() {
-  const { currentUser, isFetchingUser } = useCurrentUser();
+  const { currentUser, isFetchingUser, refreshUser } = useCurrentUser();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -58,6 +58,7 @@ export default function Home() {
 
         {/* User summary */}
         <div
+          onClick={refreshUser}
           style={{
             border: "6px solid transparent",
             borderImage:
@@ -72,10 +73,8 @@ export default function Home() {
       {/* Body */}
       <div className="w-full h-[78vh] rounded-2xl pt-[3vh] z-10 absolute top-[22vh] left-0 bg-linear-to-br from-white via-green-50 to-green-100 animate-gradient flex flex-col">
         <OrderSection user={currentUser} />
-
         {/* Scrollable section */}
-        <div className="flex-1 overflow-y-auto pb-[30vw] overscroll-contain">
-          {/* Services */}
+        {/* <div className="flex-1 overflow-y-auto pb-[30vw] overscroll-contain">
           <div className="relative mx-[5vw] mt-[5vw] h-[8vw] font-bold text-[4vw] border-b-[1vw] border-blue-700">
             <div className="absolute h-[8vw] left-0 bg-blue-700 text-white px-[2vw] py-[1vw] rounded-md">
               Dịch vụ
@@ -90,7 +89,7 @@ export default function Home() {
               </span>
             </button>
           </div>
-        </div>
+        </div> */}
       </div>
 
       <PhoneCallPopup />

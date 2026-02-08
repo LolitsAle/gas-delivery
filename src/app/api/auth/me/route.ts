@@ -37,46 +37,61 @@ export async function GET(req: Request) {
   const userId = payload.userId;
 
   const user = await prisma.$transaction(async (tx) => {
-    // 🔹 Get user first (needed for stove defaults)
+    // 0️⃣ Kiểm tra user tồn tại
     const baseUser = await tx.user.findUnique({
       where: { id: userId },
       select: {
+        id: true,
         address: true,
         addressNote: true,
       },
     });
 
     if (!baseUser) return null;
-    // 1️⃣ đảm bảo cart tồn tại
-    const existingCart = await tx.cart.findUnique({
+
+    // 1️⃣ Đảm bảo có ít nhất 1 stove
+    let defaultStove = await tx.stove.findFirst({
       where: { userId },
-      select: { id: true },
+      orderBy: { createdAt: "asc" },
     });
 
-    if (!existingCart) {
-      await tx.cart.create({
-        data: { userId },
-      });
-    }
-
-    // 2️⃣ đảm bảo user có ít nhất 1 stove
-    const stoveCount = await tx.stove.count({
-      where: { userId },
-    });
-
-    if (stoveCount === 0) {
-      await tx.stove.create({
+    if (!defaultStove) {
+      defaultStove = await tx.stove.create({
         data: {
           userId,
           name: "Nhà chính",
-          address: baseUser?.address || "",
-          note: baseUser?.addressNote || "",
+          address: baseUser.address || "",
+          note: baseUser.addressNote || "",
           defaultProductQuantity: 1,
         },
       });
     }
 
-    // 3️⃣ trả user full data
+    // 2️⃣ Đảm bảo cart tồn tại
+    let cart = await tx.cart.findUnique({
+      where: { userId },
+    });
+
+    if (!cart) {
+      cart = await tx.cart.create({
+        data: {
+          userId,
+          stoveId: defaultStove.id,
+        },
+      });
+    }
+
+    // 3️⃣ Nếu cart chưa bind stove → bind vào default stove
+    if (!cart.stoveId) {
+      cart = await tx.cart.update({
+        where: { id: cart.id },
+        data: {
+          stoveId: defaultStove.id,
+        },
+      });
+    }
+
+    // 4️⃣ Trả full user data
     return tx.user.findUnique({
       where: { id: userId },
       select: {

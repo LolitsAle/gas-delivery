@@ -22,12 +22,15 @@ import {
   showToastLoading,
   showToastSuccess,
 } from "@/lib/helper/toast";
-import { useCurrentUser } from "../context/CurrentUserContext";
+import {
+  StoveWithProducts,
+  useCurrentUser,
+} from "../context/CurrentUserContext";
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  stove: Stove | null;
+  stove: StoveWithProducts | null;
 }
 
 const formDefault = {

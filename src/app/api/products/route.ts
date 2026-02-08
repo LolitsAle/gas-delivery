@@ -9,7 +9,15 @@ export async function GET(req: NextRequest) {
     const name = searchParams.get("name");
     const tagParams = searchParams.get("tags");
     const bindable = searchParams.get("bindable");
+    const excludeBindable = searchParams.get("excludeBindable");
     const categories = searchParams.get("categories")?.split(",");
+
+    if (bindable === "true" && excludeBindable === "true") {
+      return NextResponse.json(
+        { message: "Invalid filter combination" },
+        { status: 400 },
+      );
+    }
 
     const where: any = {};
     const andConditions: any[] = [];
@@ -28,7 +36,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    /* 🏷 TAG FILTER (PRODUCT OR CATEGORY) */
+    /* 🏷 TAG FILTER */
     let finalTags: ProductTag[] = [];
 
     if (tagParams) {
@@ -44,6 +52,25 @@ export async function GET(req: NextRequest) {
         OR: [
           { tags: { hasSome: finalTags } },
           { category: { tags: { hasSome: finalTags } } },
+        ],
+      });
+    }
+
+    if (excludeBindable === "true") {
+      andConditions.push({
+        AND: [
+          {
+            NOT: {
+              tags: { has: ProductTag.BINDABLE },
+            },
+          },
+          {
+            NOT: {
+              category: {
+                tags: { has: ProductTag.BINDABLE },
+              },
+            },
+          },
         ],
       });
     }

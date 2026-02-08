@@ -15,7 +15,6 @@ export const POST = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
 
     const data: UpdateMePayload = {};
 
-    // name
     if ("name" in body) {
       if (body.name !== null && typeof body.name !== "string") {
         return NextResponse.json({ message: "Invalid name" }, { status: 400 });
@@ -23,33 +22,30 @@ export const POST = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
       data.name = body.name ?? null;
     }
 
-    // address
     if ("address" in body) {
       if (body.address !== null && typeof body.address !== "string") {
         return NextResponse.json(
           { message: "Invalid address" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       data.address = body.address ?? null;
     }
 
-    // addressNote
     if ("addressNote" in body) {
       if (body.addressNote !== null && typeof body.addressNote !== "string") {
         return NextResponse.json(
           { message: "Invalid addressNote" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       data.addressNote = body.addressNote ?? null;
     }
 
-    // Không có gì để update
     if (Object.keys(data).length === 0) {
       return NextResponse.json(
         { message: "Nothing to update" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -73,7 +69,7 @@ export const POST = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
     console.error("update /user/me error:", err);
     return NextResponse.json(
       { message: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 });
