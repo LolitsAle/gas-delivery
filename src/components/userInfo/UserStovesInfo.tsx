@@ -8,20 +8,19 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import StoveFormDrawer from "./StoveFormDrawer";
 import { showToastError, showToastSuccess } from "@/lib/helper/toast";
 import { apiFetchAuth } from "@/lib/api/apiClient";
-import { useCurrentUser } from "../context/CurrentUserContext";
-
-export interface StoveWithProduct extends Stove {
-  product: Product;
-}
+import {
+  StoveWithProducts,
+  useCurrentUser,
+} from "../context/CurrentUserContext";
 
 interface Props {
-  stoves: StoveWithProduct[];
+  stoves: StoveWithProducts[];
   onChange: (stoves: Stove[]) => void;
 }
 
 export default function UserStovesInfo({ stoves, onChange }: Props) {
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<StoveWithProduct | null>(null);
+  const [editing, setEditing] = useState<StoveWithProducts | null>(null);
   const { refreshUser } = useCurrentUser();
 
   const openCreate = () => {
@@ -29,7 +28,7 @@ export default function UserStovesInfo({ stoves, onChange }: Props) {
     setOpen(true);
   };
 
-  const openEdit = (stove: StoveWithProduct) => {
+  const openEdit = (stove: StoveWithProducts) => {
     setEditing(stove);
     setOpen(true);
   };
@@ -114,9 +113,7 @@ export default function UserStovesInfo({ stoves, onChange }: Props) {
                 </div>
               }
             >
-              <CardTitle className="text-base ml-[3vw]">
-                🔥 {stove.name}
-              </CardTitle>
+              <CardTitle className="text-base ml-[3vw]">{stove.name}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm p-[3vw] gap-[2vw] flex flex-col justify-baseline items-baseline">
               <p className="text-md">🏠 {stove.address ?? "chưa cập nhật"}</p>

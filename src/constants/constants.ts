@@ -22,3 +22,4 @@ export const CONTACT_PHONES = [
 export const USER_STORAGE_KEY = "user";
 export const PRODUCTS_LIST_KEY = "shop_products_v1";
 export const CATEGORIES_LIST_KEY = "shop_categories_v1";
+export const ACTIVE_STOVE_KEY = "active_stove_id";

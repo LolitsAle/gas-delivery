@@ -46,22 +46,31 @@ export default function ShopPage() {
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState("default");
   const router = useRouter();
-  const { currentUser, refreshUser } = useCurrentUser();
+  const { currentUser, refreshUser, activeStoveId } = useCurrentUser();
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [openDrawer, setOpenDrawer] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
   const buyNow = async (product: Product) => {
+    if (!activeStove) {
+      router.push("/");
+      return;
+    }
     await setCartItemQuantity(product, quantity);
     router.push("/cart");
   };
+
+  const activeStove = useMemo(() => {
+    if (!currentUser || !activeStoveId) return null;
+    return currentUser.stoves.find((s) => s.id === activeStoveId) ?? null;
+  }, [currentUser, activeStoveId]);
 
   const openProductDrawer = (p: Product) => {
     setSelectedProduct(p);
     setOpenDrawer(true);
 
-    const existing = currentUser?.cart?.items?.find(
+    const existing = activeStove?.cart?.items?.find(
       (i) =>
         i.productId === p.id &&
         i.payByPoints === modePoint &&
@@ -72,10 +81,13 @@ export default function ShopPage() {
   };
 
   const setCartItemQuantity = async (product: Product, qty: number) => {
+    if (!activeStove) return;
+
     try {
       await apiFetchAuth("/api/user/me/cart", {
         method: "PATCH",
         body: {
+          stoveId: activeStove.id,
           items: [
             {
               productId: product.id,
@@ -205,7 +217,7 @@ export default function ShopPage() {
             <ShoppingBasket size={"6vw"} />
             <div className="absolute top-1/2 left-1/2 z-10">
               <div className="flex items-end justify-center w-[3.5vw] h-[3.5vw] text-[2vw] rounded-full bg-red-600 text-white font-bold">
-                {currentUser?.cart?.items?.length || 0}
+                {activeStove?.cart?.items?.length || 0}
               </div>
             </div>
           </div>
@@ -370,7 +382,7 @@ export default function ShopPage() {
                 </div>
               )}
               {(() => {
-                const existing = currentUser?.cart?.items?.find(
+                const existing = activeStove?.cart?.items?.find(
                   (i) =>
                     i.productId === selectedProduct.id &&
                     i.payByPoints === modePoint &&

@@ -10,6 +10,7 @@ type CartSummaryProps = {
   totalPointsEarn: number;
   discountCash: number;
   notEnoughPoints: boolean;
+  onCreateOrder: () => void;
 };
 
 export default function CartSummary({
@@ -19,6 +20,7 @@ export default function CartSummary({
   totalPointsEarn,
   discountCash,
   notEnoughPoints,
+  onCreateOrder,
 }: CartSummaryProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -26,7 +28,10 @@ export default function CartSummary({
     <div className="w-full flex px-[5vw] py-[3vw]">
       <div className="w-full bg-gas-green-600 rounded-sm p-[2vw] flex items-start gap-[2vw]">
         {/* Confirm button */}
-        <button className="shrink-0 w-[25vw] h-[25vw] bg-gas-orange-400 rounded-sm flex flex-col gap-[1vw] justify-center items-center font-bold text-white active:bg-gas-orange-600">
+        <button
+          onClick={onCreateOrder}
+          className="shrink-0 w-[25vw] h-[25vw] bg-gas-orange-400 rounded-sm flex flex-col gap-[1vw] justify-center items-center font-bold text-white active:bg-gas-orange-600"
+        >
           <PackageCheck />
           <span className="text-[4.1vw]">Xác nhận đặt hàng</span>
         </button>

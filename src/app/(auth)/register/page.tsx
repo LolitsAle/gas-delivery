@@ -116,7 +116,7 @@ export default function RegisterPage() {
 
             <input
               type="text"
-              placeholder="Biệt danh"
+              placeholder="Tên gọi"
               value={name}
               onChange={(e) => {
                 setName(e.target.value);

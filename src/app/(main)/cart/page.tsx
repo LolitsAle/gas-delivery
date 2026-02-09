@@ -1,35 +1,50 @@
 "use client";
 
 import { useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   CartItemsWithProduct,
   useCurrentUser,
 } from "@/components/context/CurrentUserContext";
-import ProductImage from "../store/ProductImage";
 import CartSummary from "./CartSummary";
 import StoveSummary from "./StoveSummary";
+import { useRouter } from "next/navigation";
+import { apiFetchAuth } from "@/lib/api/apiClient";
+import NormalCartItems from "./NormalCartItems";
 
 export default function CartPage() {
-  const { currentUser } = useCurrentUser();
-
-  const items: CartItemsWithProduct[] = useMemo(() => {
-    return currentUser?.cart?.items ?? [];
-  }, [currentUser]);
+  const { currentUser, refreshUser, activeStoveId } = useCurrentUser();
+  const router = useRouter();
 
   const stove = useMemo(() => {
-    if (!currentUser?.cart?.stoveId) return null;
-    return (
-      currentUser.stoves.find((s) => s.id === currentUser?.cart?.stoveId) ??
-      null
-    );
-  }, [currentUser]);
+    if (!currentUser || !activeStoveId) return null;
+    return currentUser.stoves.find((s) => s.id === activeStoveId) ?? null;
+  }, [currentUser, activeStoveId]);
+  console.log("stove", stove);
+
+  const items: CartItemsWithProduct[] = useMemo(() => {
+    return stove?.cart?.items ?? [];
+  }, [stove?.cart?.items]);
+
+  const stoveProductInCart = useMemo(() => {
+    if (!stove?.productId) return false;
+    return items.some((i) => i.productId === stove.productId);
+  }, [items, stove?.productId]);
 
   const normalItems = useMemo(() => {
     if (!stove?.productId) return items;
-    return items.filter((i) => i.productId !== stove.productId);
-  }, [items, stove]);
 
+    const stoveCartItem = items.find(
+      (i) => i.productId === stove.productId && i.type === "NORMAL_PRODUCT",
+    );
+
+    if (!stoveCartItem) return items;
+
+    return items.filter(
+      (i) => i.id !== stoveCartItem.id && i.parentItemId !== stoveCartItem.id,
+    );
+  }, [items, stove?.productId]);
+
+  /* 💰 Tính toán */
   const {
     totalMoney,
     totalPointsUse,
@@ -73,6 +88,59 @@ export default function CartPage() {
   const finalPointBalance = userPoints + totalPointsEarn - totalPointsUse;
   const notEnoughPoints = finalPointBalance < 0;
 
+  const handleAddStoveProduct = async () => {
+    if (!stove?.productId || !stove?.defaultProductQuantity) return;
+
+    try {
+      await apiFetchAuth("/api/user/me/cart", {
+        method: "PATCH",
+        body: {
+          stoveId: stove.id,
+          items: [
+            {
+              productId: stove.productId,
+              quantity: stove.defaultProductQuantity,
+              payByPoints: false,
+              type: "NORMAL_PRODUCT",
+              promo:
+                stove.defaultPromoChoice === "GIFT_PRODUCT" &&
+                stove.promoProduct
+                  ? {
+                      type: "GIFT_PRODUCT",
+                      productId: stove.promoProduct.id,
+                    }
+                  : undefined,
+            },
+          ],
+        },
+      });
+
+      await refreshUser();
+    } catch (err) {
+      console.error("Add stove product failed", err);
+    }
+  };
+
+  const handleCreateOrder = async () => {
+    if (!stove) return;
+    if (!items.length) return;
+    if (notEnoughPoints) return;
+
+    try {
+      await apiFetchAuth("/api/user/me/orders", {
+        method: "POST",
+        body: {
+          stoveId: stove.id,
+        },
+      });
+
+      await refreshUser();
+      router.push("/order-completed");
+    } catch (err) {
+      console.error("Create order failed", err);
+    }
+  };
+
   return (
     <div className="bg-gas-green-50 overflow-hidden flex flex-col h-screen">
       <div className="shrink-0">
@@ -83,41 +151,27 @@ export default function CartPage() {
           totalPointsEarn={totalPointsEarn}
           discountCash={discountCash}
           notEnoughPoints={notEnoughPoints}
+          onCreateOrder={handleCreateOrder}
         />
       </div>
-      <div className="bg-white p-[5vw] overflow-auto flex-1 pb-[30vw]">
-        <StoveSummary stove={stove} cartItems={items} />
 
-        <div className="space-y-3">
-          {normalItems.map((item) => {
-            if (!item.product) return null;
+      <div className="bg-white p-[5vw] overflow-auto flex-1 pb-[30vw] flex flex-col gap-[3vw]">
+        {stove && (
+          <>
+            {stoveProductInCart ? (
+              <StoveSummary stove={stove} cartItems={items} />
+            ) : (
+              <button
+                onClick={handleAddStoveProduct}
+                className="p-[3vw] w-full bg-gas-green-700 text-white rounded-xl font-bold shadow active:scale-95 transition"
+              >
+                Thêm gas từ bếp: {stove.name}
+              </button>
+            )}
+          </>
+        )}
 
-            return (
-              <Card key={item.id} className="rounded-xl">
-                <CardContent className="p-3 flex gap-3">
-                  <div className="w-[10vw]">
-                    <ProductImage
-                      src={item.product.previewImageUrl || ""}
-                      alt={item.product.productName}
-                    />
-                  </div>
-
-                  <div className="flex-1">
-                    <p className="font-semibold">{item.product.productName}</p>
-                    <p className="text-sm text-gray-500">
-                      {(item.product.currentPrice ?? 0).toLocaleString()}đ
-                    </p>
-
-                    <div className="flex justify-between items-center mt-2">
-                      <span>SL: {item.quantity}</span>
-                      <button className="text-red-500 text-sm">Xóa</button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        <NormalCartItems items={normalItems} refreshUser={refreshUser} />
       </div>
     </div>
   );

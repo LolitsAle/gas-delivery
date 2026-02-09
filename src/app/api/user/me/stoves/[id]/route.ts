@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
 import { NextResponse } from "next/server";
+import { PromoChoiceType } from "@prisma/client";
 
 type Params = {
   params: { id: string };
@@ -46,9 +47,8 @@ export const PUT = withAuth(
         ...(body.defaultProductQuantity !== undefined && {
           defaultProductQuantity: body.defaultProductQuantity,
         }),
-        ...(body.defaultPromoChoice !== undefined && {
-          defaultPromoChoice: body.defaultPromoChoice,
-        }),
+        defaultPromoChoice:
+          body.defaultPromoChoice || PromoChoiceType.BONUS_POINT,
         ...(body.defaultPromoProductId !== undefined && {
           defaultPromoProductId: body.defaultPromoProductId,
         }),

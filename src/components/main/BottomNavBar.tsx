@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   },
   {
     name: "Đơn Hàng",
-    path: "/order",
+    path: "/orders",
     icon: Receipt,
   },
   {

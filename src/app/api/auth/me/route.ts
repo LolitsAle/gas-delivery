@@ -37,26 +37,31 @@ export async function GET(req: Request) {
   const userId = payload.userId;
 
   const user = await prisma.$transaction(async (tx) => {
-    // 0️⃣ Kiểm tra user tồn tại
     const baseUser = await tx.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
+        phoneNumber: true,
+        name: true,
+        nickname: true,
+        role: true,
+        points: true,
         address: true,
         addressNote: true,
+        tags: true,
       },
     });
 
     if (!baseUser) return null;
 
     // 1️⃣ Đảm bảo có ít nhất 1 stove
-    let defaultStove = await tx.stove.findFirst({
+    let stoves = await tx.stove.findMany({
       where: { userId },
       orderBy: { createdAt: "asc" },
     });
 
-    if (!defaultStove) {
-      defaultStove = await tx.stove.create({
+    if (stoves.length === 0) {
+      const created = await tx.stove.create({
         data: {
           userId,
           name: "Nhà chính",
@@ -65,33 +70,26 @@ export async function GET(req: Request) {
           defaultProductQuantity: 1,
         },
       });
+
+      stoves = [created];
     }
 
-    // 2️⃣ Đảm bảo cart tồn tại
-    let cart = await tx.cart.findUnique({
-      where: { userId },
-    });
-
-    if (!cart) {
-      cart = await tx.cart.create({
-        data: {
-          userId,
-          stoveId: defaultStove.id,
-        },
+    // 2️⃣ Đảm bảo mỗi stove có 1 cart
+    for (const stove of stoves) {
+      const existingCart = await tx.cart.findUnique({
+        where: { stoveId: stove.id },
       });
+
+      if (!existingCart) {
+        await tx.cart.create({
+          data: {
+            stoveId: stove.id,
+          },
+        });
+      }
     }
 
-    // 3️⃣ Nếu cart chưa bind stove → bind vào default stove
-    if (!cart.stoveId) {
-      cart = await tx.cart.update({
-        where: { id: cart.id },
-        data: {
-          stoveId: defaultStove.id,
-        },
-      });
-    }
-
-    // 4️⃣ Trả full user data
+    // 3️⃣ Trả full user + stoves + cart trong stove
     return tx.user.findUnique({
       where: { id: userId },
       select: {
@@ -103,7 +101,9 @@ export async function GET(req: Request) {
         points: true,
         address: true,
         addressNote: true,
+        tags: true,
         stoves: {
+          orderBy: { createdAt: "asc" },
           select: {
             id: true,
             name: true,
@@ -135,27 +135,28 @@ export async function GET(req: Request) {
                 tags: true,
               },
             },
-          },
-        },
-        cart: {
-          select: {
-            id: true,
-            stoveId: true,
-            items: {
+            cart: {
               select: {
                 id: true,
-                productId: true,
-                quantity: true,
-                type: true,
-                payByPoints: true,
-                earnPoints: true,
-                product: {
+                items: {
+                  orderBy: { createdAt: "asc" },
                   select: {
                     id: true,
-                    productName: true,
-                    currentPrice: true,
-                    pointValue: true,
-                    tags: true,
+                    productId: true,
+                    quantity: true,
+                    type: true,
+                    payByPoints: true,
+                    earnPoints: true,
+                    parentItemId: true,
+                    product: {
+                      select: {
+                        id: true,
+                        productName: true,
+                        currentPrice: true,
+                        pointValue: true,
+                        tags: true,
+                      },
+                    },
                   },
                 },
               },

@@ -1,20 +1,36 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  Dispatch,
+  SetStateAction,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { apiFetchAuthNoRedirect } from "@/lib/api/apiClient";
-import { USER_STORAGE_KEY } from "@/constants/constants";
+import { ACTIVE_STOVE_KEY, USER_STORAGE_KEY } from "@/constants/constants";
 import { Cart, CartItem, Product, Stove, User } from "@prisma/client";
 
 type UserContextType = {
   currentUser: UserInfoFullContext | null;
   isFetchingUser: boolean;
   refreshUser: () => Promise<void>;
-  setCurrentUser: (u: UserInfoFullContext | null) => void;
+  logout: () => void;
+  setCurrentUser: Dispatch<SetStateAction<UserInfoFullContext | null>>;
+  activeStoveId: string | null;
+  activeStove: StoveWithProducts | null;
+  setActiveStoveId: (id: string) => void;
 };
 
 export interface StoveWithProducts extends Stove {
   product: Product | null;
   promoProduct: Product | null;
+  cart: {
+    id: string;
+    items: CartItemsWithProduct[];
+  } | null;
 }
 
 export interface CartItemsWithProduct extends CartItem {
@@ -40,8 +56,27 @@ export function CurrentUserProvider({
   const [currentUser, setCurrentUser] = useState<UserInfoFullContext | null>(
     null,
   );
+
   const [isFetchingUser, setIsFetchingUser] = useState(true);
+
+  const [activeStoveId, setActiveStoveIdState] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(ACTIVE_STOVE_KEY);
+  });
+
   const refreshingRef = useRef(false);
+
+  const setActiveStoveId = (id: string) => {
+    setActiveStoveIdState(id);
+    localStorage.setItem(ACTIVE_STOVE_KEY, id);
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+    setActiveStoveIdState(null);
+    localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem(ACTIVE_STOVE_KEY);
+  };
 
   const refreshUser = async () => {
     if (refreshingRef.current) return;
@@ -56,9 +91,21 @@ export function CurrentUserProvider({
 
       setCurrentUser(data.user);
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+
+      const savedStoveId = localStorage.getItem(ACTIVE_STOVE_KEY);
+
+      const stoveExists = data.user.stoves.some((s) => s.id === savedStoveId);
+
+      if (stoveExists && savedStoveId) {
+        setActiveStoveIdState(savedStoveId);
+      } else if (data.user.stoves.length) {
+        const firstId = data.user.stoves[0].id;
+        setActiveStoveId(firstId);
+      } else {
+        setActiveStoveIdState(null);
+      }
     } catch {
-      setCurrentUser(null);
-      localStorage.removeItem(USER_STORAGE_KEY);
+      logout();
     } finally {
       setIsFetchingUser(false);
       refreshingRef.current = false;
@@ -72,11 +119,24 @@ export function CurrentUserProvider({
       setIsFetchingUser(false);
     }
     refreshUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const activeStove =
+    currentUser?.stoves.find((s) => s.id === activeStoveId) ?? null;
 
   return (
     <UserContext.Provider
-      value={{ currentUser, isFetchingUser, refreshUser, setCurrentUser }}
+      value={{
+        currentUser,
+        isFetchingUser,
+        refreshUser,
+        logout,
+        activeStoveId,
+        activeStove,
+        setActiveStoveId,
+        setCurrentUser,
+      }}
     >
       {children}
     </UserContext.Provider>

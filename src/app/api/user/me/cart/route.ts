@@ -5,14 +5,18 @@ import { CartItemType, CartType } from "@prisma/client";
 
 type UpdateCartPayload = {
   stoveId?: string | null;
-  cartType?: CartType; // 👈 thêm
+  cartType?: CartType;
   items?: {
     productId: string;
     quantity: number;
     payByPoints: boolean;
-    earnPoints?: boolean; // 👈 thêm
+    earnPoints?: boolean;
     type: CartItemType;
     parentItemId?: string | null;
+    promo?: {
+      productId: string;
+      type: CartItemType;
+    };
   }[];
 };
 
@@ -22,26 +26,42 @@ export const PATCH = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
     const user = ctx.user;
 
     const result = await prisma.$transaction(async (tx) => {
-      let cart = await tx.cart.findUnique({ where: { userId: user.id } });
+      if (!body.stoveId) {
+        throw new Error("stoveId is required");
+      }
+
+      // 1️⃣ Verify stove thuộc user
+      const stove = await tx.stove.findFirst({
+        where: {
+          id: body.stoveId,
+          userId: user.id,
+        },
+      });
+
+      if (!stove) {
+        throw new Error("Stove not found or not owned by user");
+      }
+
+      // 2️⃣ Lấy hoặc tạo cart theo stoveId
+      let cart = await tx.cart.findUnique({
+        where: { stoveId: stove.id },
+      });
 
       if (!cart) {
         cart = await tx.cart.create({
           data: {
-            userId: user.id,
-            stoveId: body.stoveId ?? null,
+            stoveId: stove.id,
             type: body.cartType ?? CartType.NORMAL,
           },
         });
+      } else if (body.cartType) {
+        await tx.cart.update({
+          where: { id: cart.id },
+          data: { type: body.cartType },
+        });
       }
 
-      await tx.cart.update({
-        where: { id: cart.id },
-        data: {
-          stoveId: body.stoveId ?? undefined,
-          type: body.cartType ?? undefined,
-        },
-      });
-
+      // 3️⃣ Update items
       if (body.items?.length) {
         for (const item of body.items) {
           if (!item.productId || typeof item.quantity !== "number") {
@@ -60,27 +80,34 @@ export const PATCH = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
               productId: item.productId,
               payByPoints: item.payByPoints,
               type: item.type,
+              parentItemId: item.parentItemId ?? null,
             },
           });
 
+          // 🧹 Remove nếu quantity <= 0
           if (item.quantity <= 0) {
             if (existing) {
-              await tx.cartItem.delete({ where: { id: existing.id } });
+              await tx.cartItem.deleteMany({
+                where: {
+                  OR: [{ id: existing.id }, { parentItemId: existing.id }],
+                },
+              });
             }
             continue;
           }
 
+          let parentItem;
+
           if (existing) {
-            await tx.cartItem.update({
+            parentItem = await tx.cartItem.update({
               where: { id: existing.id },
               data: {
                 quantity: item.quantity,
-                parentItemId: item.parentItemId ?? null,
                 earnPoints: item.earnPoints ?? true,
               },
             });
           } else {
-            await tx.cartItem.create({
+            parentItem = await tx.cartItem.create({
               data: {
                 cartId: cart.id,
                 productId: item.productId,
@@ -92,13 +119,56 @@ export const PATCH = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
               },
             });
           }
+
+          // 🎁 Handle promo gift
+          if (
+            item.promo &&
+            item.promo.type === CartItemType.GIFT_PRODUCT &&
+            item.promo.productId
+          ) {
+            const giftProduct = await tx.product.findUnique({
+              where: { id: item.promo.productId },
+              select: { id: true },
+            });
+            if (!giftProduct) throw new Error("Promo product not found");
+
+            const existingGift = await tx.cartItem.findFirst({
+              where: {
+                cartId: cart.id,
+                productId: item.promo.productId,
+                type: CartItemType.GIFT_PRODUCT,
+                parentItemId: parentItem.id,
+              },
+            });
+
+            if (existingGift) {
+              await tx.cartItem.update({
+                where: { id: existingGift.id },
+                data: { quantity: item.quantity },
+              });
+            } else {
+              await tx.cartItem.create({
+                data: {
+                  cartId: cart.id,
+                  productId: item.promo.productId,
+                  quantity: item.quantity,
+                  payByPoints: false,
+                  earnPoints: false,
+                  type: CartItemType.GIFT_PRODUCT,
+                  parentItemId: parentItem.id,
+                },
+              });
+            }
+          }
         }
       }
 
       return tx.cart.findUnique({
-        where: { id: cart.id },
+        where: { stoveId: stove.id },
         include: {
-          items: { include: { product: true } },
+          items: {
+            include: { product: true },
+          },
           stove: true,
         },
       });

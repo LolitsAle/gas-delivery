@@ -57,16 +57,18 @@ export default function ImageCarousel({ images }: Props) {
     <div className="relative w-fill h-[36vw] mt-[5vw] overflow-hidden rounded-xl mx-[5vw]">
       {/* 🔥 Preload images (hidden) */}
       <div className="hidden">
-        {images.map((src, i) => (
-          <Image
-            key={i}
-            src={src}
-            alt=""
-            width={10}
-            height={10}
-            priority={i === 0}
-          />
-        ))}
+        {images.map((src, i) => {
+          return (
+            <Image
+              key={i}
+              src={src}
+              alt=""
+              width={10}
+              height={10}
+              priority={i === 0}
+            />
+          );
+        })}
       </div>
 
       <AnimatePresence initial={false} custom={direction}>

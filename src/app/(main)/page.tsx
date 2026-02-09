@@ -1,10 +1,11 @@
 "use client";
 
 import { useCurrentUser } from "@/components/context/CurrentUserContext";
+import ImageCarousel from "@/components/main/ImageCarousel";
 import OrderSection from "@/components/main/OrderSection";
-import PhoneCallPopup from "@/components/main/PhoneCallPopup";
+import PhoneCall from "@/components/main/PhoneCall";
 import SplashScreen from "@/components/main/SplashScreen";
-import { Sun, User, Wrench } from "lucide-react";
+import { Sun, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -26,8 +27,8 @@ export default function Home() {
             <strong>{currentUser.name || "khách hàng"}</strong>
           </span>
 
-          <span className="flex justify-center items-center gap-[2vw] bg-gas-green-300 pl-[1vw] pr-[2vw] rounded-2xl">
-            <Sun size={"3vw"} /> {currentUser.points}
+          <span className="flex justify-center text-gas-orange-800 items-center gap-[2vw] bg-gas-green-100 pl-[1vw] pr-[2vw] rounded-2xl">
+            ⭐{currentUser.points}
           </span>
         </>
       );
@@ -71,28 +72,17 @@ export default function Home() {
       </div>
 
       {/* Body */}
-      <div className="w-full h-[78vh] rounded-2xl pt-[3vh] z-10 absolute top-[22vh] left-0 bg-linear-to-br from-white via-green-50 to-green-100 animate-gradient flex flex-col">
-        <OrderSection user={currentUser} />
-        {/* Scrollable section */}
-        {/* <div className="flex-1 overflow-y-auto pb-[30vw] overscroll-contain">
-          <div className="relative mx-[5vw] mt-[5vw] h-[8vw] font-bold text-[4vw] border-b-[1vw] border-blue-700">
-            <div className="absolute h-[8vw] left-0 bg-blue-700 text-white px-[2vw] py-[1vw] rounded-md">
-              Dịch vụ
-            </div>
-          </div>
-
-          <div className="pt-[6vw] grid grid-cols-4 gap-[2vw] mx-[5vw]">
-            <button className="flex flex-col items-center gap-[1.5vw] shadow-2xl py-[2vw] rounded-2xl active:bg-gas-gray-200">
-              <Wrench className="w-[7vw] h-[7vw] text-blue-700" />
-              <span className="text-[3.2vw] text-blue-800 text-center">
-                Sửa Bếp
-              </span>
-            </button>
-          </div>
-        </div> */}
+      <div className="w-full h-[78vh] rounded-2xl pt-[3vh] z-10 absolute top-[22vh] left-0 bg-gas-green-50 animate-gradient flex flex-col">
+        <OrderSection />
+        <PhoneCall />
+        <ImageCarousel
+          images={[
+            "/images/carousel-1.png",
+            "/images/carousel-2.png",
+            "/images/carousel-3.png",
+          ]}
+        />
       </div>
-
-      <PhoneCallPopup />
     </div>
   );
 }
