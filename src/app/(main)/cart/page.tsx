@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CartItemsWithProduct,
   useCurrentUser,
@@ -10,16 +10,26 @@ import StoveSummary from "./StoveSummary";
 import { useRouter } from "next/navigation";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import NormalCartItems from "./NormalCartItems";
+import {
+  dismissToast,
+  showToastError,
+  showToastLoading,
+  showToastSuccess,
+} from "@/lib/helper/toast";
+
+const isBindable = (item: CartItemsWithProduct) => {
+  return item.product?.tags?.includes("BINDABLE");
+};
 
 export default function CartPage() {
   const { currentUser, refreshUser, activeStoveId } = useCurrentUser();
+  const [triggerAddStove, setTriggerAddStove] = useState(false);
   const router = useRouter();
 
   const stove = useMemo(() => {
     if (!currentUser || !activeStoveId) return null;
     return currentUser.stoves.find((s) => s.id === activeStoveId) ?? null;
   }, [currentUser, activeStoveId]);
-  console.log("stove", stove);
 
   const items: CartItemsWithProduct[] = useMemo(() => {
     return stove?.cart?.items ?? [];
@@ -44,6 +54,61 @@ export default function CartPage() {
     );
   }, [items, stove?.productId]);
 
+  const cleanupInvalidBindableItems = useCallback(async () => {
+    if (!stove || !items.length) return;
+
+    const invalidBindableItems = items.filter((item) => {
+      if (!isBindable(item)) return false;
+
+      // Nếu là product chính của stove → hợp lệ
+      if (item.productId === stove.productId) return false;
+
+      return true;
+    });
+
+    if (!invalidBindableItems.length) return;
+
+    const itemsToRemove: any[] = [];
+
+    invalidBindableItems.forEach((item) => {
+      // remove parent
+      itemsToRemove.push({
+        productId: item.productId,
+        quantity: 0,
+        payByPoints: false,
+        type: item.type,
+      });
+
+      // remove children
+      items
+        .filter((child) => child.parentItemId === item.id)
+        .forEach((child) => {
+          itemsToRemove.push({
+            productId: child.productId,
+            quantity: 0,
+            payByPoints: false,
+            type: child.type,
+          });
+        });
+    });
+
+    await apiFetchAuth("/api/user/me/cart", {
+      method: "PATCH",
+      body: {
+        stoveId: stove.id,
+        items: itemsToRemove,
+      },
+    });
+
+    await refreshUser();
+  }, [items, stove, refreshUser]);
+
+  useEffect(() => {
+    if (!stove) return;
+    cleanupInvalidBindableItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stove]);
+
   /* 💰 Tính toán */
   const {
     totalMoney,
@@ -61,6 +126,7 @@ export default function CartPage() {
     items.forEach((i) => {
       if (!i.product) return;
 
+      console.log("items", i);
       if (i.payByPoints) {
         pointUse += (i.product.pointValue ?? 0) * i.quantity;
       } else {
@@ -90,7 +156,7 @@ export default function CartPage() {
 
   const handleAddStoveProduct = async () => {
     if (!stove?.productId || !stove?.defaultProductQuantity) return;
-
+    const loading = showToastLoading("Đang cập nhật giỏ hàng...");
     try {
       await apiFetchAuth("/api/user/me/cart", {
         method: "PATCH",
@@ -116,10 +182,25 @@ export default function CartPage() {
       });
 
       await refreshUser();
+      dismissToast(loading);
+      showToastSuccess("Cập nhật giỏ hàng thành công!");
     } catch (err) {
       console.error("Add stove product failed", err);
+      dismissToast(loading);
+      showToastError("Cập nhật giỏ hàng thất bại!");
     }
   };
+
+  useEffect(() => {
+    if (!triggerAddStove) return;
+    console.log(
+      "Trigger Add stove",
+      currentUser?.stoves[0].defaultProductQuantity,
+    );
+    handleAddStoveProduct();
+    setTriggerAddStove(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [triggerAddStove]);
 
   const handleCreateOrder = async () => {
     if (!stove) return;
@@ -159,7 +240,12 @@ export default function CartPage() {
         {stove && (
           <>
             {stoveProductInCart ? (
-              <StoveSummary stove={stove} cartItems={items} />
+              <StoveSummary
+                stove={stove}
+                cartItems={items}
+                addStove={handleAddStoveProduct}
+                addStoveTrigger={setTriggerAddStove}
+              />
             ) : (
               <button
                 onClick={handleAddStoveProduct}
@@ -168,10 +254,13 @@ export default function CartPage() {
                 Thêm gas từ bếp: {stove.name}
               </button>
             )}
+            <NormalCartItems
+              stove={stove}
+              items={normalItems}
+              refreshUser={refreshUser}
+            />
           </>
         )}
-
-        <NormalCartItems items={normalItems} refreshUser={refreshUser} />
       </div>
     </div>
   );

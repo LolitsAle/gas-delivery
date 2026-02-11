@@ -58,7 +58,7 @@ export default function UserStovesInfo({ stoves, onChange }: Props) {
       }
 
       showToastSuccess("Đã xoá bếp thành công");
-      refreshUser();
+      await refreshUser();
     } catch (err: any) {
       showToastError(err?.message || "Không thể xoá bếp");
     }

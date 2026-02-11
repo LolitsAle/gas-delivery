@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
@@ -11,16 +11,27 @@ import {
 } from "@/components/context/CurrentUserContext";
 import UserStoveDrawer from "@/components/userInfo/StoveFormDrawer";
 import { apiFetchAuth } from "@/lib/api/apiClient";
+import {
+  dismissToast,
+  showToastError,
+  showToastLoading,
+} from "@/lib/helper/toast";
 
 type CartStoveCardProps = {
   stove: StoveWithProducts | null;
   cartItems: CartItemsWithProduct[];
+  addStove: () => void;
+  addStoveTrigger: Dispatch<SetStateAction<boolean>>;
 };
 
-export default function StoveSummary({ stove, cartItems }: CartStoveCardProps) {
+export default function StoveSummary({
+  stove,
+  cartItems,
+  addStove,
+  addStoveTrigger,
+}: CartStoveCardProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const { refreshUser } = useCurrentUser();
 
   const stoveItem = useMemo(() => {
@@ -35,8 +46,6 @@ export default function StoveSummary({ stove, cartItems }: CartStoveCardProps) {
   }, [cartItems, stove?.productId]);
 
   const giftItem = useMemo(() => {
-    console.log("stoveItem:", stoveItem);
-    console.log("cartItems", cartItems);
     if (!stoveItem) return undefined;
 
     return cartItems.find(
@@ -49,41 +58,52 @@ export default function StoveSummary({ stove, cartItems }: CartStoveCardProps) {
 
   if (!stove) return null;
 
+  const removeStoveFromCart = async () => {
+    if (!stoveItem) return;
+
+    const items = [
+      {
+        productId: stoveItem.productId,
+        quantity: 0,
+        payByPoints: false,
+        type: "NORMAL_PRODUCT",
+      },
+    ];
+
+    if (giftItem) {
+      items.push({
+        productId: giftItem.productId,
+        quantity: 0,
+        payByPoints: false,
+        type: "GIFT_PRODUCT",
+      });
+    }
+
+    await apiFetchAuth("/api/user/me/cart", {
+      method: "PATCH",
+      body: {
+        stoveId: stove?.id,
+        items,
+      },
+    });
+  };
+
   const handleRemove = async () => {
-    if (!stove?.productId || !stoveItem) return;
+    if (!stoveItem) return;
+
+    const loadingToast = showToastLoading("Đang cập nhật giỏ hàng...");
 
     try {
       setLoading(true);
 
-      const itemsToRemove = [
-        {
-          productId: stove.productId,
-          quantity: 0,
-          payByPoints: false,
-          type: "NORMAL_PRODUCT",
-        },
-      ];
-
-      if (giftItem) {
-        itemsToRemove.push({
-          productId: giftItem.productId,
-          quantity: 0,
-          payByPoints: false,
-          type: "GIFT_PRODUCT",
-        });
-      }
-
-      await apiFetchAuth("/api/user/me/cart", {
-        method: "PATCH",
-        body: {
-          stoveId: stove.id,
-          items: itemsToRemove,
-        },
-      });
+      await removeStoveFromCart();
 
       await refreshUser();
+      dismissToast(loadingToast);
     } catch (err) {
       console.error("Remove stove product failed", err);
+      dismissToast(loadingToast);
+      showToastError("Cập nhật giỏ hàng thất bại!");
     } finally {
       setLoading(false);
     }
@@ -170,7 +190,15 @@ export default function StoveSummary({ stove, cartItems }: CartStoveCardProps) {
         </CardContent>
       </Card>
 
-      <UserStoveDrawer open={open} onOpenChange={setOpen} stove={stove} />
+      <UserStoveDrawer
+        open={open}
+        onOpenChange={setOpen}
+        stove={stove}
+        removeStove={removeStoveFromCart}
+        fallback={() => {
+          addStoveTrigger((prev) => !prev);
+        }}
+      />
     </>
   );
 }

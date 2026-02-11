@@ -9,6 +9,13 @@ import UserStoveDrawer from "../userInfo/StoveFormDrawer";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import { useCurrentUser } from "../context/CurrentUserContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { DialogDescription } from "@radix-ui/react-dialog";
+import {
+  dismissToast,
+  showToastError,
+  showToastLoading,
+  showToastSuccess,
+} from "@/lib/helper/toast";
 
 function OrderSection() {
   const {
@@ -25,7 +32,7 @@ function OrderSection() {
 
   const handleOrderNow = async () => {
     if (!activeStove?.productId || !activeStove?.defaultProductQuantity) return;
-
+    const loading = showToastLoading("Đang cập nhật giỏ hàng...");
     try {
       await apiFetchAuth("/api/user/me/cart", {
         method: "PATCH",
@@ -51,9 +58,13 @@ function OrderSection() {
       });
 
       await refreshUser();
+      dismissToast(loading);
+      showToastSuccess("Cập nhật giỏ hàng thành công!");
       router.push("/cart");
     } catch (err) {
       console.error("Order now failed", err);
+      dismissToast(loading);
+      showToastError("Cập nhật giỏ hàng thất bại!");
     }
   };
 
@@ -128,9 +139,13 @@ function OrderSection() {
                 Sản phẩm tặng kèm
               </div>
               {activeStove.promoProduct && (
-                <div className="flex justify-between mt-[0.5vw] text-[3vw] text-gray-700 px-[3vw]">
-                  <span>🎁{activeStove.promoProduct.productName}</span>
-                  <span>x{activeStove.defaultProductQuantity}</span>
+                <div className="flex justify-between mt-[0.5vw] gap-[3vw] text-[3vw] text-gray-700 px-[3vw]">
+                  <span className="text-nowrap overflow-hidden text-ellipsis flex-1 w-10">
+                    🎁{activeStove.promoProduct.productName}
+                  </span>
+                  <span className="shrink-0">
+                    x{activeStove.defaultProductQuantity}
+                  </span>
                 </div>
               )}
             </div>
@@ -219,6 +234,7 @@ function OrderSection() {
         <DialogContent className="w-[90vw] max-w-md rounded-2xl p-[5vw]">
           <DialogHeader>
             <DialogTitle>Chọn bếp</DialogTitle>
+            <DialogDescription className="sr-only"></DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-[3vw] mt-[2vw]">

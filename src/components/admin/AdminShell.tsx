@@ -38,11 +38,11 @@ export const DASHBOARD_MENU: IDashboardMenu[] = [
 
   // ===== VẬN HÀNH =====
   { name: "Đơn Hàng", icon: "ShoppingCart", href: "/admin/orders" },
-  { name: "Shipper", icon: "Users", href: "/admin/shippers" },
+  // { name: "Shipper", icon: "Users", href: "/admin/shippers" },
 
   // ===== KHÁCH HÀNG =====
   { name: "Khách Hàng", icon: "Users", href: "/admin/users" },
-  { name: "Bếp Khách Hàng", icon: "Info", href: "/admin/stoves" },
+  // { name: "Bếp Khách Hàng", icon: "Info", href: "/admin/stoves" },
 
   // ===== HÀNG HÓA =====
   { name: "Sản Phẩm", icon: "ShoppingBag", href: "/admin/products" },
@@ -50,10 +50,10 @@ export const DASHBOARD_MENU: IDashboardMenu[] = [
 
   // ===== ĐIỂM & KHUYẾN MÃI =====
   { name: "Khuyến Mãi", icon: "DollarSign", href: "/admin/promotions" },
-  { name: "Shop Quà Tặng", icon: "Gift", href: "/admin/reward-shop" },
+  // { name: "Shop Quà Tặng", icon: "Gift", href: "/admin/reward-shop" },
 
   // ===== HỆ THỐNG =====
-  { name: "Cài Đặt Hệ Thống", icon: "Settings", href: "/admin/settings" },
+  // { name: "Cài Đặt Hệ Thống", icon: "Settings", href: "/admin/settings" },
 ];
 
 export default function AdminShell({

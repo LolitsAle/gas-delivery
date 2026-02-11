@@ -114,7 +114,8 @@ export default function ShopPage() {
           setAllProducts(JSON.parse(cached));
           setLoadingProducts(false);
         }
-        const data = await apiFetchPublic("/api/products?excludeBindable=true");
+        //  ?excludeBindable=true
+        const data = await apiFetchPublic("/api/products");
         const mapped: Product[] = data.map((p: any) => ({
           id: p.id,
           name: p.productName,

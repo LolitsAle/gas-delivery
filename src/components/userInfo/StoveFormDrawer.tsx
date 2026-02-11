@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Stove } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -31,6 +30,8 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   stove: StoveWithProducts | null;
+  removeStove?: () => void;
+  fallback?: () => void;
 }
 
 const formDefault = {
@@ -47,7 +48,13 @@ const formDefault = {
   removedHouseImages: [] as string[], // ảnh bị xoá
 };
 
-export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
+export default function UserStoveDrawer({
+  open,
+  onOpenChange,
+  stove,
+  fallback,
+  removeStove,
+}: Props) {
   const isEdit = !!stove;
   const hasLoadedProductsRef = useRef(false);
   const { refreshUser } = useCurrentUser();
@@ -155,6 +162,7 @@ export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
         );
       }
       const finalKeys = [...form.houseImages, ...uploadedKeys];
+      if (removeStove) await removeStove();
       await apiFetchAuth(`/api/user/me/stoves/${stoveId}`, {
         method: "PUT",
         body: {
@@ -164,7 +172,8 @@ export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
       });
 
       showToastSuccess("Lưu bếp thành công 🎉", { id: loadingToastId });
-      refreshUser();
+      await refreshUser();
+      if (fallback && stove) fallback();
       onOpenChange(false);
     } catch (err: any) {
       showToastError(err?.message || "Có lỗi xảy ra", { id: loadingToastId });

@@ -122,7 +122,7 @@ function Page(props: Props) {
       await apiFetchAuth(`/api/admin/users/${user.id}`, {
         method: "DELETE",
       });
-      refreshUser();
+      await refreshUser();
     } catch {
       setUsers(snapshot);
       setTotal((t) => t + 1);

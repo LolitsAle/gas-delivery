@@ -154,6 +154,7 @@ export async function GET(req: Request) {
                         productName: true,
                         currentPrice: true,
                         pointValue: true,
+                        previewImageUrl: true,
                         tags: true,
                       },
                     },

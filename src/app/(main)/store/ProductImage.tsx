@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { ImageOff } from "lucide-react";
+import { r2Url } from "@/lib/helper/helpers";
 
 function ProductImage({ src, alt }: { src: string; alt: string }) {
   const [error, setError] = useState(false);
@@ -16,11 +17,11 @@ function ProductImage({ src, alt }: { src: string; alt: string }) {
   return (
     <div className="relative aspect-square w-full rounded-t-sm overflow-hidden">
       <Image
-        src={src}
+        src={r2Url(src)}
         alt={alt}
         fill
         sizes="50vw"
-        className="object-cover"
+        className="object-fill"
         onError={() => setError(true)}
       />
     </div>

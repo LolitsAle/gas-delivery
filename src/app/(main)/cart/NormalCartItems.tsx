@@ -2,27 +2,39 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import ProductImage from "../store/ProductImage";
-import { CartItemsWithProduct } from "@/components/context/CurrentUserContext";
+import {
+  CartItemsWithProduct,
+  StoveWithProducts,
+} from "@/components/context/CurrentUserContext";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import { Button } from "@/components/admin/Commons";
 import { Trash2, Plus, Minus } from "lucide-react";
+import {
+  dismissToast,
+  showToastError,
+  showToastLoading,
+  showToastSuccess,
+} from "@/lib/helper/toast";
 
 type Props = {
+  stove: StoveWithProducts;
   items: CartItemsWithProduct[];
   refreshUser: () => Promise<void>;
 };
 
-export default function NormalCartItems({ items, refreshUser }: Props) {
+export default function NormalCartItems({ items, refreshUser, stove }: Props) {
   const updateCartItem = async (
     productId: string,
     quantity: number,
     payByPoints: boolean,
     type: string,
   ) => {
+    const loading = showToastLoading("Đang cập nhật giỏ hàng...");
     try {
       await apiFetchAuth("/api/user/me/cart", {
         method: "PATCH",
         body: {
+          stoveId: stove.id,
           items: [
             {
               productId,
@@ -35,8 +47,12 @@ export default function NormalCartItems({ items, refreshUser }: Props) {
       });
 
       await refreshUser();
+      dismissToast(loading);
+      showToastSuccess("Cập nhật giỏ hàng thành công!");
     } catch (err) {
       console.error("Update cart failed", err);
+      dismissToast(loading);
+      showToastError("Cập nhật giỏ hàng thất bại!");
     }
   };
 
