@@ -30,8 +30,6 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   stove: StoveWithProducts | null;
-  removeStove?: () => void;
-  fallback?: () => void;
 }
 
 const formDefault = {
@@ -48,13 +46,7 @@ const formDefault = {
   removedHouseImages: [] as string[], // ảnh bị xoá
 };
 
-export default function UserStoveDrawer({
-  open,
-  onOpenChange,
-  stove,
-  fallback,
-  removeStove,
-}: Props) {
+export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
   const isEdit = !!stove;
   const hasLoadedProductsRef = useRef(false);
   const { refreshUser } = useCurrentUser();
@@ -162,7 +154,6 @@ export default function UserStoveDrawer({
         );
       }
       const finalKeys = [...form.houseImages, ...uploadedKeys];
-      if (removeStove) await removeStove();
       await apiFetchAuth(`/api/user/me/stoves/${stoveId}`, {
         method: "PUT",
         body: {
@@ -173,7 +164,6 @@ export default function UserStoveDrawer({
 
       showToastSuccess("Lưu bếp thành công 🎉", { id: loadingToastId });
       await refreshUser();
-      if (fallback && stove) fallback();
       onOpenChange(false);
     } catch (err: any) {
       showToastError(err?.message || "Có lỗi xảy ra", { id: loadingToastId });

@@ -6,6 +6,7 @@ import { CartItemType, CartType } from "@prisma/client";
 type UpdateCartPayload = {
   stoveId?: string | null;
   cartType?: CartType;
+  isStoveActive?: boolean;
   items?: {
     productId: string;
     quantity: number;
@@ -25,15 +26,15 @@ export const PATCH = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
     const body = (await req.json()) as UpdateCartPayload;
     const user = ctx.user;
 
-    const result = await prisma.$transaction(async (tx) => {
-      if (!body.stoveId) {
-        throw new Error("stoveId is required");
-      }
+    if (!body.stoveId) {
+      throw new Error("stoveId is required");
+    }
 
-      // 1️⃣ Verify stove thuộc user
+    const result = await prisma.$transaction(async (tx) => {
+      // 1️⃣ Verify stove belongs to user
       const stove = await tx.stove.findFirst({
         where: {
-          id: body.stoveId,
+          id: body.stoveId!,
           userId: user.id,
         },
       });
@@ -42,7 +43,7 @@ export const PATCH = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
         throw new Error("Stove not found or not owned by user");
       }
 
-      // 2️⃣ Lấy hoặc tạo cart theo stoveId
+      // 2️⃣ Get or create cart
       let cart = await tx.cart.findUnique({
         where: { stoveId: stove.id },
       });
@@ -52,16 +53,29 @@ export const PATCH = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
           data: {
             stoveId: stove.id,
             type: body.cartType ?? CartType.NORMAL,
+            isStoveActive: body.isStoveActive ?? false,
           },
         });
-      } else if (body.cartType) {
-        await tx.cart.update({
-          where: { id: cart.id },
-          data: { type: body.cartType },
-        });
+      } else {
+        const updateData: any = {};
+
+        if (body.cartType) {
+          updateData.type = body.cartType;
+        }
+
+        if (typeof body.isStoveActive === "boolean") {
+          updateData.isStoveActive = body.isStoveActive;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          cart = await tx.cart.update({
+            where: { id: cart.id },
+            data: updateData,
+          });
+        }
       }
 
-      // 3️⃣ Update items
+      // 3️⃣ Update cart items
       if (body.items?.length) {
         for (const item of body.items) {
           if (!item.productId || typeof item.quantity !== "number") {
@@ -84,7 +98,7 @@ export const PATCH = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
             },
           });
 
-          // 🧹 Remove nếu quantity <= 0
+          // 🧹 Remove item if quantity <= 0
           if (item.quantity <= 0) {
             if (existing) {
               await tx.cartItem.deleteMany({
@@ -130,6 +144,7 @@ export const PATCH = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
               where: { id: item.promo.productId },
               select: { id: true },
             });
+
             if (!giftProduct) throw new Error("Promo product not found");
 
             const existingGift = await tx.cartItem.findFirst({

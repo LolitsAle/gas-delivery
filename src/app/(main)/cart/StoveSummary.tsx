@@ -1,113 +1,21 @@
 "use client";
 
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
-import {
-  CartItemsWithProduct,
-  StoveWithProducts,
-  useCurrentUser,
-} from "@/components/context/CurrentUserContext";
+import { StoveWithProducts } from "@/components/context/CurrentUserContext";
 import UserStoveDrawer from "@/components/userInfo/StoveFormDrawer";
-import { apiFetchAuth } from "@/lib/api/apiClient";
-import {
-  dismissToast,
-  showToastError,
-  showToastLoading,
-} from "@/lib/helper/toast";
 
 type CartStoveCardProps = {
   stove: StoveWithProducts | null;
-  cartItems: CartItemsWithProduct[];
-  addStove: () => void;
-  addStoveTrigger: Dispatch<SetStateAction<boolean>>;
+  onRemove: () => void;
 };
 
-export default function StoveSummary({
-  stove,
-  cartItems,
-  addStove,
-  addStoveTrigger,
-}: CartStoveCardProps) {
+export default function StoveSummary({ stove, onRemove }: CartStoveCardProps) {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const { refreshUser } = useCurrentUser();
-
-  const stoveItem = useMemo(() => {
-    if (!stove?.productId) return undefined;
-
-    return cartItems.find(
-      (item) =>
-        item.productId === stove.productId &&
-        item.type === "NORMAL_PRODUCT" &&
-        !item.parentItemId,
-    );
-  }, [cartItems, stove?.productId]);
-
-  const giftItem = useMemo(() => {
-    if (!stoveItem) return undefined;
-
-    return cartItems.find(
-      (item) =>
-        item.type === "GIFT_PRODUCT" && item.parentItemId === stoveItem.id,
-    );
-  }, [cartItems, stoveItem]);
-
-  const isActive = !!stoveItem;
 
   if (!stove) return null;
-
-  const removeStoveFromCart = async () => {
-    if (!stoveItem) return;
-
-    const items = [
-      {
-        productId: stoveItem.productId,
-        quantity: 0,
-        payByPoints: false,
-        type: "NORMAL_PRODUCT",
-      },
-    ];
-
-    if (giftItem) {
-      items.push({
-        productId: giftItem.productId,
-        quantity: 0,
-        payByPoints: false,
-        type: "GIFT_PRODUCT",
-      });
-    }
-
-    await apiFetchAuth("/api/user/me/cart", {
-      method: "PATCH",
-      body: {
-        stoveId: stove?.id,
-        items,
-      },
-    });
-  };
-
-  const handleRemove = async () => {
-    if (!stoveItem) return;
-
-    const loadingToast = showToastLoading("Đang cập nhật giỏ hàng...");
-
-    try {
-      setLoading(true);
-
-      await removeStoveFromCart();
-
-      await refreshUser();
-      dismissToast(loadingToast);
-    } catch (err) {
-      console.error("Remove stove product failed", err);
-      dismissToast(loadingToast);
-      showToastError("Cập nhật giỏ hàng thất bại!");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const renderPromoLabel = () => {
     switch (stove.defaultPromoChoice) {
@@ -118,7 +26,7 @@ export default function StoveSummary({
           <div className="text-green-600 text-xs">⭐ Cộng điểm thưởng</div>
         );
       case "GIFT_PRODUCT":
-        return <div className="text-xs text-gray-500">Sản phẩm tặng kèm</div>;
+        return <div className="text-xs text-green-600">Sản phẩm tặng kèm</div>;
       default:
         return null;
     }
@@ -140,17 +48,14 @@ export default function StoveSummary({
                 <Pencil className="w-4 h-4" />
               </Button>
 
-              {isActive && (
-                <Button
-                  className="shadow rounded-lg bg-white text-red-600"
-                  size="icon"
-                  variant="ghost"
-                  disabled={loading}
-                  onClick={handleRemove}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              )}
+              <Button
+                className="shadow rounded-lg bg-white text-red-600"
+                size="icon"
+                variant="ghost"
+                onClick={onRemove}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
             </div>
           }
         >
@@ -158,26 +63,47 @@ export default function StoveSummary({
         </CardHeader>
 
         <CardContent className="text-sm p-[3vw] flex flex-col gap-[2vw]">
-          <div
-            className={`p-[2vw] w-full rounded-md font-semibold ${
-              isActive ? "bg-gas-green-100" : "bg-gray-100 text-gray-500"
-            }`}
-          >
-            {isActive && stoveItem?.product ? (
-              <div className="flex flex-col gap-2">
+          <div className="p-[2vw] w-full rounded-md font-semibold bg-gas-green-100">
+            {stove.product ? (
+              <div className="flex flex-col gap-1">
                 <div className="flex justify-between">
-                  <span>📦 {stoveItem.product.productName}</span>
-                  <span>x{stoveItem.quantity}</span>
+                  <span>📦 {stove.product.productName}</span>
+                  <span>x{stove.defaultProductQuantity}</span>
+                </div>
+                <div className="flex justify-between pl-[5vw]">
+                  <span>
+                    Giá: {stove.product.currentPrice.toLocaleString()}đ x{" "}
+                    {stove.defaultProductQuantity}
+                  </span>
+                  <span>
+                    {(
+                      stove.product.currentPrice * stove.defaultProductQuantity
+                    ).toLocaleString()}
+                    đ
+                  </span>
                 </div>
 
-                <div className=" bg-green-50 rounded-lg p-2">
+                <div className="bg-green-50 rounded-lg p-2">
                   <div className="border-l border-gray-200 pl-3">
                     {renderPromoLabel()}
 
-                    {giftItem && (
-                      <div className="flex justify-between text-xs text-gray-700 mt-0.5">
-                        <span> 🎁 {giftItem.product.productName}</span>
-                        <span>x{giftItem.quantity}</span>
+                    {stove.defaultPromoChoice === "GIFT_PRODUCT" &&
+                      stove.promoProduct && (
+                        <div className="flex justify-between text-xs text-gray-700 mt-0.5">
+                          <span>🎁 {stove.promoProduct.productName}</span>
+                          <span>x{stove.defaultProductQuantity}</span>
+                        </div>
+                      )}
+                    {stove.defaultPromoChoice === "DISCOUNT_CASH" && (
+                      <div className="text-green-600 text-xs flex justify-between">
+                        <div>-10,000đ x {stove.defaultProductQuantity}</div>
+                        <div>
+                          -
+                          {(
+                            10000 * stove.defaultProductQuantity
+                          ).toLocaleString()}
+                          đ
+                        </div>
                       </div>
                     )}
                   </div>
@@ -190,15 +116,7 @@ export default function StoveSummary({
         </CardContent>
       </Card>
 
-      <UserStoveDrawer
-        open={open}
-        onOpenChange={setOpen}
-        stove={stove}
-        removeStove={removeStoveFromCart}
-        fallback={() => {
-          addStoveTrigger((prev) => !prev);
-        }}
-      />
+      <UserStoveDrawer open={open} onOpenChange={setOpen} stove={stove} />
     </>
   );
 }

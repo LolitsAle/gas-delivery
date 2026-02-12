@@ -60,19 +60,20 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
     }
 
     const order = await prisma.$transaction(async (tx) => {
-      // 1️⃣ Verify stove thuộc user
+      // 1️⃣ Verify stove
       const stove = await tx.stove.findFirst({
         where: {
           id: stoveId,
           userId: user.id,
         },
+        include: { product: true },
       });
 
       if (!stove) {
         throw new Error("Bếp không tồn tại hoặc không thuộc user");
       }
 
-      // 2️⃣ Lấy cart theo stoveId
+      // 2️⃣ Get cart
       const cart = await tx.cart.findUnique({
         where: { stoveId },
         include: {
@@ -81,35 +82,83 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         },
       });
 
-      if (!cart) {
-        throw new Error("Cart không tồn tại");
-      }
+      if (!cart) throw new Error("Cart không tồn tại");
 
-      if (!cart.items.length && !cart.serviceItems.length) {
+      if (
+        !cart.items.length &&
+        !cart.serviceItems.length &&
+        !cart.isStoveActive
+      ) {
         throw new Error("Cart đang trống");
       }
 
-      // ===== TÍNH TIỀN =====
-      let subtotal = 0;
+      const EARN_POINT_CART_BINDABLE = 2000;
+      const EARN_POINT_STOVE_BINDABLE = 1000;
 
+      let subtotal = 0;
+      let totalPointsUse = 0;
+      let totalPointsEarn = 0;
+      let discountAmount = 0;
+
+      // ===== 1️⃣ Cart items =====
       for (const item of cart.items) {
-        if (!item.payByPoints) {
-          subtotal += item.product.currentPrice * item.quantity;
+        if (!item.product || item.parentItemId) continue;
+
+        const price = item.product.currentPrice ?? 0;
+        const exchangePoint = item.product.pointValue ?? 0;
+        const qty = item.quantity;
+        const bindable = item.product.tags?.includes("BINDABLE");
+
+        if (item.payByPoints) {
+          totalPointsUse += exchangePoint * qty;
+          continue;
+        }
+
+        subtotal += price * qty;
+
+        if (bindable) {
+          totalPointsEarn += EARN_POINT_CART_BINDABLE * qty;
         }
       }
 
+      // ===== 2️⃣ Stove gas =====
+      if (cart.isStoveActive && stove.product && stove.defaultProductQuantity) {
+        const qty = stove.defaultProductQuantity;
+        const price = stove.product.currentPrice ?? 0;
+        const bindable = stove.product.tags?.includes("BINDABLE");
+
+        subtotal += price * qty;
+
+        if (bindable) {
+          totalPointsEarn += EARN_POINT_STOVE_BINDABLE * qty;
+        }
+
+        if (stove.defaultPromoChoice === "DISCOUNT_CASH") {
+          discountAmount += 10000 * qty;
+        }
+
+        if (stove.defaultPromoChoice === "BONUS_POINT") {
+          totalPointsEarn += 1000 * qty;
+        }
+      }
+
+      // ===== 3️⃣ Service items =====
       for (const service of cart.serviceItems) {
         subtotal += service.price * service.quantity;
       }
 
       const shipFee = 0;
-      const discountAmount = 0;
-      const totalPrice = subtotal - discountAmount + shipFee;
+      const totalPrice = Math.max(subtotal - discountAmount, 0);
 
-      // ===== TẠO ORDER =====
+      // ===== 4️⃣ Check điểm (KHÔNG cộng điểm tương lai) =====
+      if (totalPointsUse > user.points) {
+        throw new Error("Không đủ điểm để tạo đơn");
+      }
+
+      // ===== 5️⃣ Create order =====
       const createdOrder = await tx.order.create({
         data: {
-          userId: user.id, // có thể giữ tạm để tiện query
+          userId: user.id,
           stoveId,
           type: cart.type,
           subtotal,
@@ -117,6 +166,8 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
           shipFee,
           totalPrice,
           status: OrderStatus.PENDING,
+          pointsUsed: totalPointsUse,
+          pointsEarned: totalPointsEarn,
           items: {
             create: cart.items.map((item) => ({
               productId: item.productId,
@@ -127,6 +178,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
               earnPoints: item.earnPoints,
             })),
           },
+
           serviceItems: {
             create: cart.serviceItems.map((item) => ({
               serviceId: item.serviceId,
@@ -140,7 +192,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         },
       });
 
-      // ===== CLEAR CART (KHÔNG unbind stove) =====
+      // ===== 6️⃣ Clear cart & reset stove =====
       await tx.cartItem.deleteMany({
         where: { cartId: cart.id },
       });
@@ -153,6 +205,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         where: { id: cart.id },
         data: {
           type: CartType.NORMAL,
+          isStoveActive: false,
         },
       });
 

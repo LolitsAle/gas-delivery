@@ -138,6 +138,7 @@ export async function GET(req: Request) {
             cart: {
               select: {
                 id: true,
+                isStoveActive: true,
                 items: {
                   orderBy: { createdAt: "asc" },
                   select: {

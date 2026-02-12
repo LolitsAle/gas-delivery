@@ -31,40 +31,26 @@ function OrderSection() {
   const [openSwitchDialog, setOpenSwitchDialog] = useState(false);
 
   const handleOrderNow = async () => {
-    if (!activeStove?.productId || !activeStove?.defaultProductQuantity) return;
+    if (!activeStove) return;
+
     const loading = showToastLoading("Đang cập nhật giỏ hàng...");
+
     try {
       await apiFetchAuth("/api/user/me/cart", {
         method: "PATCH",
         body: {
           stoveId: activeStove.id,
-          items: [
-            {
-              productId: activeStove.productId,
-              quantity: activeStove.defaultProductQuantity,
-              payByPoints: false,
-              type: "NORMAL_PRODUCT",
-              promo:
-                activeStove.defaultPromoChoice === "GIFT_PRODUCT" &&
-                activeStove.promoProduct
-                  ? {
-                      type: "GIFT_PRODUCT",
-                      productId: activeStove.promoProduct.id,
-                    }
-                  : undefined,
-            },
-          ],
+          isStoveActive: true,
         },
       });
 
       await refreshUser();
       dismissToast(loading);
-      showToastSuccess("Cập nhật giỏ hàng thành công!");
+      showToastSuccess("Đã thêm gas từ bếp!");
       router.push("/cart");
     } catch (err) {
-      console.error("Order now failed", err);
       dismissToast(loading);
-      showToastError("Cập nhật giỏ hàng thất bại!");
+      showToastError("Cập nhật thất bại!");
     }
   };
 

@@ -15,14 +15,21 @@ import {
   showToastLoading,
   showToastSuccess,
 } from "@/lib/helper/toast";
+import { useMemo } from "react";
 
 type Props = {
   stove: StoveWithProducts;
-  items: CartItemsWithProduct[];
   refreshUser: () => Promise<void>;
 };
 
-export default function NormalCartItems({ items, refreshUser, stove }: Props) {
+export default function NormalCartItems({ refreshUser, stove }: Props) {
+  const items: CartItemsWithProduct[] = useMemo(() => {
+    return (
+      stove.cart?.items.filter((item) => !item.parentItemId && item.product) ??
+      []
+    );
+  }, [stove.cart?.items]);
+
   const updateCartItem = async (
     productId: string,
     quantity: number,
@@ -56,11 +63,11 @@ export default function NormalCartItems({ items, refreshUser, stove }: Props) {
     }
   };
 
+  if (!items.length) return null;
+
   return (
     <>
       {items.map((item) => {
-        if (!item.product) return null;
-
         const handleIncrease = () => {
           updateCartItem(
             item.productId,
@@ -71,8 +78,12 @@ export default function NormalCartItems({ items, refreshUser, stove }: Props) {
         };
 
         const handleDecrease = () => {
-          const newQty = item.quantity - 1;
-          updateCartItem(item.productId, newQty, item.payByPoints, item.type);
+          updateCartItem(
+            item.productId,
+            item.quantity - 1,
+            item.payByPoints,
+            item.type,
+          );
         };
 
         const handleRemove = () => {
@@ -81,43 +92,42 @@ export default function NormalCartItems({ items, refreshUser, stove }: Props) {
 
         return (
           <Card key={item.id} className="rounded-xl bg-white">
-            <CardContent className="p-3 flex justify-center items-center gap-[4vw] relative">
+            <CardContent className="p-3 flex justify-center items-start gap-[4vw] relative">
               <div className="w-[20vw]">
                 <ProductImage
-                  src={item.product.previewImageUrl || ""}
-                  alt={item.product.productName}
+                  src={item.product?.previewImageUrl || ""}
+                  alt={item.product?.productName || ""}
                 />
               </div>
 
-              <div className="flex-1">
-                <p className="font-semibold">{item.product.productName}</p>
-
-                {item.payByPoints ? (
-                  <p className="text-sm text-gas-orange-500">
-                    {(
-                      (item.product.pointValue ?? 0) * item.quantity
-                    ).toLocaleString()}
-                    ⭐
-                  </p>
-                ) : (
-                  <p className="text-sm text-gas-green-600">
-                    {(
-                      (item.product.currentPrice ?? 0) * item.quantity
-                    ).toLocaleString()}
-                    đ
-                  </p>
-                )}
-
-                {/* Quantity control */}
-                <div className="flex items-center gap-3 mt-2">
+              <div className="flex-1 flex justify-start items-start">
+                <div className="flex-1">
+                  <p className="font-semibold">{item.product?.productName}</p>
+                  {item.payByPoints ? (
+                    <p className="text-sm text-gas-orange-500">
+                      {(
+                        (item.product?.pointValue ?? 0) * item.quantity
+                      ).toLocaleString()}
+                      ⭐
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gas-green-600">
+                      {(
+                        (item.product?.currentPrice ?? 0) * item.quantity
+                      ).toLocaleString()}
+                      đ
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center shrink-0 rounded-md px-[1vw]">
                   <Button size="icon" variant="ghost" onClick={handleDecrease}>
-                    <Minus className="w-4 h-4" />
+                    <Minus className="w-3 h-3" />
                   </Button>
 
-                  <span className="font-semibold">{item.quantity}</span>
+                  <span className=" px-[2vw]">{item.quantity}</span>
 
                   <Button size="icon" variant="ghost" onClick={handleIncrease}>
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3 h-3" />
                   </Button>
                 </div>
               </div>

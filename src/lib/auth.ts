@@ -13,6 +13,7 @@ export interface AuthUser {
   id: string;
   role: Role;
   phoneNumber?: string;
+  points: number;
 }
 
 export type AuthContext = {

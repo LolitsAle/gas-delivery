@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Order" ADD COLUMN     "pointsEarned" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "pointsUsed" INTEGER NOT NULL DEFAULT 0;

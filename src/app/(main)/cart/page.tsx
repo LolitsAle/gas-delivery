@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   CartItemsWithProduct,
   useCurrentUser,
@@ -17,13 +17,8 @@ import {
   showToastSuccess,
 } from "@/lib/helper/toast";
 
-const isBindable = (item: CartItemsWithProduct) => {
-  return item.product?.tags?.includes("BINDABLE");
-};
-
 export default function CartPage() {
   const { currentUser, refreshUser, activeStoveId } = useCurrentUser();
-  const [triggerAddStove, setTriggerAddStove] = useState(false);
   const router = useRouter();
 
   const stove = useMemo(() => {
@@ -34,82 +29,9 @@ export default function CartPage() {
   const items: CartItemsWithProduct[] = useMemo(() => {
     return stove?.cart?.items ?? [];
   }, [stove?.cart?.items]);
+  const cart = stove?.cart ?? null;
+  const isStoveActive = cart?.isStoveActive ?? false;
 
-  const stoveProductInCart = useMemo(() => {
-    if (!stove?.productId) return false;
-    return items.some((i) => i.productId === stove.productId);
-  }, [items, stove?.productId]);
-
-  const normalItems = useMemo(() => {
-    if (!stove?.productId) return items;
-
-    const stoveCartItem = items.find(
-      (i) => i.productId === stove.productId && i.type === "NORMAL_PRODUCT",
-    );
-
-    if (!stoveCartItem) return items;
-
-    return items.filter(
-      (i) => i.id !== stoveCartItem.id && i.parentItemId !== stoveCartItem.id,
-    );
-  }, [items, stove?.productId]);
-
-  const cleanupInvalidBindableItems = useCallback(async () => {
-    if (!stove || !items.length) return;
-
-    const invalidBindableItems = items.filter((item) => {
-      if (!isBindable(item)) return false;
-
-      // Nếu là product chính của stove → hợp lệ
-      if (item.productId === stove.productId) return false;
-
-      return true;
-    });
-
-    if (!invalidBindableItems.length) return;
-
-    const itemsToRemove: any[] = [];
-
-    invalidBindableItems.forEach((item) => {
-      // remove parent
-      itemsToRemove.push({
-        productId: item.productId,
-        quantity: 0,
-        payByPoints: false,
-        type: item.type,
-      });
-
-      // remove children
-      items
-        .filter((child) => child.parentItemId === item.id)
-        .forEach((child) => {
-          itemsToRemove.push({
-            productId: child.productId,
-            quantity: 0,
-            payByPoints: false,
-            type: child.type,
-          });
-        });
-    });
-
-    await apiFetchAuth("/api/user/me/cart", {
-      method: "PATCH",
-      body: {
-        stoveId: stove.id,
-        items: itemsToRemove,
-      },
-    });
-
-    await refreshUser();
-  }, [items, stove, refreshUser]);
-
-  useEffect(() => {
-    if (!stove) return;
-    cleanupInvalidBindableItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stove]);
-
-  /* 💰 Tính toán */
   const {
     totalMoney,
     totalPointsUse,
@@ -123,23 +45,54 @@ export default function CartPage() {
     let discount = 0;
     let bonus = 0;
 
-    items.forEach((i) => {
-      if (!i.product) return;
+    const BASE_EARN_POINT = 1000;
+    const CART_BINDABLE_BONUS = 1000; // extra boost cho sản phẩm từ cart
 
-      console.log("items", i);
+    // 1️⃣ Tính từ cart items
+    items.forEach((i) => {
+      if (!i.product || i.parentItemId) return;
+
+      const price = i.product.currentPrice ?? 0;
+      const exchangePoint = i.product.pointValue ?? 0;
+      const qty = i.quantity;
+      const bindable = i.product.tags?.includes("BINDABLE");
+
       if (i.payByPoints) {
-        pointUse += (i.product.pointValue ?? 0) * i.quantity;
-      } else {
-        money += (i.product.currentPrice ?? 0) * i.quantity;
+        // 🔥 đổi điểm → không tính tiền, không tặng điểm
+        pointUse += exchangePoint * qty;
+        return;
       }
 
-      if (i.earnPoints) {
-        pointEarn += 1000;
+      // tính tiền
+      money += price * qty;
+
+      // 🔥 bindable từ cart → 2000 điểm / sản phẩm
+      if (bindable) {
+        pointEarn += (BASE_EARN_POINT + CART_BINDABLE_BONUS) * qty;
       }
     });
 
-    if (stove?.defaultPromoChoice === "DISCOUNT_CASH") discount = 10000;
-    if (stove?.defaultPromoChoice === "BONUS_POINT") bonus = 1000;
+    // 2️⃣ Gas từ stove (bindable nhưng chỉ 1000 điểm)
+    if (isStoveActive && stove?.product && stove.defaultProductQuantity) {
+      const qty = stove.defaultProductQuantity;
+      const price = stove.product.currentPrice ?? 0;
+      const bindable = stove.product.tags?.includes("BINDABLE");
+
+      money += price * qty;
+
+      if (bindable) {
+        pointEarn += BASE_EARN_POINT * qty;
+      }
+
+      // 3️⃣ Promo theo số lượng gas
+      if (stove.defaultPromoChoice === "DISCOUNT_CASH") {
+        discount = 10000 * qty;
+      }
+
+      if (stove.defaultPromoChoice === "BONUS_POINT") {
+        bonus = 1000 * qty;
+      }
+    }
 
     return {
       totalMoney: Math.max(money - discount, 0),
@@ -148,64 +101,73 @@ export default function CartPage() {
       discountCash: discount,
       bonusPoints: bonus,
     };
-  }, [items, stove]);
+  }, [items, stove, isStoveActive]);
 
   const userPoints = currentUser?.points ?? 0;
-  const finalPointBalance = userPoints + totalPointsEarn - totalPointsUse;
-  const notEnoughPoints = finalPointBalance < 0;
+  const notEnoughPoints = totalPointsUse > userPoints;
 
-  const handleAddStoveProduct = async () => {
-    if (!stove?.productId || !stove?.defaultProductQuantity) return;
+  const handleActivateStove = async () => {
+    if (!stove) return;
+
     const loading = showToastLoading("Đang cập nhật giỏ hàng...");
+
     try {
       await apiFetchAuth("/api/user/me/cart", {
         method: "PATCH",
         body: {
           stoveId: stove.id,
-          items: [
-            {
-              productId: stove.productId,
-              quantity: stove.defaultProductQuantity,
-              payByPoints: false,
-              type: "NORMAL_PRODUCT",
-              promo:
-                stove.defaultPromoChoice === "GIFT_PRODUCT" &&
-                stove.promoProduct
-                  ? {
-                      type: "GIFT_PRODUCT",
-                      productId: stove.promoProduct.id,
-                    }
-                  : undefined,
-            },
-          ],
+          isStoveActive: true,
         },
       });
 
       await refreshUser();
       dismissToast(loading);
-      showToastSuccess("Cập nhật giỏ hàng thành công!");
+      showToastSuccess("Đã thêm gas từ bếp!");
     } catch (err) {
-      console.error("Add stove product failed", err);
       dismissToast(loading);
-      showToastError("Cập nhật giỏ hàng thất bại!");
+      showToastError("Cập nhật thất bại!");
     }
   };
 
-  useEffect(() => {
-    if (!triggerAddStove) return;
-    console.log(
-      "Trigger Add stove",
-      currentUser?.stoves[0].defaultProductQuantity,
-    );
-    handleAddStoveProduct();
-    setTriggerAddStove(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [triggerAddStove]);
+  const handleDeactivateStove = async () => {
+    if (!stove) return;
+
+    const loading = showToastLoading("Đang cập nhật giỏ hàng...");
+
+    try {
+      await apiFetchAuth("/api/user/me/cart", {
+        method: "PATCH",
+        body: {
+          stoveId: stove.id,
+          isStoveActive: false,
+        },
+      });
+
+      await refreshUser();
+      dismissToast(loading);
+      showToastSuccess("Đã xóa gas khỏi giỏ!");
+    } catch (err) {
+      dismissToast(loading);
+      showToastError("Cập nhật thất bại!");
+    }
+  };
 
   const handleCreateOrder = async () => {
     if (!stove) return;
-    if (!items.length) return;
-    if (notEnoughPoints) return;
+
+    const canOrder = items.length > 0 || isStoveActive;
+
+    if (!canOrder) {
+      showToastError("Không có sản phẩm, không thể đặt hàng...");
+      return;
+    }
+
+    if (totalPointsUse > userPoints) {
+      showToastError("Không đủ điểm để sử dụng.");
+      return;
+    }
+
+    const loading = showToastLoading("Đang tạo đơn hàng...");
 
     try {
       await apiFetchAuth("/api/user/me/orders", {
@@ -215,9 +177,14 @@ export default function CartPage() {
         },
       });
 
+      dismissToast(loading);
+      showToastSuccess("Tạo đơn thành công!");
+
       await refreshUser();
       router.push("/order-completed");
-    } catch (err) {
+    } catch (err: any) {
+      dismissToast(loading);
+      showToastError(err?.message || "Có lỗi xảy ra khi tạo đơn hàng.");
       console.error("Create order failed", err);
     }
   };
@@ -239,26 +206,18 @@ export default function CartPage() {
       <div className="bg-white p-[5vw] overflow-auto flex-1 pb-[30vw] flex flex-col gap-[3vw]">
         {stove && (
           <>
-            {stoveProductInCart ? (
-              <StoveSummary
-                stove={stove}
-                cartItems={items}
-                addStove={handleAddStoveProduct}
-                addStoveTrigger={setTriggerAddStove}
-              />
+            {isStoveActive ? (
+              <StoveSummary stove={stove} onRemove={handleDeactivateStove} />
             ) : (
               <button
-                onClick={handleAddStoveProduct}
+                onClick={handleActivateStove}
                 className="p-[3vw] w-full bg-gas-green-700 text-white rounded-xl font-bold shadow active:scale-95 transition"
               >
                 Thêm gas từ bếp: {stove.name}
               </button>
             )}
-            <NormalCartItems
-              stove={stove}
-              items={normalItems}
-              refreshUser={refreshUser}
-            />
+
+            <NormalCartItems stove={stove} refreshUser={refreshUser} />
           </>
         )}
       </div>

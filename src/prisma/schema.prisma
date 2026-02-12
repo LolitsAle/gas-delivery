@@ -149,10 +149,10 @@ model Stove {
 }
 
 model Cart {
-  id       String   @id @default(uuid())
-  stoveId  String   @unique
-  type     CartType @default(NORMAL)
-  isActive Boolean  @default(true)
+  id            String   @id @default(uuid())
+  stoveId       String   @unique
+  type          CartType @default(NORMAL)
+  isStoveActive Boolean  @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -217,6 +217,8 @@ model Order {
   shipFee        Int     @default(0)
   totalPrice     Int
   shipperId      String?
+  pointsUsed     Int     @default(0)
+  pointsEarned   Int     @default(0)
 
   confirmedAt     DateTime?
   deliveredAt     DateTime?

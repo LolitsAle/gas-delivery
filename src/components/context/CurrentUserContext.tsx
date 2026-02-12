@@ -29,6 +29,7 @@ export interface StoveWithProducts extends Stove {
   promoProduct: Product | null;
   cart: {
     id: string;
+    isStoveActive: true;
     items: CartItemsWithProduct[];
   } | null;
 }

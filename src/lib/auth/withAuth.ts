@@ -9,7 +9,7 @@ import { AuthContext, AuthUser } from "@/lib/auth";
 ========================= */
 type AuthHandler = (
   req: Request,
-  ctx: AuthContext
+  ctx: AuthContext,
 ) => Response | Promise<Response>;
 
 /* =========================
@@ -28,7 +28,7 @@ export function withAuth(roles: string[], handler: AuthHandler) {
       if (err instanceof AuthError) {
         return NextResponse.json(
           { message: err.message },
-          { status: err.status }
+          { status: err.status },
         );
       }
 
@@ -36,7 +36,7 @@ export function withAuth(roles: string[], handler: AuthHandler) {
 
       return NextResponse.json(
         { message: "Internal server error" },
-        { status: 500 }
+        { status: 500 },
       );
     }
   };
