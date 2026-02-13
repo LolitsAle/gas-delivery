@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { StoveWithProducts } from "@/components/context/CurrentUserContext";
-import UserStoveDrawer from "@/components/userInfo/StoveFormDrawer";
+import UserStoveDrawer from "@/components/main/userInfo/StoveFormDrawer";
 
 type CartStoveCardProps = {
   stove: StoveWithProducts | null;

@@ -234,9 +234,10 @@ model Order {
   shipper User? @relation("ShipperRelation", fields: [shipperId], references: [id])
   stove   Stove @relation(fields: [stoveId], references: [id])
 
-  items        OrderItem[]
-  promotions   OrderPromotion[]
-  serviceItems OrderServiceItem[]
+  stoveSnapshot OrderStoveSnapshot?
+  items         OrderItem[]
+  promotions    OrderPromotion[]
+  serviceItems  OrderServiceItem[]
 }
 
 model OrderItem {
@@ -244,8 +245,9 @@ model OrderItem {
   orderId   String
   productId String
 
-  quantity  Int
-  unitPrice Int
+  quantity       Int  @default(0)
+  unitPrice      Int  @default(0)
+  unitPointPrice Int? @default(0)
 
   type OrderItemType
 
@@ -259,8 +261,35 @@ model OrderItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  order   Order   @relation(fields: [orderId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
+}
+
+model OrderStoveSnapshot {
+  id      String @id @default(uuid())
+  orderId String @unique
+
+  // snapshot stove info
+  stoveName String
+  address   String
+  note      String?
+
+  // snapshot gas product
+  productId   String?
+  productName String? // ✅ thêm
+  unitPrice   Int?
+  quantity    Int?
+
+  // snapshot promo
+  promoChoice           PromoChoiceType?
+  promoProductId        String?
+  promoProductName      String? // ✅ thêm
+  promoProductQuantity  Int?
+  promoProductUnitPrice Int?             @default(0)
+
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model OrderServiceItem {

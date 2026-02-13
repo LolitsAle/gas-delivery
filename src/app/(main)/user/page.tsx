@@ -4,12 +4,11 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrentUser } from "@/components/context/CurrentUserContext";
-
-import UserBasicInfo from "@/components/userInfo/UserBasicInfo";
-import UserStovesInfo from "@/components/userInfo/UserStovesInfo";
+import UserBasicInfo from "@/components/main/userInfo/UserBasicInfo";
+import UserStovesInfo from "@/components/main/userInfo/UserStovesInfo";
 
 export default function UserPage() {
-  const { currentUser, isFetchingUser, setCurrentUser } = useCurrentUser();
+  const { currentUser, isFetchingUser } = useCurrentUser();
   const router = useRouter();
 
   useEffect(() => {
@@ -18,36 +17,31 @@ export default function UserPage() {
     }
   }, [currentUser, isFetchingUser, router]);
 
-  const updateUser = (partial: any) => {
-    if (!currentUser) return;
-    setCurrentUser({ ...currentUser, ...partial });
-  };
-
   if (isFetchingUser || !currentUser) {
     return null;
   }
 
   return (
     <div className="min-h-screen p-4 pb-[30vw] bg-gas-green-50">
-      <Tabs defaultValue="profile" className="w-full">
+      <Tabs defaultValue="stoves" className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-[3vw] shadow">
-          <TabsTrigger
-            className="data-[state=active]:bg-gas-green-600 data-[state=active]:text-white transition-all"
-            value="profile"
-          >
-            Thông tin
-          </TabsTrigger>
           <TabsTrigger
             className="data-[state=active]:bg-gas-green-600 data-[state=active]:text-white transition-all duration-100"
             value="stoves"
           >
             Bếp của bạn
           </TabsTrigger>
+          <TabsTrigger
+            className="data-[state=active]:bg-gas-green-600 data-[state=active]:text-white transition-all"
+            value="profile"
+          >
+            Thông tin
+          </TabsTrigger>
         </TabsList>
 
         {/* TAB 1 — PROFILE */}
         <TabsContent value="profile" className="space-y-6">
-          <UserBasicInfo user={currentUser} onChange={updateUser} />
+          <UserBasicInfo user={currentUser} />
         </TabsContent>
 
         {/* TAB 2 — STOVES */}

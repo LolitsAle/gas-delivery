@@ -1,5 +1,5 @@
 // lib/auth/withAuth.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "./requiredRole";
 import { AuthError } from "./authError";
 import { AuthContext, AuthUser } from "@/lib/auth";
@@ -8,7 +8,7 @@ import { AuthContext, AuthUser } from "@/lib/auth";
    Auth-aware Handler
 ========================= */
 type AuthHandler = (
-  req: Request,
+  req: NextRequest,
   ctx: AuthContext,
 ) => Response | Promise<Response>;
 
@@ -16,7 +16,7 @@ type AuthHandler = (
    withAuth Wrapper
 ========================= */
 export function withAuth(roles: string[], handler: AuthHandler) {
-  return async function (req: Request, ctx: any): Promise<Response> {
+  return async function (req: NextRequest, ctx: any): Promise<Response> {
     try {
       const user = (await requireRole(req, roles)) as AuthUser;
 

@@ -69,6 +69,7 @@ export const GET = withAuth(["ADMIN", "STAFF"], async (req) => {
             note: true,
           },
         },
+        stoveSnapshot: true,
         items: {
           include: {
             product: {

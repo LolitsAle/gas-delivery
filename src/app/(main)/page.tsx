@@ -1,16 +1,19 @@
 "use client";
 
+import { Button } from "@/components/admin/Commons";
+import InfoBanner from "@/components/common/InfoBanner";
 import { useCurrentUser } from "@/components/context/CurrentUserContext";
 import ImageCarousel from "@/components/main/ImageCarousel";
 import OrderSection from "@/components/main/OrderSection";
 import PhoneCall from "@/components/main/PhoneCall";
 import SplashScreen from "@/components/main/SplashScreen";
-import { Sun, User } from "lucide-react";
+import { Pencil, Sun, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 export default function Home() {
-  const { currentUser, isFetchingUser, refreshUser } = useCurrentUser();
+  const { currentUser, isFetchingUser, refreshUser, activeStove } =
+    useCurrentUser();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -74,6 +77,25 @@ export default function Home() {
       {/* Body */}
       <div className="w-full h-[78vh] rounded-2xl pt-[3vh] z-10 absolute top-[22vh] left-0 bg-gas-green-50 animate-gradient flex flex-col">
         <OrderSection />
+        {!activeStove?.product?.productName && (
+          <InfoBanner type="success" className="mx-[5vw] mt-[2vw]">
+            Cửa hàng chưa có thông tin về bếp của bạn, hãy bấm nút{" "}
+            <span className="text-gas-orange-700">đặt ngay</span> hoặc nút{" "}
+            <Button
+              className="shadow rounded-lg bg-white p-[1.5vw]"
+              size="icon"
+              variant="ghost"
+              // onClick={() => setOpenStoveEdit(true)}
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
+            để cập nhật thông tin.
+            <p className="text-red-600">
+              Không cập nhật được? Bấm vào số điện thoại bên dưới để được hỗ trợ
+              bạn nhé!
+            </p>
+          </InfoBanner>
+        )}
         <PhoneCall />
         <ImageCarousel
           images={[

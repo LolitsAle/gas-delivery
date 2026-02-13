@@ -6,45 +6,83 @@ import { OrderStatus, CartType } from "@prisma/client";
 export const GET = withAuth(["USER", "ADMIN"], async (req, ctx) => {
   try {
     const user = ctx.user;
+    const params = req.nextUrl.searchParams;
 
-    const orders = await prisma.order.findMany({
-      where: {
-        stove: {
-          userId: user.id,
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      include: {
-        stove: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-            note: true,
-          },
-        },
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                productName: true,
-                previewImageUrl: true,
-                currentPrice: true,
-                pointValue: true,
+    const page = Number(params.get("page") || 1);
+    const limit = Number(params.get("limit") || 10);
+    const stoveId = params.get("stoveId") || undefined;
+    const status = params.get("status") || undefined;
+    const timeRange = params.get("timeRange") || "ALL";
+    const sort = params.get("sort") === "asc" ? "asc" : "desc";
+
+    const skip = (page - 1) * limit;
+
+    // ---- time filter ----
+    const now = new Date();
+    let createdAt: any;
+
+    if (timeRange === "TODAY") {
+      const start = new Date(now.setHours(0, 0, 0, 0));
+      createdAt = { gte: start };
+    }
+
+    if (timeRange === "WEEK") {
+      const start = new Date();
+      start.setDate(start.getDate() - 7);
+      createdAt = { gte: start };
+    }
+
+    if (timeRange === "MONTH") {
+      const start = new Date();
+      start.setMonth(start.getMonth() - 1);
+      createdAt = { gte: start };
+    }
+
+    const where: any = {
+      stove: { userId: user.id },
+      ...(stoveId && { stoveId }),
+      ...(status && { status }),
+      ...(createdAt && { createdAt }),
+    };
+
+    const [totalCount, orders] = await prisma.$transaction([
+      prisma.order.count({ where }),
+      prisma.order.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: sort },
+        include: {
+          stoveSnapshot: true,
+
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  productName: true,
+                },
               },
             },
           },
+
+          serviceItems: true,
         },
-        serviceItems: true,
+      }),
+    ]);
+
+    return NextResponse.json({
+      data: orders,
+      pagination: {
+        page,
+        totalPages: Math.ceil(totalCount / limit),
+        totalCount,
       },
     });
-
-    return NextResponse.json(orders);
   } catch (err: any) {
     console.error("GET /user/me/orders error:", err);
     return NextResponse.json(
-      { message: err.message || "Không thể tải danh sách đơn hàng" },
+      { message: err.message || "Không thể tải đơn hàng" },
       { status: 500 },
     );
   }
@@ -66,7 +104,10 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
           id: stoveId,
           userId: user.id,
         },
-        include: { product: true },
+        include: {
+          product: true,
+          promoProduct: true, // ✅ include promo product
+        },
       });
 
       if (!stove) {
@@ -105,12 +146,12 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         if (!item.product || item.parentItemId) continue;
 
         const price = item.product.currentPrice ?? 0;
-        const exchangePoint = item.product.pointValue ?? 0;
+        const pointPrice = item.product.pointValue ?? 0;
         const qty = item.quantity;
         const bindable = item.product.tags?.includes("BINDABLE");
 
         if (item.payByPoints) {
-          totalPointsUse += exchangePoint * qty;
+          totalPointsUse += pointPrice * qty;
           continue;
         }
 
@@ -122,12 +163,18 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
       }
 
       // ===== 2️⃣ Stove gas =====
+      let stoveUnitPrice: number | null = null;
+      let stoveQuantity: number | null = null;
+
       if (cart.isStoveActive && stove.product && stove.defaultProductQuantity) {
         const qty = stove.defaultProductQuantity;
         const price = stove.product.currentPrice ?? 0;
         const bindable = stove.product.tags?.includes("BINDABLE");
 
         subtotal += price * qty;
+
+        stoveUnitPrice = price;
+        stoveQuantity = qty;
 
         if (bindable) {
           totalPointsEarn += EARN_POINT_STOVE_BINDABLE * qty;
@@ -150,12 +197,11 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
       const shipFee = 0;
       const totalPrice = Math.max(subtotal - discountAmount, 0);
 
-      // ===== 4️⃣ Check điểm (KHÔNG cộng điểm tương lai) =====
       if (totalPointsUse > user.points) {
         throw new Error("Không đủ điểm để tạo đơn");
       }
 
-      // ===== 5️⃣ Create order =====
+      // ===== 4️⃣ Create order =====
       const createdOrder = await tx.order.create({
         data: {
           userId: user.id,
@@ -172,7 +218,8 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
             create: cart.items.map((item) => ({
               productId: item.productId,
               quantity: item.quantity,
-              unitPrice: item.product.currentPrice,
+              unitPrice: item.product?.currentPrice ?? 0,
+              unitPointPrice: item.product?.pointValue ?? 0,
               type: item.type,
               payByPoints: item.payByPoints,
               earnPoints: item.earnPoints,
@@ -192,7 +239,30 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         },
       });
 
-      // ===== 6️⃣ Clear cart & reset stove =====
+      // ===== 5️⃣ Snapshot stove + promo =====
+      await tx.orderStoveSnapshot.create({
+        data: {
+          orderId: createdOrder.id,
+          stoveName: stove.name,
+          address: stove.address,
+          note: stove.note,
+
+          // ===== Gas snapshot =====
+          productId: stove.product?.id ?? null,
+          productName: stove.product?.productName ?? null,
+          unitPrice: stoveUnitPrice,
+          quantity: stoveQuantity,
+
+          // ===== Promo snapshot =====
+          promoChoice: stove.defaultPromoChoice,
+          promoProductId: stove.defaultPromoProductId ?? null,
+          promoProductName: stove.promoProduct?.productName ?? null,
+          promoProductQuantity: stove.defaultProductQuantity ?? null,
+          promoProductUnitPrice: 0,
+        },
+      });
+
+      // ===== 6️⃣ Clear cart =====
       await tx.cartItem.deleteMany({
         where: { cartId: cart.id },
       });

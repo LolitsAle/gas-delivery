@@ -5,7 +5,7 @@ import React, { memo, useMemo, useState } from "react";
 import { StoveWithProducts } from "../context/CurrentUserContext";
 import { useRouter } from "next/navigation";
 import { Button } from "../admin/Commons";
-import UserStoveDrawer from "../userInfo/StoveFormDrawer";
+import UserStoveDrawer from "./userInfo/StoveFormDrawer";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import { useCurrentUser } from "../context/CurrentUserContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
@@ -32,6 +32,10 @@ function OrderSection() {
 
   const handleOrderNow = async () => {
     if (!activeStove) return;
+    if (!activeStove?.productId) {
+      setOpen(true);
+      return;
+    }
 
     const loading = showToastLoading("Đang cập nhật giỏ hàng...");
 
@@ -179,7 +183,6 @@ function OrderSection() {
         <div className="flex w-full gap-[3vw]">
           <button
             onClick={handleOrderNow}
-            disabled={!activeStove?.productId}
             className="w-[28vw] h-[28vw] bg-gas-orange-400 rounded-2xl flex flex-col gap-[1vw] justify-center items-center font-bold text-white active:bg-gas-orange-600 disabled:opacity-50"
           >
             <PackageCheck />

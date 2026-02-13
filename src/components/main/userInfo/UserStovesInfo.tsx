@@ -11,7 +11,8 @@ import { apiFetchAuth } from "@/lib/api/apiClient";
 import {
   StoveWithProducts,
   useCurrentUser,
-} from "../context/CurrentUserContext";
+} from "@/components/context/CurrentUserContext";
+import InfoBanner from "@/components/common/InfoBanner";
 
 interface Props {
   stoves: StoveWithProducts[];
@@ -66,6 +67,11 @@ export default function UserStovesInfo({ stoves, onChange }: Props) {
 
   return (
     <div>
+      <InfoBanner type="error" className="mb-[4vw]">
+        Bếp là đại diện thói quen sử dụng gas của bạn. bếp chứa loại gas, số
+        lượng, địa chỉ và phần quà đi kèm. Nếu bạn điểu chỉnh dữ liệu bếp sai
+        thực tế có thể ảnh hưởng đến quá trình giao gas của cửa hàng.
+      </InfoBanner>
       {/* HEADER */}
       <div className="mb-[5vw]">
         <Button
@@ -116,15 +122,23 @@ export default function UserStovesInfo({ stoves, onChange }: Props) {
               <CardTitle className="text-base ml-[3vw]">{stove.name}</CardTitle>
             </CardHeader>
             <CardContent className="text-sm p-[3vw] gap-[2vw] flex flex-col justify-baseline items-baseline">
-              <p className="text-md">🏠 {stove.address ?? "chưa cập nhật"}</p>
+              <p className="text-md">
+                🏠 Địa chỉ: {stove.address ?? "chưa cập nhật"}
+              </p>
               {stove.note && (
-                <p className="text-muted-foreground">🗺️: {stove.note}</p>
+                <p className="text-muted-foreground">
+                  🗺️ Ghi chú: {stove.note}
+                </p>
               )}
               <div className="bg-gas-green-100 p-[2vw] w-full rounded-md font-bold">
-                📦{" "}
-                {stove?.product?.productName
-                  ? stove?.product?.productName
-                  : "chưa chọn sản phẩm"}
+                <p>📦 Sản phẩm mặc định:</p>
+                <span className="font-medium pl-[7vw]">
+                  {stove?.product?.productName
+                    ? stove?.product?.productName +
+                      " x " +
+                      stove?.defaultProductQuantity
+                    : "chưa chọn sản phẩm"}
+                </span>
               </div>
             </CardContent>
           </Card>

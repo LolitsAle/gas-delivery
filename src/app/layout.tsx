@@ -44,7 +44,9 @@ export default function RootLayout({
         {/* Safari iOS specific */}
         <link rel="apple-touch-icon" href="/icons/icon-512.png" />
       </Head>
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]`}
+      >
         <Toaster richColors />
         <AuthProvider>{children}</AuthProvider>
       </body>

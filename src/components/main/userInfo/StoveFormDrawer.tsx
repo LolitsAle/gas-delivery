@@ -24,7 +24,7 @@ import {
 import {
   StoveWithProducts,
   useCurrentUser,
-} from "../context/CurrentUserContext";
+} from "@/components/context/CurrentUserContext";
 
 interface Props {
   open: boolean;
@@ -98,8 +98,8 @@ export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
   }, [open]);
 
   const submit = async () => {
-    if (!form.name?.trim() || !form.address?.trim() || !form.productId) {
-      showToastInfo("Vui lòng nhập đầy đủ tên bếp, địa chỉ và sản phẩm gas");
+    if (!form.name?.trim() || !form.productId) {
+      showToastInfo("Vui lòng nhập đầy đủ tên bếp và sản phẩm gas");
       return;
     }
 

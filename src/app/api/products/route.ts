@@ -90,6 +90,7 @@ export async function GET(req: NextRequest) {
         pointValue: true,
         tags: true,
         categoryId: true,
+        description: true,
         category: {
           select: {
             id: true,

@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { CATEGORIES_LIST_KEY, PRODUCTS_LIST_KEY } from "@/constants/constants";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useCurrentUser } from "@/components/context/CurrentUserContext";
+import InfoBanner from "@/components/common/InfoBanner";
 
 type Product = {
   id: string;
@@ -28,6 +29,7 @@ type Product = {
   pointPrice: number;
   categoryId: string;
   categoryName: string;
+  description: string;
   tags: string[];
 };
 
@@ -77,7 +79,7 @@ export default function ShopPage() {
         i.type === (modePoint ? "POINT_EXCHANGE" : "NORMAL_PRODUCT"),
     );
 
-    setQuantity(existing?.quantity ?? 0);
+    setQuantity(existing?.quantity ?? 1);
   };
 
   const setCartItemQuantity = async (product: Product, qty: number) => {
@@ -116,6 +118,7 @@ export default function ShopPage() {
         }
         //  ?excludeBindable=true
         const data = await apiFetchPublic("/api/products");
+        console.log("data", data);
         const mapped: Product[] = data.map((p: any) => ({
           id: p.id,
           name: p.productName,
@@ -124,6 +127,7 @@ export default function ShopPage() {
           pointPrice: p.pointValue,
           categoryId: p.category?.id,
           categoryName: p.category?.name,
+          description: p.description,
           tags: p.tags || [],
         }));
         setAllProducts(mapped);
@@ -315,7 +319,7 @@ export default function ShopPage() {
         </div>
       </div>
       <Drawer open={openDrawer} onOpenChange={setOpenDrawer}>
-        <DrawerContent className="rounded-t-2xl ">
+        <DrawerContent className="rounded-t-2xl max-h-[90vh] overflow-hidden">
           <div className="hidden">
             <DrawerTitle>Chi tiết sản phẩm</DrawerTitle>
           </div>
@@ -344,44 +348,59 @@ export default function ShopPage() {
                   </Badge>
                 </div>
               </div>
-              <p className="text-sm text-gas-gray-500 leading-relaxed">
-                Sản phẩm chất lượng cao, dùng an toàn cho gia đình. Thiết kế phù
-                hợp với nhu cầu sử dụng hằng ngày.
+              <p className="text-md text-gas-gray-700 leading-relaxed">
+                {selectedProduct.description ||
+                  "Sản phẩm chất lượng cao, dùng an toàn cho gia đình. Thiết kế phù hợp với nhu cầu sử dụng hằng ngày."}
               </p>
-              <div className="flex items-center justify-between border rounded-xl px-4 py-2">
-                <span className="text-sm font-medium">Số lượng</span>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setQuantity((q) => Math.max(0, q - 1))}
-                    className="w-8 h-8 rounded-full border text-lg"
-                  >
-                    −
-                  </button>
-                  <span className="text-lg font-bold w-6 text-center">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={() => setQuantity((q) => q + 1)}
-                    className="w-8 h-8 rounded-full border text-lg"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-              {selectedProduct && quantity > 0 && (
-                <div
-                  className={`rounded-xl px-4 py-3 border ${ui.border} ${ui.soft}`}
-                >
-                  <div className="flex justify-between text-sm">
-                    <span>Tạm tính</span>
-                    <span className="font-bold">
-                      {modePoint
-                        ? `${selectedProduct.pointPrice * quantity} ⭐`
-                        : `${(selectedProduct.price * quantity).toLocaleString()}đ`}
+              {selectedProduct.tags.includes("BINDABLE") && (
+                <InfoBanner type="warning">
+                  <p>
+                    Sản phẩm gas yêu cầu bạn phải sở hữu vỏ gas tương ứng để
+                    đổi, giá từ <strong>250,000đ</strong> đến{" "}
+                    <strong>270,000đ</strong> trên một vỏ.
+                  </p>
+                  <p>
+                    Nếu bạn chưa có vỏ gas, vui lòng thông báo cho nhân viên khi
+                    xác nhận đơn.
+                  </p>
+                </InfoBanner>
+              )}
+              <div className="flex justify-baseline items-center gap-[4vw]">
+                <div className="flex items-center justify-baseline gap-[2vw] border rounded-xl px-4 py-2">
+                  <span className="text-sm font-medium">Số lượng</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setQuantity((q) => Math.max(0, q - 1))}
+                      className="w-6 h-6 rounded-full border text-md flex justify-center items-center"
+                    >
+                      −
+                    </button>
+                    <span className="text-md font-bold w-6 text-center flex justify-center items-center">
+                      {quantity}
                     </span>
+                    <button
+                      onClick={() => setQuantity((q) => q + 1)}
+                      className="w-6 h-6 rounded-full border text-md flex justify-center items-center"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
-              )}
+                {selectedProduct && quantity > 0 && (
+                  <div
+                    className={`rounded-xl px-4 py-3 border ${ui.border} ${ui.soft}`}
+                  >
+                    <div className="flex justify-between text-sm">
+                      <span className="font-bold">
+                        {modePoint
+                          ? `${selectedProduct.pointPrice * quantity} ⭐`
+                          : `${(selectedProduct.price * quantity).toLocaleString()}đ`}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {(() => {
                 const existing = activeStove?.cart?.items?.find(
                   (i) =>
@@ -412,12 +431,6 @@ export default function ShopPage() {
                   className="flex-2 py-3 rounded-xl font-semibold bg-blue-400 text-white"
                 >
                   Mua ngay
-                </button>
-                <button
-                  onClick={() => setOpenDrawer(false)}
-                  className="flex-1 py-3 rounded-xl text-sm text-gray-400 border border-gray-200 active:scale-95 transition"
-                >
-                  Hủy
                 </button>
               </div>
             </div>
