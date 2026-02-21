@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import AdminOrderCard from "./AdminOrderCard";
 import AdminOrderTable from "./AdminOrderTable";
-import EditUserDrawer from "@/components/admin/forms/EditUserDrawer";
+import EditUserDrawer from "./EditUserDrawer";
 
 type Order = any;
 
@@ -13,11 +13,11 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
 
   // Users
-  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [openDrawer, setOpenDrawer] = useState(false);
 
-  const handleViewUser = (user: any) => {
-    setSelectedUser(user);
+  const handleViewUser = (order: any) => {
+    setSelectedOrder(order);
     setOpenDrawer(true);
   };
 
@@ -74,18 +74,11 @@ export default function AdminOrdersPage() {
       <div className="hidden md:block">
         <AdminOrderTable orders={orders} getStatusColor={getStatusColor} />
       </div>
-      {selectedUser && (
+      {selectedOrder && (
         <EditUserDrawer
           open={openDrawer}
-          selectedUser={selectedUser}
+          selectedOrder={selectedOrder}
           onClose={() => setOpenDrawer(false)}
-          onSave={async (data) => {
-            await apiFetchAuth(`/api/admin/users/${selectedUser.id}`, {
-              method: "PATCH",
-              body: JSON.stringify(data),
-            });
-            await loadOrders(); // refresh lại
-          }}
         />
       )}
     </div>
