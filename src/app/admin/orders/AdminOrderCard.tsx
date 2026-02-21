@@ -22,7 +22,7 @@ export default function AdminOrderCard({
   onViewUser,
 }: {
   order: Order;
-  onViewUser: (user: any) => void;
+  onViewUser: (order: Order) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -75,7 +75,7 @@ export default function AdminOrderCard({
             </div>
 
             <button
-              onClick={() => onViewUser(order.user)}
+              onClick={() => onViewUser(order)}
               className="w-8 h-8 flex items-center justify-center rounded-md bg-white active:scale-95 transition"
             >
               <Eye size={16} />

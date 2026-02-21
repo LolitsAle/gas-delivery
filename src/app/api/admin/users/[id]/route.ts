@@ -38,6 +38,8 @@ export const GET = withAuth(["ADMIN"], async (_req, { params }) => {
           name: true,
           address: true,
           productId: true,
+          note: true,
+          houseImage: true,
           product: {
             select: {
               id: true,
@@ -117,6 +119,8 @@ export const PUT = withAuth(["ADMIN"], async (req, { params }) => {
           name: true,
           address: true,
           productId: true,
+          note: true,
+          houseImage: true,
           product: {
             select: {
               id: true,
