@@ -4,6 +4,14 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/helper/helpers";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ChevronDown,
   ChevronUp,
@@ -15,16 +23,32 @@ import {
   Eye,
 } from "lucide-react";
 
+type OrderStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "WAITING_CUSTOMER_CONFIRM"
+  | "READY"
+  | "DELIVERING"
+  | "COMPLETED"
+  | "CANCELLED";
+
 type Order = any;
 
 export default function AdminOrderCard({
   order,
   onViewUser,
+  onChangeStatus,
+  getAvailableTransitions,
+  isUpdating,
 }: {
   order: Order;
   onViewUser: (order: Order) => void;
+  onChangeStatus: (order: Order, nextStatus: OrderStatus) => Promise<void>;
+  getAvailableTransitions: (status: OrderStatus) => OrderStatus[];
+  isUpdating: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [nextStatus, setNextStatus] = useState<string>("");
 
   const statusMap: Record<string, { icon: React.ReactNode; style: string }> = {
     PENDING: {
@@ -35,11 +59,15 @@ export default function AdminOrderCard({
       icon: <CheckCircle2 size={14} />,
       style: "bg-blue-100 text-blue-700 border-blue-200",
     },
+    READY: {
+      icon: <CheckCircle2 size={14} />,
+      style: "bg-indigo-100 text-indigo-700 border-indigo-200",
+    },
     DELIVERING: {
       icon: <Truck size={14} />,
       style: "bg-purple-100 text-purple-700 border-purple-200",
     },
-    DONE: {
+    COMPLETED: {
       icon: <CheckCircle2 size={14} />,
       style: "bg-green-100 text-green-700 border-green-200",
     },
@@ -52,11 +80,11 @@ export default function AdminOrderCard({
   const status = statusMap[order.status];
 
   const isBusiness = order?.user?.tags?.includes("BUSINESS");
+  const transitions = getAvailableTransitions(order.status);
 
   return (
     <Card className="rounded-md shadow-sm border border-gas-green-700">
       <CardContent className="p-0">
-        {/* HEADER */}
         <div className="flex justify-between items-center p-[3vw] bg-gas-green-600 rounded-t-md">
           <div className="flex items-center gap-2 min-w-0">
             <div className="truncate max-w-[45vw]">
@@ -100,13 +128,35 @@ export default function AdminOrderCard({
           </div>
         </div>
 
-        {/* BODY */}
         <div className="flex flex-col gap-[2vw] p-[3vw]">
           <div className="text-[3vw] text-white/80 bg-blue-600 w-fit rounded-md px-2">
             Ngày đặt: {formatDateTime(order.createdAt)}
           </div>
 
-          {/* Stove */}
+          {transitions.length > 0 && (
+            <div className="space-y-2 bg-white border border-gray-200 p-2 rounded-md">
+              <Select value={nextStatus} onValueChange={setNextStatus}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Chọn trạng thái mới" />
+                </SelectTrigger>
+                <SelectContent>
+                  {transitions.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                className="w-full"
+                disabled={!nextStatus || isUpdating}
+                onClick={() => onChangeStatus(order, nextStatus as OrderStatus)}
+              >
+                {isUpdating ? "Đang đổi trạng thái..." : "Cập nhật trạng thái"}
+              </Button>
+            </div>
+          )}
+
           {order.stoveSnapshot?.quantity > 0 && (
             <div className="bg-gas-green-100 p-[3vw] rounded-md text-sm font-semibold flex justify-between">
               <div>
@@ -122,7 +172,6 @@ export default function AdminOrderCard({
             </div>
           )}
 
-          {/* Products */}
           {order.items?.length > 0 && (
             <div className="bg-white border border-gas-green-600 p-[3vw] rounded-md space-y-2 text-sm">
               {order.items.map((item: any) => (
@@ -143,7 +192,6 @@ export default function AdminOrderCard({
             </div>
           )}
 
-          {/* Services */}
           {order.serviceItems?.length > 0 && (
             <div className="space-y-2 text-sm">
               {order.serviceItems.map((item: any) => (
@@ -160,7 +208,6 @@ export default function AdminOrderCard({
           )}
         </div>
 
-        {/* TOTAL */}
         <div className="border-t border-gas-green-700 py-3 px-[4vw] text-sm relative">
           <div className="flex justify-between font-semibold">
             <div>Tổng tiền</div>
