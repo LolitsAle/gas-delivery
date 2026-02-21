@@ -1,13 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { sendSMS } from "@/lib/speedSMS";
 import type { SendSmsPayload } from "@/lib/speedSMS";
+import { randomInt } from "crypto";
 
 export async function sendOtpService(phone: string): Promise<void> {
   if (!phone) {
     throw new Error("Phone number is required");
   }
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = randomInt(100000, 1000000).toString();
 
   await prisma.phoneOtp.deleteMany({
     where: { phone },
@@ -29,5 +30,4 @@ export async function sendOtpService(phone: string): Promise<void> {
   }
 
   console.log("OTP sent to", phone);
-  console.log("OTP content: ", otp);
 }

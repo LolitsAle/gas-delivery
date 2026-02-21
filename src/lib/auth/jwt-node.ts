@@ -1,8 +1,11 @@
 // src/lib/auth/jwt-node.ts
 import jwt, { SignOptions } from "jsonwebtoken";
 
-const JWT_SECRET =
-  Buffer.from(process.env.JWT_SECRET!, "utf-8") || "GasNgocLam";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("Missing JWT_SECRET environment variable");
+}
 
 export function signJwt(
   payload: object,
