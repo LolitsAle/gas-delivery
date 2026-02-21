@@ -20,6 +20,12 @@ import { CATEGORIES_LIST_KEY, PRODUCTS_LIST_KEY } from "@/constants/constants";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useCurrentUser } from "@/components/context/CurrentUserContext";
 import InfoBanner from "@/components/common/InfoBanner";
+import {
+  dismissToast,
+  showToastError,
+  showToastLoading,
+  showToastSuccess,
+} from "@/lib/helper/toast";
 
 type Product = {
   id: string;
@@ -71,18 +77,51 @@ export default function ShopPage() {
   const openProductDrawer = (p: Product) => {
     setSelectedProduct(p);
     setOpenDrawer(true);
+    setQuantity(1);
+  };
+
+  const setCartItemQuantity = async (product: Product, qty: number) => {
+    if (!activeStove || qty <= 0) return;
+    const loading = showToastLoading("Đang cập nhật giỏ hàng...");
 
     const existing = activeStove?.cart?.items?.find(
       (i) =>
-        i.productId === p.id &&
+        i.productId === product.id &&
         i.payByPoints === modePoint &&
         i.type === (modePoint ? "POINT_EXCHANGE" : "NORMAL_PRODUCT"),
     );
 
-    setQuantity(existing?.quantity ?? 1);
+    const newQuantity = existing ? existing.quantity + qty : qty;
+
+    try {
+      await apiFetchAuth("/api/user/me/cart", {
+        method: "PATCH",
+        body: {
+          stoveId: activeStove.id,
+          items: [
+            {
+              productId: product.id,
+              quantity: newQuantity,
+              payByPoints: modePoint,
+              type: modePoint ? "POINT_EXCHANGE" : "NORMAL_PRODUCT",
+            },
+          ],
+        },
+      });
+
+      await refreshUser();
+      setOpenDrawer(false);
+      setQuantity(1);
+      dismissToast(loading);
+      showToastSuccess("Cập nhật giỏ thành công!");
+    } catch (err) {
+      console.error("Update cart failed", err);
+      dismissToast(loading);
+      showToastError("Cập nhật giỏ thất bại!");
+    }
   };
 
-  const setCartItemQuantity = async (product: Product, qty: number) => {
+  const removeCartItem = async (product: Product) => {
     if (!activeStove) return;
 
     try {
@@ -93,7 +132,7 @@ export default function ShopPage() {
           items: [
             {
               productId: product.id,
-              quantity: qty,
+              quantity: 0,
               payByPoints: modePoint,
               type: modePoint ? "POINT_EXCHANGE" : "NORMAL_PRODUCT",
             },
@@ -103,7 +142,7 @@ export default function ShopPage() {
 
       await refreshUser();
     } catch (err) {
-      console.error("Update cart failed", err);
+      console.error("Remove cart item failed", err);
     }
   };
 
@@ -164,6 +203,25 @@ export default function ShopPage() {
 
     loadCategories();
   }, []);
+
+  useEffect(() => {
+    if (modePoint) {
+      setCategory("all");
+    }
+  }, [modePoint]);
+
+  const visibleCategories = useMemo(() => {
+    if (!modePoint) return categories;
+
+    // Lấy các categoryId có sản phẩm PROMO_ELIGIBLE
+    const eligibleCategoryIds = new Set(
+      allProducts
+        .filter((p) => p.tags.includes("POINT_EXCHANGABLE"))
+        .map((p) => p.categoryId),
+    );
+
+    return categories.filter((c) => eligibleCategoryIds.has(c.id));
+  }, [categories, allProducts, modePoint]);
 
   const products = useMemo(() => {
     let list = [...allProducts];
@@ -248,7 +306,7 @@ export default function ShopPage() {
           Tất cả
         </button>
 
-        {categories.map((c) => (
+        {visibleCategories.map((c) => (
           <button
             key={c.id}
             onClick={() => setCategory(c.id)}
@@ -319,7 +377,7 @@ export default function ShopPage() {
         </div>
       </div>
       <Drawer open={openDrawer} onOpenChange={setOpenDrawer}>
-        <DrawerContent className="rounded-t-2xl max-h-[90vh] overflow-hidden">
+        <DrawerContent className="rounded-t-2xl max-h-[90vh] overflow-hidden  ">
           <div className="hidden">
             <DrawerTitle>Chi tiết sản phẩm</DrawerTitle>
           </div>
@@ -370,7 +428,7 @@ export default function ShopPage() {
                   <span className="text-sm font-medium">Số lượng</span>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => setQuantity((q) => Math.max(0, q - 1))}
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                       className="w-6 h-6 rounded-full border text-md flex justify-center items-center"
                     >
                       −
@@ -409,10 +467,21 @@ export default function ShopPage() {
                     i.type ===
                       (modePoint ? "POINT_EXCHANGE" : "NORMAL_PRODUCT"),
                 );
+
                 if (!existing) return null;
+
                 return (
-                  <div className="text-xs text-green-600 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                    Sản phẩm đã có trong giỏ: <b>{existing.quantity}</b>
+                  <div className="flex items-center justify-between text-xs bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    <span className="text-green-700">
+                      Sản phẩm đã có trong giỏ: <b>{existing.quantity}</b>
+                    </span>
+
+                    <button
+                      onClick={() => removeCartItem(selectedProduct)}
+                      className="text-red-600 font-semibold ml-3 p-[1vw] border border-red-600 bg-white rounded-md"
+                    >
+                      Xóa khỏi giỏ
+                    </button>
                   </div>
                 );
               })()}
@@ -424,7 +493,7 @@ export default function ShopPage() {
                   }
                   className={`flex-2 py-3 rounded-xl font-semibold text-white ${ui.primary}`}
                 >
-                  {quantity === 0 ? "Xóa khỏi giỏ" : "Thêm vào giỏ"}
+                  Thêm vào giỏ
                 </button>
                 <button
                   onClick={() => selectedProduct && buyNow(selectedProduct)}

@@ -16,6 +16,7 @@ import {
   showToastLoading,
   showToastSuccess,
 } from "@/lib/helper/toast";
+import InfoBanner from "@/components/common/InfoBanner";
 
 export default function CartPage() {
   const { currentUser, refreshUser, activeStoveId } = useCurrentUser();
@@ -209,12 +210,20 @@ export default function CartPage() {
             {isStoveActive ? (
               <StoveSummary stove={stove} onRemove={handleDeactivateStove} />
             ) : (
-              <button
-                onClick={handleActivateStove}
-                className="p-[3vw] w-full bg-gas-green-700 text-white rounded-xl font-bold shadow active:scale-95 transition"
-              >
-                Thêm gas từ bếp: {stove.name}
-              </button>
+              <>
+                <button
+                  onClick={handleActivateStove}
+                  className="p-[3vw] w-full bg-gas-green-700 text-white rounded-xl font-bold shadow active:scale-95 transition"
+                >
+                  Thêm gas từ bếp: {stove.name}
+                </button>
+                <InfoBanner type="warning">
+                  Đơn hàng phải có ít nhất 1 sản phẩm gas để được miễn phí ship.
+                  Nhân viên có thể yêu cầu thêm phí ship từ{" "}
+                  <strong>10,000đ</strong> đến <strong>20,000đ</strong> nếu mua
+                  hàng bình thường.
+                </InfoBanner>
+              </>
             )}
 
             <NormalCartItems stove={stove} refreshUser={refreshUser} />

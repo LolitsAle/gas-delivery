@@ -219,6 +219,7 @@ model Order {
   shipperId      String?
   pointsUsed     Int     @default(0)
   pointsEarned   Int     @default(0)
+  pointsSettled  Boolean @default(false)
 
   confirmedAt     DateTime?
   deliveredAt     DateTime?

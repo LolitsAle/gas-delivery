@@ -77,33 +77,35 @@ export default function Home() {
       {/* Body */}
       <div className="w-full h-[78vh] rounded-2xl pt-[3vh] z-10 absolute top-[22vh] left-0 bg-gas-green-50 animate-gradient flex flex-col">
         <OrderSection />
-        {!activeStove?.product?.productName && (
-          <InfoBanner type="success" className="mx-[5vw] mt-[2vw]">
-            Cửa hàng chưa có thông tin về bếp của bạn, hãy bấm nút{" "}
-            <span className="text-gas-orange-700">đặt ngay</span> hoặc nút{" "}
-            <Button
-              className="shadow rounded-lg bg-white p-[1.5vw]"
-              size="icon"
-              variant="ghost"
-              // onClick={() => setOpenStoveEdit(true)}
-            >
-              <Pencil className="w-4 h-4" />
-            </Button>
-            để cập nhật thông tin.
-            <p className="text-red-600">
-              Không cập nhật được? Bấm vào số điện thoại bên dưới để được hỗ trợ
-              bạn nhé!
-            </p>
-          </InfoBanner>
-        )}
-        <PhoneCall />
-        <ImageCarousel
-          images={[
-            "/images/carousel-1.png",
-            "/images/carousel-2.png",
-            "/images/carousel-3.png",
-          ]}
-        />
+        <div className="flex-1 overflow-auto pb-[30vw] no-scrollbar">
+          {!activeStove?.product?.productName && (
+            <InfoBanner type="success" className="mx-[5vw] mt-[2vw]">
+              Cửa hàng chưa có thông tin về bếp của bạn, hãy bấm nút{" "}
+              <span className="text-gas-orange-700">đặt ngay</span> hoặc nút{" "}
+              <Button
+                className="shadow rounded-lg bg-white p-[1.5vw]"
+                size="icon"
+                variant="ghost"
+                // onClick={() => setOpenStoveEdit(true)}
+              >
+                <Pencil className="w-4 h-4" />
+              </Button>
+              để cập nhật thông tin.
+              <p className="text-red-600">
+                Không cập nhật được? Bấm vào số điện thoại bên dưới để được hỗ
+                trợ bạn nhé!
+              </p>
+            </InfoBanner>
+          )}
+          <PhoneCall />
+          <ImageCarousel
+            images={[
+              "/images/carousel-1.png",
+              "/images/carousel-2.png",
+              "/images/carousel-3.png",
+            ]}
+          />
+        </div>
       </div>
     </div>
   );

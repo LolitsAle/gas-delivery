@@ -97,7 +97,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
       throw new Error("stoveId is required");
     }
 
-    const order = await prisma.$transaction(async (tx) => {
+    const createdOrder = await prisma.$transaction(async (tx) => {
       // 1️⃣ Verify stove
       const stove = await tx.stove.findFirst({
         where: {
@@ -106,7 +106,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         },
         include: {
           product: true,
-          promoProduct: true, // ✅ include promo product
+          promoProduct: true,
         },
       });
 
@@ -197,12 +197,31 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
       const shipFee = 0;
       const totalPrice = Math.max(subtotal - discountAmount, 0);
 
-      if (totalPointsUse > user.points) {
-        throw new Error("Không đủ điểm để tạo đơn");
+      // ======================================================
+      // 🔥 4️⃣ CHECK & DEDUCT POINTS (ANTI-RACE CONDITION)
+      // ======================================================
+      if (totalPointsUse > 0) {
+        const updateResult = await tx.user.updateMany({
+          where: {
+            id: user.id,
+            points: {
+              gte: totalPointsUse, // đủ điểm mới trừ
+            },
+          },
+          data: {
+            points: {
+              decrement: totalPointsUse,
+            },
+          },
+        });
+
+        if (updateResult.count === 0) {
+          throw new Error("Không đủ điểm để tạo đơn");
+        }
       }
 
-      // ===== 4️⃣ Create order =====
-      const createdOrder = await tx.order.create({
+      // ===== 5️⃣ Create order =====
+      const order = await tx.order.create({
         data: {
           userId: user.id,
           stoveId,
@@ -214,6 +233,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
           status: OrderStatus.PENDING,
           pointsUsed: totalPointsUse,
           pointsEarned: totalPointsEarn,
+          pointsSettled: false, // sẽ settle khi complete hoặc cancel
           items: {
             create: cart.items.map((item) => ({
               productId: item.productId,
@@ -225,7 +245,6 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
               earnPoints: item.earnPoints,
             })),
           },
-
           serviceItems: {
             create: cart.serviceItems.map((item) => ({
               serviceId: item.serviceId,
@@ -239,21 +258,19 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         },
       });
 
-      // ===== 5️⃣ Snapshot stove + promo =====
+      // ===== 6️⃣ Snapshot stove + promo =====
       await tx.orderStoveSnapshot.create({
         data: {
-          orderId: createdOrder.id,
+          orderId: order.id,
           stoveName: stove.name,
           address: stove.address,
           note: stove.note,
 
-          // ===== Gas snapshot =====
           productId: stove.product?.id ?? null,
           productName: stove.product?.productName ?? null,
           unitPrice: stoveUnitPrice,
           quantity: stoveQuantity,
 
-          // ===== Promo snapshot =====
           promoChoice: stove.defaultPromoChoice,
           promoProductId: stove.defaultPromoProductId ?? null,
           promoProductName: stove.promoProduct?.productName ?? null,
@@ -262,7 +279,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         },
       });
 
-      // ===== 6️⃣ Clear cart =====
+      // ===== 7️⃣ Clear cart =====
       await tx.cartItem.deleteMany({
         where: { cartId: cart.id },
       });
@@ -279,10 +296,10 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         },
       });
 
-      return createdOrder;
+      return order;
     });
 
-    return NextResponse.json(order, { status: 201 });
+    return NextResponse.json(createdOrder, { status: 201 });
   } catch (err: any) {
     console.error("POST /user/orders error:", err);
     return NextResponse.json(

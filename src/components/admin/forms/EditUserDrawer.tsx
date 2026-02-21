@@ -5,265 +5,261 @@ import { User } from "@prisma/client";
 import {
   Drawer,
   DrawerContent,
-  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Field } from "../Commons";
+import { apiFetchAuth } from "@/lib/api/apiClient";
 
-interface UserWithStoves extends User {
+interface UserWithRelations extends User {
   stoves: any[];
   orders?: any[];
 }
 
 interface Props {
   open: boolean;
-  user: UserWithStoves;
+  selectedUser: UserWithRelations | null;
   onClose: () => void;
-  onSave: (
-    data: Partial<UserWithStoves> & { password?: string },
-  ) => Promise<void> | void;
+  onSave: (data: Partial<UserWithRelations>) => Promise<void> | void;
 }
 
-export default function EditUserDrawer({ open, user, onClose, onSave }: Props) {
+export default function EditUserDrawer({
+  open,
+  selectedUser,
+  onClose,
+  onSave,
+}: Props) {
   const [loading, setLoading] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
 
-  const [form, setForm] = useState({
-    phoneNumber: user?.phoneNumber || "",
-    name: user?.name || "",
-    nickname: user?.nickname || "",
-    address: user?.address || "",
-    addressNote: user?.addressNote || "",
-    points: user?.points ?? 0,
-    role: user?.role || "USER",
-    isVerified: user?.isVerified ?? false,
-    isActive: user?.isActive ?? true,
-  });
+  const [userDetail, setUserDetail] = useState<UserWithRelations | null>(null);
+
+  const [form, setForm] = useState<any>(null);
+
+  /* ================= FETCH USER DETAIL ================= */
 
   useEffect(() => {
-    setForm({
-      phoneNumber: user?.phoneNumber || "",
-      name: user?.name || "",
-      nickname: user?.nickname || "",
-      address: user?.address || "",
-      addressNote: user?.addressNote || "",
-      points: user?.points ?? 0,
-      role: user?.role || "USER",
-      isVerified: user?.isVerified ?? false,
-      isActive: user?.isActive ?? true,
-    });
-  }, [user, open]);
+    console.log(open, selectedUser?.id);
+    if (!open || !selectedUser?.id) return;
 
-  const update = <K extends keyof typeof form>(
-    key: K,
-    value: (typeof form)[K],
-  ) => setForm((p) => ({ ...p, [key]: value }));
+    const fetchUserDetail = async () => {
+      try {
+        setDetailLoading(true);
+
+        const data = await apiFetchAuth(`/api/admin/users/${selectedUser.id}`);
+
+        setUserDetail(data);
+
+        setForm({
+          phoneNumber: data.phoneNumber,
+          name: data.name || "",
+          nickname: data.nickname || "",
+          address: data.address || "",
+          addressNote: data.addressNote || "",
+          points: data.points ?? 0,
+          role: data.role,
+          isVerified: data.isVerified,
+          isActive: data.isActive,
+          tags: data.tags || [],
+        });
+      } catch (err) {
+        console.error("Fetch user detail failed", err);
+      } finally {
+        setDetailLoading(false);
+      }
+    };
+
+    fetchUserDetail();
+  }, [open, selectedUser?.id]);
+
+  /* ================= RESET WHEN CLOSE ================= */
+
+  useEffect(() => {
+    if (!open) {
+      setUserDetail(null);
+      setForm(null);
+      setLoading(false);
+      setDetailLoading(false);
+    }
+  }, [open]);
+
+  /* ================= HANDLERS ================= */
+
+  const update = (key: string, value: any) =>
+    setForm((prev: any) => ({ ...prev, [key]: value }));
+
+  const toggleTag = (tag: string) => {
+    const exists = form.tags.includes(tag);
+    update(
+      "tags",
+      exists ? form.tags.filter((t: string) => t !== tag) : [...form.tags, tag],
+    );
+  };
 
   const handleSave = async () => {
     try {
       setLoading(true);
-
-      const payload: any = {
-        name: form.name,
-        nickname: form.nickname,
-        address: form.address,
-        addressNote: form.addressNote,
-        role: form.role,
-        points: form.points,
-        isVerified: form.isVerified,
-        isActive: form.isActive,
-      };
-
-      await onSave(payload);
+      await onSave(form);
       onClose();
-    } catch {
+    } catch (err) {
+      console.error(err);
       alert("Lưu thất bại");
     } finally {
       setLoading(false);
     }
   };
 
+  /* ================= UI ================= */
+
   return (
     <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
       <DrawerContent className="h-[95vh] md:h-screen md:max-w-2xl md:ml-auto flex flex-col">
-        {/* HEADER */}
         <DrawerHeader>
           <DrawerTitle>
-            Quản lý người dùng • {user?.nickname || user?.phoneNumber}
+            {detailLoading
+              ? "Đang tải..."
+              : `Quản lý người dùng • ${
+                  form?.nickname ||
+                  form?.phoneNumber ||
+                  selectedUser?.phoneNumber ||
+                  ""
+                }`}
           </DrawerTitle>
-          <DrawerDescription></DrawerDescription>
         </DrawerHeader>
 
-        {/* BODY */}
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid grid-cols-3 mb-4">
-              <TabsTrigger value="info">Thông tin</TabsTrigger>
-              <TabsTrigger value="stoves">Bếp</TabsTrigger>
-              <TabsTrigger value="orders">Đơn hàng</TabsTrigger>
-            </TabsList>
+        {detailLoading || !form ? (
+          <div className="flex-1 flex items-center justify-center text-sm">
+            Đang tải dữ liệu...
+          </div>
+        ) : (
+          <>
+            {/* BODY */}
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              <Tabs defaultValue="info">
+                <TabsList className="grid grid-cols-3 mb-4">
+                  <TabsTrigger value="info">Thông tin</TabsTrigger>
+                  <TabsTrigger value="stoves">Bếp</TabsTrigger>
+                  <TabsTrigger value="orders">Đơn hàng</TabsTrigger>
+                </TabsList>
 
-            {/* TAB 1 — INFO */}
-            <TabsContent value="info" className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Số điện thoại">
-                  <input
-                    className="w-full text-sm bg-gray-100"
-                    value={form.phoneNumber}
-                    disabled
-                  />
-                </Field>
-              </div>
+                {/* INFO */}
+                <TabsContent value="info" className="space-y-4">
+                  <Field label="Số điện thoại">
+                    <input
+                      className="w-full bg-gray-100"
+                      value={form.phoneNumber}
+                      disabled
+                    />
+                  </Field>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Tên">
-                  <input
-                    className="w-full text-sm"
-                    value={form.name}
-                    onChange={(e) => update("name", e.target.value)}
-                  />
-                </Field>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Tên">
+                      <input
+                        className="w-full"
+                        value={form.name}
+                        onChange={(e) => update("name", e.target.value)}
+                      />
+                    </Field>
 
-                <Field label="Nickname">
-                  <input
-                    className="w-full text-sm"
-                    value={form.nickname}
-                    onChange={(e) => update("nickname", e.target.value)}
-                  />
-                </Field>
-              </div>
-
-              <Field label="Địa chỉ">
-                <input
-                  className="w-full text-sm"
-                  value={form.address}
-                  onChange={(e) => update("address", e.target.value)}
-                />
-              </Field>
-
-              <Field label="Ghi chú địa chỉ">
-                <input
-                  className="w-full text-sm"
-                  value={form.addressNote}
-                  onChange={(e) => update("addressNote", e.target.value)}
-                />
-              </Field>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Điểm">
-                  <input
-                    type="number"
-                    className="w-full text-sm bg-gray-100"
-                    value={form.points}
-                    disabled
-                    onChange={(e) => update("points", Number(e.target.value))}
-                  />
-                </Field>
-
-                <Field label="Vai trò">
-                  <select
-                    className="w-full text-sm"
-                    value={form.role}
-                    onChange={(e) =>
-                      update("role", e.target.value as User["role"])
-                    }
-                  >
-                    <option value="USER">Người dùng</option>
-                    <option value="STAFF">Nhân viên</option>
-                    <option value="ADMIN">Quản trị viên</option>
-                  </select>
-                </Field>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <label className="flex items-center justify-between border rounded px-3 py-2 text-sm">
-                  <span>Đã xác thực</span>
-                  <input
-                    type="checkbox"
-                    checked={form.isVerified}
-                    onChange={(e) => update("isVerified", e.target.checked)}
-                  />
-                </label>
-
-                <label className="flex items-center justify-between border rounded px-3 py-2 text-sm">
-                  <span>Đang hoạt động</span>
-                  <input
-                    type="checkbox"
-                    checked={form.isActive}
-                    onChange={(e) => update("isActive", e.target.checked)}
-                  />
-                </label>
-              </div>
-            </TabsContent>
-
-            {/* TAB 2 — STOVES */}
-            <TabsContent value="stoves">
-              <div className="space-y-3">
-                {user?.stoves?.length ? (
-                  user?.stoves.map((s, i) => (
-                    <div
-                      key={s.id || i}
-                      className="border rounded-lg p-3 text-sm flex justify-between"
-                    >
-                      <div>
-                        <div className="font-medium">Bếp #{i + 1}</div>
-                        <div className="text-gray-500">{s.address}</div>
-                        <div className="text-gray-500">{s.note}</div>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        Sửa
-                      </Button>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-sm text-gray-500">
-                    Người dùng chưa có bếp nào
+                    <Field label="Nickname">
+                      <input
+                        className="w-full"
+                        value={form.nickname}
+                        onChange={(e) => update("nickname", e.target.value)}
+                      />
+                    </Field>
                   </div>
-                )}
-              </div>
-            </TabsContent>
 
-            {/* TAB 3 — ORDERS */}
-            <TabsContent value="orders">
-              <div className="space-y-3">
-                {user?.orders?.length ? (
-                  user?.orders.map((o, i) => (
-                    <div
-                      key={o.id || i}
-                      className="border rounded-lg p-3 text-sm flex justify-between"
-                    >
-                      <div>
-                        <div className="font-medium">
-                          Đơn #{o.id.slice(0, 8)}
-                        </div>
-                        <div className="text-gray-500">
-                          {o.totalPrice?.toLocaleString()} đ
-                        </div>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        Xem
-                      </Button>
+                  <Field label="Địa chỉ">
+                    <input
+                      className="w-full"
+                      value={form.address}
+                      onChange={(e) => update("address", e.target.value)}
+                    />
+                  </Field>
+
+                  {/* TAGS */}
+                  <Field label="Tags">
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={form.tags.includes("BUSSINESS")}
+                          onChange={() => toggleTag("BUSSINESS")}
+                        />
+                        Business
+                      </label>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-sm text-gray-500">Chưa có đơn hàng</div>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+                  </Field>
 
-        {/* FOOTER */}
-        <div className="sticky bottom-0 bg-white border-t px-5 py-4 flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
-            Đóng
-          </Button>
-          <Button onClick={handleSave} disabled={loading}>
-            {loading ? "Đang lưu..." : "Lưu thay đổi"}
-          </Button>
-        </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="flex justify-between border rounded px-3 py-2 text-sm">
+                      <span>Đã xác thực</span>
+                      <input
+                        type="checkbox"
+                        checked={form.isVerified}
+                        onChange={(e) => update("isVerified", e.target.checked)}
+                      />
+                    </label>
+
+                    <label className="flex justify-between border rounded px-3 py-2 text-sm">
+                      <span>Đang hoạt động</span>
+                      <input
+                        type="checkbox"
+                        checked={form.isActive}
+                        onChange={(e) => update("isActive", e.target.checked)}
+                      />
+                    </label>
+                  </div>
+                </TabsContent>
+
+                {/* STOVES */}
+                <TabsContent value="stoves">
+                  {userDetail?.stoves?.length ? (
+                    userDetail.stoves.map((s: any, i: number) => (
+                      <div
+                        key={s.id}
+                        className="border rounded p-3 text-sm mb-2"
+                      >
+                        Bếp #{i + 1} – {s.address}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-gray-500">Chưa có bếp</div>
+                  )}
+                </TabsContent>
+
+                {/* ORDERS */}
+                <TabsContent value="orders">
+                  {userDetail?.orders?.length ? (
+                    userDetail.orders.map((o: any) => (
+                      <div
+                        key={o.id}
+                        className="border rounded p-3 text-sm mb-2"
+                      >
+                        #{o.id.slice(0, 8)} – {o.totalPrice?.toLocaleString()}đ
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-gray-500">Chưa có đơn</div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* FOOTER */}
+            <div className="border-t px-5 py-4 flex justify-end gap-2">
+              <Button variant="outline" onClick={onClose}>
+                Đóng
+              </Button>
+              <Button onClick={handleSave} disabled={loading}>
+                {loading ? "Đang lưu..." : "Lưu thay đổi"}
+              </Button>
+            </div>
+          </>
+        )}
       </DrawerContent>
     </Drawer>
   );

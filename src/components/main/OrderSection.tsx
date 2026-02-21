@@ -151,7 +151,7 @@ function OrderSection() {
 
   return (
     <>
-      <div className="flex justify-between gap-[2vw] items-center mx-[5vw]">
+      <div className="shrink-0 flex justify-between gap-[2vw] items-center mx-[5vw]">
         <div
           onClick={handleStoveClick}
           className={`bg-gas-orange-900 px-[3vw] py-[2vw] rounded-md flex justify-center items-center gap-[2vw] shadow-md ${

@@ -435,7 +435,7 @@ function Page(props: Props) {
 
       <EditUserDrawer
         open={!!editingUser}
-        user={editingUser!}
+        selectedUser={editingUser!}
         onClose={() => setEditingUser(null)}
         onSave={async (data) => {
           await updateUser(editingUser!.id, data);
