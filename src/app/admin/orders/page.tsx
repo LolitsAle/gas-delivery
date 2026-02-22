@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import { useCurrentUser } from "@/components/context/CurrentUserContext";
 import AdminOrderCard from "./AdminOrderCard";
@@ -28,6 +28,17 @@ import {
   showToastLoading,
   showToastSuccess,
 } from "@/lib/helper/toast";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 type OrderStatus =
   | "PENDING"
@@ -42,6 +53,15 @@ type Order = {
   status: OrderStatus;
   shipperId?: string | null;
 };
+
+type PaginationData = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+type DateFilterPreset = "TODAY" | "THIS_WEEK" | "THIS_MONTH" | "DATE";
 
 type AssigneeUser = {
   id: string;
@@ -60,10 +80,69 @@ const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
   CANCELLED: [],
 };
 
+const FILTER_STORAGE_KEY = "admin-orders-filter-v1";
+
+const getFilterRange = (preset: DateFilterPreset, dateValue: string) => {
+  const now = new Date();
+  const start = new Date(now);
+  const end = new Date(now);
+
+  if (preset === "DATE") {
+    if (!dateValue) return null;
+    const selectedDate = new Date(`${dateValue}T00:00:00`);
+    if (Number.isNaN(selectedDate.getTime())) return null;
+    return {
+      from: selectedDate.toISOString(),
+      to: new Date(`${dateValue}T23:59:59.999`).toISOString(),
+    };
+  }
+
+  if (preset === "TODAY") {
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+    return { from: start.toISOString(), to: end.toISOString() };
+  }
+
+  if (preset === "THIS_WEEK") {
+    const day = start.getDay();
+    const offset = day === 0 ? 6 : day - 1;
+    start.setDate(start.getDate() - offset);
+    start.setHours(0, 0, 0, 0);
+    end.setTime(start.getTime());
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return { from: start.toISOString(), to: end.toISOString() };
+  }
+
+  start.setDate(1);
+  start.setHours(0, 0, 0, 0);
+  end.setMonth(start.getMonth() + 1, 0);
+  end.setHours(23, 59, 59, 999);
+  return { from: start.toISOString(), to: end.toISOString() };
+};
+
+const getPaginationItems = (page: number, totalPages: number) => {
+  if (totalPages <= 1) return [1];
+  const pages = new Set<number>([1, totalPages, page, page - 1, page + 1]);
+
+  return [...pages]
+    .filter((value) => value >= 1 && value <= totalPages)
+    .sort((a, b) => a - b);
+};
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<PaginationData>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  });
+  const [selectedPreset, setSelectedPreset] = useState<DateFilterPreset>("TODAY");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [showCompleted, setShowCompleted] = useState(false);
 
   // Users
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
@@ -84,16 +163,36 @@ export default function AdminOrdersPage() {
     setOpenDrawer(true);
   };
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async (targetPage: number = pagination.page) => {
+    setLoading(true);
     try {
-      const res = await apiFetchAuth("/api/admin/orders");
-      setOrders(res);
+      const params = new URLSearchParams();
+      params.set("page", String(targetPage));
+      params.set("limit", String(pagination.limit));
+      params.set("includeCompleted", showCompleted ? "true" : "false");
+
+      const range = getFilterRange(selectedPreset, selectedDate);
+      if (range) {
+        params.set("from", range.from);
+        params.set("to", range.to);
+      }
+
+      const res = await apiFetchAuth(`/api/admin/orders?${params.toString()}`);
+      setOrders(res.orders || []);
+      setPagination(
+        res.pagination || {
+          page: 1,
+          limit: pagination.limit,
+          total: 0,
+          totalPages: 1,
+        },
+      );
     } catch (err) {
       console.error("Load orders failed", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.limit, pagination.page, selectedDate, selectedPreset, showCompleted]);
 
   const loadShipperUsers = async () => {
     try {
@@ -108,9 +207,28 @@ export default function AdminOrdersPage() {
   };
 
   useEffect(() => {
-    loadOrders();
+    const rawFilter = window.localStorage.getItem(FILTER_STORAGE_KEY);
+    if (rawFilter) {
+      try {
+        const parsed = JSON.parse(rawFilter);
+        if (parsed?.selectedPreset) setSelectedPreset(parsed.selectedPreset);
+        if (typeof parsed?.selectedDate === "string") setSelectedDate(parsed.selectedDate);
+        if (typeof parsed?.showCompleted === "boolean") setShowCompleted(parsed.showCompleted);
+      } catch (error) {
+        console.error("Invalid filter state", error);
+      }
+    }
+
     loadShipperUsers();
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      FILTER_STORAGE_KEY,
+      JSON.stringify({ selectedPreset, selectedDate, showCompleted }),
+    );
+    loadOrders(1);
+  }, [loadOrders, selectedDate, selectedPreset, showCompleted]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -195,10 +313,58 @@ export default function AdminOrdersPage() {
     setPendingDeliveryOrderId(null);
   };
 
+  const goToPage = (nextPage: number) => {
+    if (nextPage < 1 || nextPage > pagination.totalPages || nextPage === pagination.page) {
+      return;
+    }
+    loadOrders(nextPage);
+  };
+
+  const pageItems = getPaginationItems(pagination.page, pagination.totalPages);
+
   if (loading) return <div className="p-6">Đang tải đơn hàng...</div>;
 
   return (
     <div className="p-[2vw] md:p-[4vw]">
+      <div className="mb-4 rounded-xl border p-3 md:p-4 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant={selectedPreset === "TODAY" ? "default" : "outline"}
+            onClick={() => setSelectedPreset("TODAY")}
+          >
+            Hôm nay
+          </Button>
+          <Button
+            size="sm"
+            variant={selectedPreset === "THIS_WEEK" ? "default" : "outline"}
+            onClick={() => setSelectedPreset("THIS_WEEK")}
+          >
+            Tuần này
+          </Button>
+          <Button
+            size="sm"
+            variant={selectedPreset === "THIS_MONTH" ? "default" : "outline"}
+            onClick={() => setSelectedPreset("THIS_MONTH")}
+          >
+            Tháng này
+          </Button>
+          <Input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => {
+              setSelectedDate(e.target.value);
+              setSelectedPreset("DATE");
+            }}
+            className="w-[180px]"
+          />
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <Switch checked={showCompleted} onCheckedChange={setShowCompleted} />
+          <span>Hiển thị đơn đã hoàn thành</span>
+        </div>
+      </div>
+
       {/* ================= MOBILE ================= */}
       <div className="md:hidden flex flex-col gap-[3vw]">
         {orders.map((order) => (
@@ -223,6 +389,67 @@ export default function AdminOrdersPage() {
           updatingId={updatingId}
         />
       </div>
+
+      <div className="mt-4 space-y-2">
+        <div className="text-sm text-muted-foreground text-center">
+          Tổng {pagination.total} đơn hàng
+        </div>
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  goToPage(pagination.page - 1);
+                }}
+                className={pagination.page <= 1 ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+
+            {pageItems.map((page, index) => {
+              const previous = pageItems[index - 1];
+              return (
+                <div key={`item-${page}`} className="flex items-center">
+                  {previous && page - previous > 1 && (
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )}
+                  <PaginationItem>
+                    <PaginationLink
+                      href="#"
+                      isActive={pagination.page === page}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        goToPage(page);
+                      }}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                </div>
+              );
+            })}
+
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  goToPage(pagination.page + 1);
+                }}
+                className={
+                  pagination.page >= pagination.totalPages
+                    ? "pointer-events-none opacity-50"
+                    : ""
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
+
       {selectedOrder && (
         <EditUserDrawer
           open={openDrawer}
