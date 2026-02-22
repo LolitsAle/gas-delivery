@@ -4,14 +4,12 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/helper/helpers";
-import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   ChevronDown,
   ChevronUp,
@@ -26,7 +24,6 @@ import {
 type OrderStatus =
   | "PENDING"
   | "CONFIRMED"
-  | "WAITING_CUSTOMER_CONFIRM"
   | "READY"
   | "DELIVERING"
   | "COMPLETED"
@@ -48,7 +45,6 @@ export default function AdminOrderCard({
   isUpdating: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [nextStatus, setNextStatus] = useState<string>("");
 
   const statusMap: Record<string, { icon: React.ReactNode; style: string }> = {
     PENDING: {
@@ -111,13 +107,34 @@ export default function AdminOrderCard({
           </div>
 
           <div className="flex items-center gap-2">
-            <Badge
-              className={`px-2 py-2 rounded-md border ${
-                status?.style || "bg-gray-100 text-gray-600 border-gray-200"
-              }`}
-            >
-              {status?.icon}
-            </Badge>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  disabled={transitions.length === 0 || isUpdating}
+                  className="disabled:opacity-60"
+                >
+                  <Badge
+                    className={`px-2 py-2 rounded-md border cursor-pointer ${
+                      status?.style || "bg-gray-100 text-gray-600 border-gray-200"
+                    }`}
+                  >
+                    {status?.icon}
+                  </Badge>
+                </button>
+              </DropdownMenuTrigger>
+              {transitions.length > 0 && (
+                <DropdownMenuContent align="end" sideOffset={8}>
+                  {transitions.map((status) => (
+                    <DropdownMenuItem
+                      key={status}
+                      onClick={() => onChangeStatus(order, status as OrderStatus)}
+                    >
+                      {status}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              )}
+            </DropdownMenu>
 
             <a
               href={`tel:${order?.user?.phoneNumber}`}
@@ -132,30 +149,6 @@ export default function AdminOrderCard({
           <div className="text-[3vw] text-white/80 bg-blue-600 w-fit rounded-md px-2">
             Ngày đặt: {formatDateTime(order.createdAt)}
           </div>
-
-          {transitions.length > 0 && (
-            <div className="space-y-2 bg-white border border-gray-200 p-2 rounded-md">
-              <Select value={nextStatus} onValueChange={setNextStatus}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn trạng thái mới" />
-                </SelectTrigger>
-                <SelectContent>
-                  {transitions.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                className="w-full"
-                disabled={!nextStatus || isUpdating}
-                onClick={() => onChangeStatus(order, nextStatus as OrderStatus)}
-              >
-                {isUpdating ? "Đang đổi trạng thái..." : "Cập nhật trạng thái"}
-              </Button>
-            </div>
-          )}
 
           {order.stoveSnapshot?.quantity > 0 && (
             <div className="bg-gas-green-100 p-[3vw] rounded-md text-sm font-semibold flex justify-between">

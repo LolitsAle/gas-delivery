@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
+import { useCurrentUser } from "@/components/context/CurrentUserContext";
 import AdminOrderCard from "./AdminOrderCard";
 import AdminOrderTable from "./AdminOrderTable";
 import EditUserDrawer from "./EditUserDrawer";
@@ -25,7 +26,6 @@ import {
 type OrderStatus =
   | "PENDING"
   | "CONFIRMED"
-  | "WAITING_CUSTOMER_CONFIRM"
   | "READY"
   | "DELIVERING"
   | "COMPLETED"
@@ -48,7 +48,6 @@ type AssigneeUser = {
 const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ["CONFIRMED", "CANCELLED"],
   CONFIRMED: ["READY", "CANCELLED"],
-  WAITING_CUSTOMER_CONFIRM: ["READY", "CANCELLED"],
   READY: ["DELIVERING", "CANCELLED"],
   DELIVERING: ["COMPLETED"],
   COMPLETED: [],
@@ -70,11 +69,7 @@ export default function AdminOrdersPage() {
   const [selectedShipperId, setSelectedShipperId] = useState<string>("");
   const [assigningType, setAssigningType] = useState<"ME" | "PICK">("ME");
   const [pendingDeliveryOrderId, setPendingDeliveryOrderId] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<{
-    id: string;
-    name?: string | null;
-    phoneNumber: string;
-  } | null>(null);
+  const { currentUser } = useCurrentUser();
 
   const handleViewUser = (order: any) => {
     setSelectedOrder(order);
@@ -92,15 +87,6 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const loadCurrentUser = async () => {
-    try {
-      const me = await apiFetchAuth("/api/auth/me");
-      setCurrentUser(me?.user || null);
-    } catch (err) {
-      console.error("Load current user failed", err);
-    }
-  };
-
   const loadShipperUsers = async () => {
     try {
       const res = await apiFetchAuth("/api/admin/users?limit=50");
@@ -115,7 +101,6 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     loadOrders();
-    loadCurrentUser();
     loadShipperUsers();
   }, []);
 

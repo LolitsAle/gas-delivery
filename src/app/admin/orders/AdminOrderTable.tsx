@@ -14,7 +14,6 @@ import {
 type OrderStatus =
   | "PENDING"
   | "CONFIRMED"
-  | "WAITING_CUSTOMER_CONFIRM"
   | "READY"
   | "DELIVERING"
   | "COMPLETED"
