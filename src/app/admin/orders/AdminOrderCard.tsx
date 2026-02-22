@@ -46,35 +46,44 @@ export default function AdminOrderCard({
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  const statusMap: Record<string, { icon: React.ReactNode; style: string }> = {
+  const statusMeta: Record<
+    OrderStatus,
+    { label: string; icon: React.ReactNode; style: string }
+  > = {
     PENDING: {
+      label: "Chờ xác nhận",
       icon: <Clock size={14} />,
       style: "bg-yellow-100 text-yellow-700 border-yellow-200",
     },
     CONFIRMED: {
+      label: "Đã xác nhận",
       icon: <CheckCircle2 size={14} />,
       style: "bg-blue-100 text-blue-700 border-blue-200",
     },
     READY: {
+      label: "Sẵn sàng giao",
       icon: <CheckCircle2 size={14} />,
       style: "bg-indigo-100 text-indigo-700 border-indigo-200",
     },
     DELIVERING: {
+      label: "Đang giao",
       icon: <Truck size={14} />,
       style: "bg-purple-100 text-purple-700 border-purple-200",
     },
     COMPLETED: {
+      label: "Hoàn tất",
       icon: <CheckCircle2 size={14} />,
       style: "bg-green-100 text-green-700 border-green-200",
     },
     CANCELLED: {
+      label: "Đã huỷ",
       icon: <XCircle size={14} />,
       style: "bg-red-100 text-red-700 border-red-200",
     },
   };
 
-  const status = statusMap[order.status];
-
+  const currentStatus = order.status as OrderStatus;
+  const status = statusMeta[currentStatus];
   const isBusiness = order?.user?.tags?.includes("BUSINESS");
   const transitions = getAvailableTransitions(order.status);
 
@@ -115,10 +124,14 @@ export default function AdminOrderCard({
                 >
                   <Badge
                     className={`px-2 py-2 rounded-md border cursor-pointer ${
-                      status?.style || "bg-gray-100 text-gray-600 border-gray-200"
+                      status?.style ||
+                      "bg-gray-100 text-gray-600 border-gray-200"
                     }`}
                   >
-                    {status?.icon}
+                    <div className="flex items-center gap-1">
+                      {status?.icon}
+                      <span>{status?.label}</span>
+                    </div>
                   </Badge>
                 </button>
               </DropdownMenuTrigger>
@@ -127,9 +140,11 @@ export default function AdminOrderCard({
                   {transitions.map((status) => (
                     <DropdownMenuItem
                       key={status}
-                      onClick={() => onChangeStatus(order, status as OrderStatus)}
+                      onClick={() =>
+                        onChangeStatus(order, status as OrderStatus)
+                      }
                     >
-                      {status}
+                      {statusMeta[status].label}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>

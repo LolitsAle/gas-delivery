@@ -22,6 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  dismissToast,
+  showToastError,
+  showToastLoading,
+  showToastSuccess,
+} from "@/lib/helper/toast";
 
 type OrderStatus =
   | "PENDING"
@@ -68,7 +74,9 @@ export default function AdminOrdersPage() {
   const [shipperUsers, setShipperUsers] = useState<AssigneeUser[]>([]);
   const [selectedShipperId, setSelectedShipperId] = useState<string>("");
   const [assigningType, setAssigningType] = useState<"ME" | "PICK">("ME");
-  const [pendingDeliveryOrderId, setPendingDeliveryOrderId] = useState<string | null>(null);
+  const [pendingDeliveryOrderId, setPendingDeliveryOrderId] = useState<
+    string | null
+  >(null);
   const { currentUser } = useCurrentUser();
 
   const handleViewUser = (order: any) => {
@@ -133,19 +141,23 @@ export default function AdminOrdersPage() {
     shipperId?: string,
   ) => {
     setUpdatingId(orderId);
+    const loading = showToastLoading("Đang cập nhật thông tin đơn hàng...");
     try {
       await apiFetchAuth(`/api/admin/orders/${orderId}/status`, {
         method: "PATCH",
-        body: JSON.stringify({
+        body: {
           status: nextStatus,
           shipperId,
-        }),
+        },
       });
 
       await loadOrders();
+      dismissToast(loading);
+      showToastSuccess("Cập nhật đơn hàng thành công!");
     } catch (err) {
       console.error("Update order status failed", err);
-      alert("Cập nhật trạng thái thất bại");
+      dismissToast(loading);
+      showToastError("Cập nhật đơn hàng thất bại");
     } finally {
       setUpdatingId(null);
     }
@@ -170,7 +182,8 @@ export default function AdminOrdersPage() {
   const handleConfirmAssignShipper = async () => {
     if (!pendingDeliveryOrderId) return;
 
-    const shipperId = assigningType === "ME" ? currentUser?.id : selectedShipperId;
+    const shipperId =
+      assigningType === "ME" ? currentUser?.id : selectedShipperId;
 
     if (!shipperId) {
       alert("Vui lòng chọn shipper");
@@ -245,7 +258,10 @@ export default function AdminOrdersPage() {
             </Button>
 
             {assigningType === "PICK" && (
-              <Select value={selectedShipperId} onValueChange={setSelectedShipperId}>
+              <Select
+                value={selectedShipperId}
+                onValueChange={setSelectedShipperId}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Chọn shipper" />
                 </SelectTrigger>
