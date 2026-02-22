@@ -10,7 +10,6 @@ type Params = {
 const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ["CONFIRMED", "CANCELLED"],
   CONFIRMED: ["READY", "CANCELLED"],
-  WAITING_CUSTOMER_CONFIRM: ["READY", "CANCELLED"],
   READY: ["DELIVERING", "CANCELLED"],
   DELIVERING: ["COMPLETED"],
   COMPLETED: [],
