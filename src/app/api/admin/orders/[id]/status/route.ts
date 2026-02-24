@@ -10,7 +10,7 @@ type Params = {
 const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ["CONFIRMED", "CANCELLED"],
   CONFIRMED: ["DELIVERING", "CANCELLED"],
-  DELIVERING: ["UNPAID"],
+  DELIVERING: ["UNPAID", "COMPLETED"],
   UNPAID: ["COMPLETED", "CANCELLED"],
   COMPLETED: [],
   CANCELLED: [],
@@ -67,7 +67,7 @@ export const PATCH = withAuth(["ADMIN"], async (req, { params }) => {
         updateData.confirmedAt = new Date();
       }
 
-      if (status === OrderStatus.UNPAID) {
+      if (status === OrderStatus.UNPAID || status === OrderStatus.COMPLETED) {
         updateData.deliveredAt = new Date();
       }
 

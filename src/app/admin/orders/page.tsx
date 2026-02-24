@@ -80,7 +80,7 @@ type AssigneeUser = {
 const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ["CONFIRMED", "CANCELLED"],
   CONFIRMED: ["DELIVERING", "CANCELLED"],
-  DELIVERING: ["UNPAID"],
+  DELIVERING: ["UNPAID", "COMPLETED"],
   UNPAID: ["COMPLETED", "CANCELLED"],
   COMPLETED: [],
   CANCELLED: [],
