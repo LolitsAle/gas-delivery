@@ -176,6 +176,8 @@ export default function AdminOrdersPage() {
     string | null
   >(null);
 
+  const [hydrated, setHydrated] = useState(false);
+
   const { currentUser } = useCurrentUser();
 
   const handleViewUser = (order: any) => {
@@ -184,7 +186,7 @@ export default function AdminOrdersPage() {
   };
 
   const loadOrders = useCallback(
-    async (targetPage: number = pagination.page) => {
+    async (targetPage: number = 1) => {
       setLoading(true);
       try {
         const params = new URLSearchParams();
@@ -201,10 +203,11 @@ export default function AdminOrdersPage() {
         const res = await apiFetchAuth(
           `/api/admin/orders?${params.toString()}`,
         );
+
         setOrders(res.orders || []);
         setPagination(
           res.pagination || {
-            page: 1,
+            page: targetPage,
             limit: pagination.limit,
             total: 0,
             totalPages: 1,
@@ -216,13 +219,7 @@ export default function AdminOrdersPage() {
         setLoading(false);
       }
     },
-    [
-      pagination.limit,
-      pagination.page,
-      selectedDate,
-      selectedPreset,
-      showCompleted,
-    ],
+    [pagination.limit, selectedDate, selectedPreset, showCompleted],
   );
 
   const loadShipperUsers = async () => {
@@ -238,33 +235,48 @@ export default function AdminOrdersPage() {
   };
 
   useEffect(() => {
-    const rawFilter = window.localStorage.getItem(FILTER_STORAGE_KEY);
-    if (rawFilter) {
-      try {
-        const parsed = JSON.parse(rawFilter);
-        if (parsed?.selectedPreset) setSelectedPreset(parsed.selectedPreset);
-        if (typeof parsed?.selectedDate === "string")
-          setSelectedDate(parsed.selectedDate);
-        if (typeof parsed?.showCompleted === "boolean")
-          setShowCompleted(parsed.showCompleted);
-
-        // UI nicety: nếu đang DATE thì auto mở advanced
-        if (parsed?.selectedPreset === "DATE") setOpenAdvanced(true);
-      } catch (error) {
-        console.error("Invalid filter state", error);
-      }
-    }
-
+    // 1) load shipper users
     loadShipperUsers();
+
+    // 2) hydrate filters from localStorage
+    try {
+      const raw = window.localStorage.getItem(FILTER_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+
+        const preset = (parsed?.selectedPreset ?? "TODAY") as DateFilterPreset;
+        const date =
+          typeof parsed?.selectedDate === "string" ? parsed.selectedDate : "";
+        const completed =
+          typeof parsed?.showCompleted === "boolean"
+            ? parsed.showCompleted
+            : false;
+
+        setSelectedPreset(preset);
+        setSelectedDate(date);
+        setShowCompleted(completed);
+
+        if (preset === "DATE") setOpenAdvanced(true);
+      }
+    } catch (error) {
+      console.error("Invalid filter state", error);
+    } finally {
+      setHydrated(true);
+    }
   }, []);
 
   useEffect(() => {
+    if (!hydrated) return;
     window.localStorage.setItem(
       FILTER_STORAGE_KEY,
       JSON.stringify({ selectedPreset, selectedDate, showCompleted }),
     );
+  }, [hydrated, selectedPreset, selectedDate, showCompleted]);
+
+  useEffect(() => {
+    if (!hydrated) return;
     loadOrders(1);
-  }, [loadOrders, selectedDate, selectedPreset, showCompleted]);
+  }, [hydrated, loadOrders, selectedPreset, selectedDate, showCompleted]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -352,6 +364,7 @@ export default function AdminOrdersPage() {
   };
 
   const goToPage = (nextPage: number) => {
+    if (loading) return;
     if (
       nextPage < 1 ||
       nextPage > pagination.totalPages ||
@@ -361,7 +374,6 @@ export default function AdminOrdersPage() {
     }
     loadOrders(nextPage);
   };
-
   const pageItems = getPaginationItems(pagination.page, pagination.totalPages);
 
   // Khi đổi preset bằng Select:
@@ -465,36 +477,43 @@ export default function AdminOrdersPage() {
         </Collapsible>
       </div>
 
-      {loading && <div>Đang tải danh sách đơn hàng</div>}
-
-      {!loading && (
-        <>
-          {/* ================= MOBILE ================= */}
-          <div className="md:hidden flex flex-col gap-[3vw]">
-            {orders.map((order) => (
-              <AdminOrderCard
-                key={order.id}
-                order={order}
-                onViewUser={handleViewUser}
-                onChangeStatus={handleChangeStatus}
-                getAvailableTransitions={getAvailableTransitions}
-                isUpdating={updatingId === order.id}
-              />
-            ))}
-          </div>
-
-          {/* ================= DESKTOP ================= */}
-          <div className="hidden md:block">
-            <AdminOrderTable
-              orders={orders}
-              getStatusColor={getStatusColor}
+      {/* ORDERS WRAPPER */}
+      <div className="relative">
+        {/* ================= MOBILE ================= */}
+        <div className="md:hidden flex flex-col gap-[3vw]">
+          {orders.map((order) => (
+            <AdminOrderCard
+              key={order.id}
+              order={order}
+              onViewUser={handleViewUser}
               onChangeStatus={handleChangeStatus}
               getAvailableTransitions={getAvailableTransitions}
-              updatingId={updatingId}
+              isUpdating={updatingId === order.id}
             />
+          ))}
+        </div>
+
+        {/* ================= DESKTOP ================= */}
+        <div className="hidden md:block">
+          <AdminOrderTable
+            orders={orders}
+            getStatusColor={getStatusColor}
+            onChangeStatus={handleChangeStatus}
+            getAvailableTransitions={getAvailableTransitions}
+            updatingId={updatingId}
+          />
+        </div>
+
+        {/* LOADING OVERLAY (cover orders area only) */}
+        {loading && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-white/70 backdrop-blur-sm">
+            <div className="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 shadow-sm">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-800" />
+              <span className="text-sm font-medium">Đang tải…</span>
+            </div>
           </div>
-        </>
-      )}
+        )}
+      </div>
 
       <div className="mt-4 space-y-2">
         <div className="text-sm text-muted-foreground text-center">

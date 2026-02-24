@@ -5,11 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/helper/helpers";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ChevronDown,
   ChevronUp,
@@ -115,41 +116,35 @@ export default function AdminOrderCard({
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  disabled={transitions.length === 0 || isUpdating}
-                  className="disabled:opacity-60"
+          <div className="flex items-center gap-[2vw]">
+            <Select
+              value={currentStatus}
+              onValueChange={(v) => onChangeStatus(order, v as OrderStatus)}
+              disabled={transitions.length === 0 || isUpdating}
+            >
+              <SelectTrigger className="h-auto w-auto inline-flex p-0 pr-0 border-0 bg-transparent shadow-none focus:ring-0 focus:ring-offset-0 [&>svg]:hidden">
+                <Badge
+                  className={`px-2 py-2 rounded-md border ${
+                    status?.style || "bg-gray-100 text-gray-600 border-gray-200"
+                  } ${transitions.length === 0 || isUpdating ? "opacity-60" : "cursor-pointer"}`}
                 >
-                  <Badge
-                    className={`px-2 py-2 rounded-md border cursor-pointer ${
-                      status?.style ||
-                      "bg-gray-100 text-gray-600 border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-center gap-1">
-                      {status?.icon}
+                  <div className="flex items-center gap-1">
+                    {status?.icon}
+                    <SelectValue asChild>
                       <span>{status?.label}</span>
-                    </div>
-                  </Badge>
-                </button>
-              </DropdownMenuTrigger>
-              {transitions.length > 0 && (
-                <DropdownMenuContent align="end" sideOffset={8}>
-                  {transitions.map((status) => (
-                    <DropdownMenuItem
-                      key={status}
-                      onClick={() =>
-                        onChangeStatus(order, status as OrderStatus)
-                      }
-                    >
-                      {statusMeta[status].label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              )}
-            </DropdownMenu>
+                    </SelectValue>
+                  </div>
+                </Badge>
+              </SelectTrigger>
+
+              <SelectContent align="end">
+                {transitions.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {statusMeta[s].label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             <a
               href={`tel:${order?.user?.phoneNumber}`}
@@ -161,8 +156,25 @@ export default function AdminOrderCard({
         </div>
 
         <div className="flex flex-col gap-[2vw] p-[1vw]">
-          <div className="text-[3vw] text-white/80 bg-blue-500 w-fit rounded-md px-2">
-            Ngày đặt: {formatDateTime(order.createdAt)}
+          <div className="flex items-center gap-[2vw] flex-wrap">
+            <div className="text-[3vw] text-white/90 bg-blue-500 rounded-md px-2 py-[1vw]">
+              Ngày đặt: {formatDateTime(order.createdAt)}
+            </div>
+
+            {(order?.shipper || order?.shipperId) && (
+              <div className="text-[3vw] text-white/90 bg-purple-600 rounded-md px-2 py-[1vw] inline-flex items-center gap-1 max-w-[55vw]">
+                <Truck size={14} className="shrink-0" />
+                <span className="truncate">
+                  Shipper:{" "}
+                  {order?.shipper
+                    ? order.shipper.name ||
+                      order.shipper.nickname ||
+                      order.shipper.phoneNumber ||
+                      "Không tên"
+                    : order.shipperId}
+                </span>
+              </div>
+            )}
           </div>
 
           {order.stoveSnapshot?.quantity > 0 && (
