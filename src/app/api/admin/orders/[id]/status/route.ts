@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
 import { OrderStatus } from "@prisma/client";
+import { emitOrderSocketEvent } from "@/lib/socket/orderEvents";
 
 type Params = {
   params: { id: string };
@@ -137,6 +138,11 @@ export const PATCH = withAuth(["ADMIN"], async (req, { params }) => {
       }
 
       return updatedOrder;
+    });
+
+    emitOrderSocketEvent({
+      type: "ORDER_UPDATED",
+      orderId: result.id,
     });
 
     return NextResponse.json(result);
