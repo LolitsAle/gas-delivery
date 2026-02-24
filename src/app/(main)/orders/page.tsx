@@ -23,6 +23,10 @@ const STATUS_STYLE_MAP: Record<string, { text: string; className: string }> = {
     text: "Đang giao",
     className: "bg-purple-100 text-purple-700",
   },
+  UNPAID: {
+    text: "Chưa thanh toán",
+    className: "bg-orange-100 text-orange-700",
+  },
   COMPLETED: {
     text: "Hoàn thành",
     className: "bg-green-100 text-green-700",
