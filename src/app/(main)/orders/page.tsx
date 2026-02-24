@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import { useCurrentUser } from "@/components/context/CurrentUserContext";
 import OrdersHeader from "./OrdersHeader";
 import OrdersContent from "./OrdersContent";
+import ConfirmModal from "@/components/main/ConfirmModal";
+import { showToastError, showToastSuccess } from "@/lib/helper/toast";
 
 type Order = any;
 
@@ -40,6 +40,8 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
 
   const [showFilter, setShowFilter] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -96,6 +98,45 @@ export default function OrdersPage() {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleStatusClick = (order: Order) => {
+    setSelectedOrder(order);
+  };
+
+  const handleCancelOrder = async () => {
+    if (!selectedOrder) return;
+
+    if (selectedOrder.status !== "PENDING") {
+      showToastError("Không thể hủy đơn", {
+        description: "Đơn đã được xử lý. Vui lòng gọi nhân viên để được hỗ trợ.",
+      });
+      setSelectedOrder(null);
+      return;
+    }
+
+    setCancelLoading(true);
+    try {
+      await apiFetchAuth(`/api/user/me/orders/${selectedOrder.id}/status`, {
+        method: "PATCH",
+        body: {
+          status: "CANCELLED",
+          cancelledReason: "Cancelled by customer",
+        },
+      });
+
+      showToastSuccess("Đã hủy đơn thành công");
+      setSelectedOrder(null);
+      fetchOrders();
+    } catch (error: any) {
+      showToastError("Hủy đơn thất bại", {
+        description: error?.message || "Vui lòng thử lại sau",
+      });
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  const isPendingOrder = selectedOrder?.status === "PENDING";
+
   return (
     <div className="h-screen flex flex-col bg-gas-green-50">
       {/* HEADER */}
@@ -128,8 +169,26 @@ export default function OrdersPage() {
           orders={orders}
           loading={loading}
           STATUS_STYLE_MAP={STATUS_STYLE_MAP}
+          onStatusClick={handleStatusClick}
         />
       </div>
+
+      <ConfirmModal
+        open={!!selectedOrder}
+        title={isPendingOrder ? "Xác nhận hủy đơn" : "Đơn không thể hủy"}
+        description={
+          isPendingOrder
+            ? "Bạn có chắc muốn hủy đơn này không?"
+            : "Đơn đã qua trạng thái chờ. Vui lòng gọi điện cho nhân viên để được hỗ trợ hủy đơn."
+        }
+        confirmText={isPendingOrder ? "Hủy đơn" : "Đã hiểu"}
+        cancelText="Đóng"
+        loading={cancelLoading}
+        onCancel={() => setSelectedOrder(null)}
+        onConfirm={
+          isPendingOrder ? handleCancelOrder : () => setSelectedOrder(null)
+        }
+      />
     </div>
   );
 }

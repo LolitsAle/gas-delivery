@@ -9,12 +9,14 @@ type OrdersContentProps = {
   orders: any[];
   loading: boolean;
   STATUS_STYLE_MAP: Record<string, { text: string; className: string }>;
+  onStatusClick: (order: any) => void;
 };
 
 export default function OrdersContent({
   orders,
   loading,
   STATUS_STYLE_MAP,
+  onStatusClick,
 }: OrdersContentProps) {
   if (loading) {
     return (
@@ -52,6 +54,7 @@ export default function OrdersContent({
           key={order.id}
           order={order}
           STATUS_STYLE_MAP={STATUS_STYLE_MAP}
+          onStatusClick={onStatusClick}
         />
       ))}
     </div>
