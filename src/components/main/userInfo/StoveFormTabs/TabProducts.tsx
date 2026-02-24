@@ -84,7 +84,7 @@ export default function TabProducts({
         <div className="space-y-2 min-w-0">
           <Label>Khuyến mãi mặc định</Label>
           <Select
-            value={form.defaultPromoChoice ?? ""}
+            value={form.defaultPromoChoice ?? "BONUS_POINT"}
             onValueChange={(v) =>
               setForm({
                 ...form,

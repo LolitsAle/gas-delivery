@@ -88,9 +88,9 @@ export default function AdminOrderCard({
   const transitions = getAvailableTransitions(order.status);
 
   return (
-    <Card className="rounded-md shadow-sm border border-gas-green-700">
+    <Card className="rounded-md shadow-sm border border-gray-500">
       <CardContent className="p-0">
-        <div className="flex justify-between items-center p-[3vw] bg-gas-green-600 rounded-t-md">
+        <div className="flex justify-between items-center p-[3vw] bg-gray-500 rounded-t-md">
           <div className="flex items-center gap-2 min-w-0">
             <div className="truncate max-w-[45vw]">
               <div
@@ -160,13 +160,13 @@ export default function AdminOrderCard({
           </div>
         </div>
 
-        <div className="flex flex-col gap-[2vw] p-[3vw]">
-          <div className="text-[3vw] text-white/80 bg-blue-600 w-fit rounded-md px-2">
+        <div className="flex flex-col gap-[2vw] p-[1vw]">
+          <div className="text-[3vw] text-white/80 bg-blue-500 w-fit rounded-md px-2">
             Ngày đặt: {formatDateTime(order.createdAt)}
           </div>
 
           {order.stoveSnapshot?.quantity > 0 && (
-            <div className="bg-gas-green-100 p-[3vw] rounded-md text-sm font-semibold flex justify-between">
+            <div className="bg-gray-200 p-[3vw] rounded-md text-sm font-semibold flex justify-between">
               <div>
                 {order.stoveSnapshot.productName} x
                 {order.stoveSnapshot.quantity}
@@ -181,7 +181,7 @@ export default function AdminOrderCard({
           )}
 
           {order.items?.length > 0 && (
-            <div className="bg-white border border-gas-green-600 p-[3vw] rounded-md space-y-2 text-sm">
+            <div className="bg-white border border-gray-600 p-[3vw] rounded-md space-y-2 text-sm">
               {order.items.map((item: any) => (
                 <div
                   key={item.id}
@@ -216,7 +216,7 @@ export default function AdminOrderCard({
           )}
         </div>
 
-        <div className="border-t border-gas-green-700 py-3 px-[4vw] text-sm relative">
+        <div className="border-t border-gray-700 py-3 px-[4vw] text-sm relative">
           <div className="flex justify-between font-semibold">
             <div>Tổng tiền</div>
             <div>{order.totalPrice.toLocaleString()}đ</div>
@@ -241,7 +241,7 @@ export default function AdminOrderCard({
 
           <button
             onClick={() => setExpanded(!expanded)}
-            className="absolute bottom-0 left-1/2 translate-y-1/2 -translate-x-1/2 w-[8vw] h-[4vw] bg-gas-green-700 flex items-center justify-center text-white rounded-full shadow"
+            className="absolute bottom-0 left-1/2 translate-y-1/2 -translate-x-1/2 w-[8vw] h-[4vw] bg-gray-700 flex items-center justify-center text-white rounded-full shadow"
           >
             {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>

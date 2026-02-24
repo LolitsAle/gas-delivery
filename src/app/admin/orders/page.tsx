@@ -15,6 +15,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -23,13 +25,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  dismissToast,
-  showToastError,
-  showToastLoading,
-  showToastSuccess,
-} from "@/lib/helper/toast";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Pagination,
   PaginationContent,
@@ -39,6 +38,13 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  dismissToast,
+  showToastError,
+  showToastLoading,
+  showToastSuccess,
+} from "@/lib/helper/toast";
+import { CalendarDays, ChevronDown } from "lucide-react";
 
 type OrderStatus =
   | "PENDING"
@@ -114,6 +120,7 @@ const getFilterRange = (preset: DateFilterPreset, dateValue: string) => {
     return { from: start.toISOString(), to: end.toISOString() };
   }
 
+  // THIS_MONTH
   start.setDate(1);
   start.setHours(0, 0, 0, 0);
   end.setMonth(start.getMonth() + 1, 0);
@@ -130,6 +137,13 @@ const getPaginationItems = (page: number, totalPages: number) => {
     .sort((a, b) => a - b);
 };
 
+const presetLabel: Record<DateFilterPreset, string> = {
+  TODAY: "Hôm nay",
+  THIS_WEEK: "Tuần này",
+  THIS_MONTH: "Tháng này",
+  DATE: "Ngày cụ thể",
+};
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,9 +154,14 @@ export default function AdminOrdersPage() {
     total: 0,
     totalPages: 1,
   });
-  const [selectedPreset, setSelectedPreset] = useState<DateFilterPreset>("TODAY");
+
+  const [selectedPreset, setSelectedPreset] =
+    useState<DateFilterPreset>("TODAY");
   const [selectedDate, setSelectedDate] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
+
+  // UI: expandable for date
+  const [openAdvanced, setOpenAdvanced] = useState(false);
 
   // Users
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
@@ -156,6 +175,7 @@ export default function AdminOrdersPage() {
   const [pendingDeliveryOrderId, setPendingDeliveryOrderId] = useState<
     string | null
   >(null);
+
   const { currentUser } = useCurrentUser();
 
   const handleViewUser = (order: any) => {
@@ -163,36 +183,47 @@ export default function AdminOrdersPage() {
     setOpenDrawer(true);
   };
 
-  const loadOrders = useCallback(async (targetPage: number = pagination.page) => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set("page", String(targetPage));
-      params.set("limit", String(pagination.limit));
-      params.set("includeCompleted", showCompleted ? "true" : "false");
+  const loadOrders = useCallback(
+    async (targetPage: number = pagination.page) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("page", String(targetPage));
+        params.set("limit", String(pagination.limit));
+        params.set("includeCompleted", showCompleted ? "true" : "false");
 
-      const range = getFilterRange(selectedPreset, selectedDate);
-      if (range) {
-        params.set("from", range.from);
-        params.set("to", range.to);
+        const range = getFilterRange(selectedPreset, selectedDate);
+        if (range) {
+          params.set("from", range.from);
+          params.set("to", range.to);
+        }
+
+        const res = await apiFetchAuth(
+          `/api/admin/orders?${params.toString()}`,
+        );
+        setOrders(res.orders || []);
+        setPagination(
+          res.pagination || {
+            page: 1,
+            limit: pagination.limit,
+            total: 0,
+            totalPages: 1,
+          },
+        );
+      } catch (err) {
+        console.error("Load orders failed", err);
+      } finally {
+        setLoading(false);
       }
-
-      const res = await apiFetchAuth(`/api/admin/orders?${params.toString()}`);
-      setOrders(res.orders || []);
-      setPagination(
-        res.pagination || {
-          page: 1,
-          limit: pagination.limit,
-          total: 0,
-          totalPages: 1,
-        },
-      );
-    } catch (err) {
-      console.error("Load orders failed", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.limit, pagination.page, selectedDate, selectedPreset, showCompleted]);
+    },
+    [
+      pagination.limit,
+      pagination.page,
+      selectedDate,
+      selectedPreset,
+      showCompleted,
+    ],
+  );
 
   const loadShipperUsers = async () => {
     try {
@@ -212,8 +243,13 @@ export default function AdminOrdersPage() {
       try {
         const parsed = JSON.parse(rawFilter);
         if (parsed?.selectedPreset) setSelectedPreset(parsed.selectedPreset);
-        if (typeof parsed?.selectedDate === "string") setSelectedDate(parsed.selectedDate);
-        if (typeof parsed?.showCompleted === "boolean") setShowCompleted(parsed.showCompleted);
+        if (typeof parsed?.selectedDate === "string")
+          setSelectedDate(parsed.selectedDate);
+        if (typeof parsed?.showCompleted === "boolean")
+          setShowCompleted(parsed.showCompleted);
+
+        // UI nicety: nếu đang DATE thì auto mở advanced
+        if (parsed?.selectedPreset === "DATE") setOpenAdvanced(true);
       } catch (error) {
         console.error("Invalid filter state", error);
       }
@@ -259,7 +295,9 @@ export default function AdminOrdersPage() {
     shipperId?: string,
   ) => {
     setUpdatingId(orderId);
-    const loading = showToastLoading("Đang cập nhật thông tin đơn hàng...");
+    const loadingToast = showToastLoading(
+      "Đang cập nhật thông tin đơn hàng...",
+    );
     try {
       await apiFetchAuth(`/api/admin/orders/${orderId}/status`, {
         method: "PATCH",
@@ -270,11 +308,11 @@ export default function AdminOrdersPage() {
       });
 
       await loadOrders();
-      dismissToast(loading);
+      dismissToast(loadingToast);
       showToastSuccess("Cập nhật đơn hàng thành công!");
     } catch (err) {
       console.error("Update order status failed", err);
-      dismissToast(loading);
+      dismissToast(loadingToast);
       showToastError("Cập nhật đơn hàng thất bại");
     } finally {
       setUpdatingId(null);
@@ -314,7 +352,11 @@ export default function AdminOrdersPage() {
   };
 
   const goToPage = (nextPage: number) => {
-    if (nextPage < 1 || nextPage > pagination.totalPages || nextPage === pagination.page) {
+    if (
+      nextPage < 1 ||
+      nextPage > pagination.totalPages ||
+      nextPage === pagination.page
+    ) {
       return;
     }
     loadOrders(nextPage);
@@ -322,73 +364,137 @@ export default function AdminOrdersPage() {
 
   const pageItems = getPaginationItems(pagination.page, pagination.totalPages);
 
-  if (loading) return <div className="p-6">Đang tải đơn hàng...</div>;
+  // Khi đổi preset bằng Select:
+  // - nếu không phải DATE thì clear date cho sạch state
+  // - nếu là DATE thì auto mở advanced để user thấy chọn ngày
+  const onChangePreset = (value: DateFilterPreset) => {
+    setSelectedPreset(value);
+
+    if (value !== "DATE") {
+      setSelectedDate("");
+      setOpenAdvanced(false);
+      return;
+    }
+
+    setOpenAdvanced(true);
+  };
 
   return (
     <div className="p-[2vw] md:p-[4vw]">
-      <div className="mb-4 rounded-xl border p-3 md:p-4 space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            variant={selectedPreset === "TODAY" ? "default" : "outline"}
-            onClick={() => setSelectedPreset("TODAY")}
-          >
-            Hôm nay
-          </Button>
-          <Button
-            size="sm"
-            variant={selectedPreset === "THIS_WEEK" ? "default" : "outline"}
-            onClick={() => setSelectedPreset("THIS_WEEK")}
-          >
-            Tuần này
-          </Button>
-          <Button
-            size="sm"
-            variant={selectedPreset === "THIS_MONTH" ? "default" : "outline"}
-            onClick={() => setSelectedPreset("THIS_MONTH")}
-          >
-            Tháng này
-          </Button>
-          <Input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => {
-              setSelectedDate(e.target.value);
-              setSelectedPreset("DATE");
-            }}
-            className="w-[180px]"
-          />
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <Switch checked={showCompleted} onCheckedChange={setShowCompleted} />
-          <span>Hiển thị đơn đã hoàn thành</span>
-        </div>
+      {/* FILTER */}
+      <div className="mb-4 rounded-xl border p-3 md:p-4">
+        <Collapsible open={openAdvanced} onOpenChange={setOpenAdvanced}>
+          {/* ROW 1 - All in one line */}
+          <div className="flex items-center gap-3">
+            {/* Preset Select */}
+            <Select value={selectedPreset} onValueChange={onChangePreset}>
+              <SelectTrigger className="h-9 w-42.5 md:w-50 font-medium">
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 opacity-80" />
+                  <SelectValue placeholder="Thời gian" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="TODAY">{presetLabel.TODAY}</SelectItem>
+                <SelectItem value="THIS_WEEK">
+                  {presetLabel.THIS_WEEK}
+                </SelectItem>
+                <SelectItem value="THIS_MONTH">
+                  {presetLabel.THIS_MONTH}
+                </SelectItem>
+                <SelectItem value="DATE">{presetLabel.DATE}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Completed Switch */}
+            <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+              <Switch
+                trackClassName={showCompleted ? "bg-green-500" : "bg-red-500"}
+                thumbClassName="bg-white"
+                checked={showCompleted}
+                onCheckedChange={setShowCompleted}
+              />
+              <span className="text-black">
+                {!showCompleted ? "Ẩn" : "Hiện"} hoàn thành
+              </span>
+            </label>
+
+            {/* Chevron only toggle */}
+            <CollapsibleTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="ml-auto h-9 w-9 border-2 border-gray-400 rounded-md"
+              >
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    openAdvanced ? "rotate-180" : ""
+                  }`}
+                />
+              </Button>
+            </CollapsibleTrigger>
+          </div>
+
+          {/* ROW 2 - Expandable */}
+          <CollapsibleContent className="pt-3">
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  setSelectedPreset("DATE");
+                }}
+                disabled={selectedPreset !== "DATE"}
+                className="h-9 w-42.5 md:w-50"
+              />
+
+              {selectedPreset === "DATE" && selectedDate && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedDate("")}
+                >
+                  Xoá
+                </Button>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
-      {/* ================= MOBILE ================= */}
-      <div className="md:hidden flex flex-col gap-[3vw]">
-        {orders.map((order) => (
-          <AdminOrderCard
-            key={order.id}
-            order={order}
-            onViewUser={handleViewUser}
-            onChangeStatus={handleChangeStatus}
-            getAvailableTransitions={getAvailableTransitions}
-            isUpdating={updatingId === order.id}
-          />
-        ))}
-      </div>
+      {loading && <div>Đang tải danh sách đơn hàng</div>}
 
-      {/* ================= DESKTOP ================= */}
-      <div className="hidden md:block">
-        <AdminOrderTable
-          orders={orders}
-          getStatusColor={getStatusColor}
-          onChangeStatus={handleChangeStatus}
-          getAvailableTransitions={getAvailableTransitions}
-          updatingId={updatingId}
-        />
-      </div>
+      {!loading && (
+        <>
+          {/* ================= MOBILE ================= */}
+          <div className="md:hidden flex flex-col gap-[3vw]">
+            {orders.map((order) => (
+              <AdminOrderCard
+                key={order.id}
+                order={order}
+                onViewUser={handleViewUser}
+                onChangeStatus={handleChangeStatus}
+                getAvailableTransitions={getAvailableTransitions}
+                isUpdating={updatingId === order.id}
+              />
+            ))}
+          </div>
+
+          {/* ================= DESKTOP ================= */}
+          <div className="hidden md:block">
+            <AdminOrderTable
+              orders={orders}
+              getStatusColor={getStatusColor}
+              onChangeStatus={handleChangeStatus}
+              getAvailableTransitions={getAvailableTransitions}
+              updatingId={updatingId}
+            />
+          </div>
+        </>
+      )}
 
       <div className="mt-4 space-y-2">
         <div className="text-sm text-muted-foreground text-center">
@@ -403,7 +509,9 @@ export default function AdminOrdersPage() {
                   e.preventDefault();
                   goToPage(pagination.page - 1);
                 }}
-                className={pagination.page <= 1 ? "pointer-events-none opacity-50" : ""}
+                className={
+                  pagination.page <= 1 ? "pointer-events-none opacity-50" : ""
+                }
               />
             </PaginationItem>
 

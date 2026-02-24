@@ -178,10 +178,10 @@ export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
         </DrawerHeader>
 
         <div className="p-4">
-          <Tabs defaultValue="info" className="w-full">
+          <Tabs defaultValue="products" className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-[3vw] shadow">
-              <TabsTrigger value="info">Thông tin</TabsTrigger>
               <TabsTrigger value="products">Sản phẩm</TabsTrigger>
+              <TabsTrigger value="info">Thông tin</TabsTrigger>
               <TabsTrigger value="images">Hình ảnh</TabsTrigger>
             </TabsList>
 

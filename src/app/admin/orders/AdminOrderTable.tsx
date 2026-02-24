@@ -34,7 +34,9 @@ export default function AdminOrderTable({
   getAvailableTransitions,
   updatingId,
 }: Props) {
-  const [selectedNextStatus, setSelectedNextStatus] = useState<Record<string, string>>({});
+  const [selectedNextStatus, setSelectedNextStatus] = useState<
+    Record<string, string>
+  >({});
 
   return (
     <div className="overflow-x-auto rounded-2xl border">
@@ -59,18 +61,30 @@ export default function AdminOrderTable({
 
             return (
               <tr key={order.id} className="border-t hover:bg-gray-50">
-                <td className="p-3">{new Date(order.createdAt).toLocaleString()}</td>
+                <td className="p-3">
+                  {new Date(order.createdAt).toLocaleString()}
+                </td>
                 <td className="p-3">{order.user?.name || "-"}</td>
                 <td className="p-3">{order.user?.phoneNumber}</td>
-                <td className="p-3 font-medium">{order.totalPrice.toLocaleString()} đ</td>
+                <td className="p-3 font-medium">
+                  {order.totalPrice.toLocaleString()} đ
+                </td>
                 <td className="p-3">
                   <div className="text-xs">
-                    {order.pointsUsed > 0 && <div className="text-red-500">-{order.pointsUsed}</div>}
-                    {order.pointsEarned > 0 && <div className="text-green-600">+{order.pointsEarned}</div>}
+                    {order.pointsUsed > 0 && (
+                      <div className="text-red-500">-{order.pointsUsed}</div>
+                    )}
+                    {order.pointsEarned > 0 && (
+                      <div className="text-green-600">
+                        +{order.pointsEarned}
+                      </div>
+                    )}
                   </div>
                 </td>
                 <td className="p-3">
-                  <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+                  <Badge className={getStatusColor(order.status)}>
+                    {order.status}
+                  </Badge>
                 </td>
                 <td className="p-3">{order.shipper?.name || "-"}</td>
                 <td className="p-3">
@@ -79,10 +93,13 @@ export default function AdminOrderTable({
                       <Select
                         value={nextStatus}
                         onValueChange={(value) =>
-                          setSelectedNextStatus((prev) => ({ ...prev, [order.id]: value }))
+                          setSelectedNextStatus((prev) => ({
+                            ...prev,
+                            [order.id]: value,
+                          }))
                         }
                       >
-                        <SelectTrigger className="w-[170px]">
+                        <SelectTrigger className="w-42.5">
                           <SelectValue placeholder="Chọn trạng thái" />
                         </SelectTrigger>
                         <SelectContent>
@@ -95,21 +112,27 @@ export default function AdminOrderTable({
                       </Select>
                       <Button
                         size="sm"
-                        onClick={() => onChangeStatus(order, nextStatus as OrderStatus)}
+                        onClick={() =>
+                          onChangeStatus(order, nextStatus as OrderStatus)
+                        }
                         disabled={!nextStatus || updatingId === order.id}
                       >
                         {updatingId === order.id ? "Đang đổi..." : "Cập nhật"}
                       </Button>
                     </div>
                   ) : (
-                    <span className="text-gray-400 text-xs">Không thể chuyển</span>
+                    <span className="text-gray-400 text-xs">
+                      Không thể chuyển
+                    </span>
                   )}
                 </td>
                 <td className="p-3">
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => (window.location.href = `/admin/orders/${order.id}`)}
+                    onClick={() =>
+                      (window.location.href = `/admin/orders/${order.id}`)
+                    }
                   >
                     Xem
                   </Button>

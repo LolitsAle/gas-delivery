@@ -50,9 +50,9 @@ export const POST = withAuth(
         defaultPromoProductId,
       } = body || {};
 
-      if (!name?.trim() || !productId || !address?.trim()) {
+      if (!name?.trim() || !productId) {
         return NextResponse.json(
-          { message: "name, productId and address are required" },
+          { message: "tên bếp và sản phẩm cần phải được cập nhật." },
           { status: 400 },
         );
       }
@@ -72,7 +72,7 @@ export const POST = withAuth(
       const stove = await prisma.stove.create({
         data: {
           name: name.trim(),
-          address: address.trim(),
+          address: address.trim() ?? "",
           note: note ?? "",
           userId: user.id,
           productId,
