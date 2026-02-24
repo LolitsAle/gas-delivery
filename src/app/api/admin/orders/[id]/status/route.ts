@@ -9,9 +9,9 @@ type Params = {
 
 const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ["CONFIRMED", "CANCELLED"],
-  CONFIRMED: ["READY", "CANCELLED"],
-  READY: ["DELIVERING", "CANCELLED"],
-  DELIVERING: ["COMPLETED"],
+  CONFIRMED: ["DELIVERING", "CANCELLED"],
+  DELIVERING: ["UNPAID", "COMPLETED"],
+  UNPAID: ["COMPLETED", "CANCELLED"],
   COMPLETED: [],
   CANCELLED: [],
 };
@@ -52,13 +52,22 @@ export const PATCH = withAuth(["ADMIN"], async (req, { params }) => {
         throw new Error("Completed order cannot be modified");
       }
 
+      if (
+        order.status === OrderStatus.CONFIRMED &&
+        status === OrderStatus.DELIVERING &&
+        !shipperId &&
+        !order.shipperId
+      ) {
+        throw new Error("Shipper is required when moving to DELIVERING");
+      }
+
       const updateData: any = { status };
 
       if (status === OrderStatus.CONFIRMED) {
         updateData.confirmedAt = new Date();
       }
 
-      if (status === OrderStatus.COMPLETED) {
+      if (status === OrderStatus.UNPAID || status === OrderStatus.COMPLETED) {
         updateData.deliveredAt = new Date();
       }
 

@@ -73,6 +73,7 @@ export enum OrderStatus {
   PENDING = "PENDING",
   CONFIRMED = "CONFIRMED",
   DELIVERING = "DELIVERING",
+  UNPAID = "UNPAID",
   COMPLETED = "COMPLETED",
   CANCELLED = "CANCELLED",
 }
@@ -85,6 +86,7 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   PENDING: "Chờ xử lý",
   CONFIRMED: "Đã xác nhận",
   DELIVERING: "Đang giao",
+  UNPAID: "Chưa thanh toán",
   COMPLETED: "Hoàn thành",
   CANCELLED: "Đã hủy",
 };
@@ -93,6 +95,7 @@ export const ORDER_STATUS_COLOR: Record<OrderStatus, string> = {
   PENDING: "bg-gray-100 text-gray-700",
   CONFIRMED: "bg-blue-100 text-blue-700",
   DELIVERING: "bg-yellow-100 text-yellow-800",
+  UNPAID: "bg-orange-100 text-orange-700",
   COMPLETED: "bg-green-100 text-green-700",
   CANCELLED: "bg-red-100 text-red-700",
 };

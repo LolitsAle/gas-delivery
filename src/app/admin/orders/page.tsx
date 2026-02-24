@@ -49,8 +49,8 @@ import { CalendarDays, ChevronDown } from "lucide-react";
 type OrderStatus =
   | "PENDING"
   | "CONFIRMED"
-  | "READY"
   | "DELIVERING"
+  | "UNPAID"
   | "COMPLETED"
   | "CANCELLED";
 
@@ -79,9 +79,9 @@ type AssigneeUser = {
 
 const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ["CONFIRMED", "CANCELLED"],
-  CONFIRMED: ["READY", "CANCELLED"],
-  READY: ["DELIVERING", "CANCELLED"],
-  DELIVERING: ["COMPLETED"],
+  CONFIRMED: ["DELIVERING", "CANCELLED"],
+  DELIVERING: ["UNPAID", "COMPLETED"],
+  UNPAID: ["COMPLETED", "CANCELLED"],
   COMPLETED: [],
   CANCELLED: [],
 };
@@ -167,7 +167,7 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [openDrawer, setOpenDrawer] = useState(false);
 
-  // READY -> DELIVERING popup
+  // CONFIRMED -> DELIVERING popup
   const [shipperDialogOpen, setShipperDialogOpen] = useState(false);
   const [shipperUsers, setShipperUsers] = useState<AssigneeUser[]>([]);
   const [selectedShipperId, setSelectedShipperId] = useState<string>("");
@@ -272,10 +272,10 @@ export default function AdminOrdersPage() {
         return "bg-yellow-100 text-yellow-700";
       case "CONFIRMED":
         return "bg-blue-100 text-blue-700";
-      case "READY":
-        return "bg-indigo-100 text-indigo-700";
       case "DELIVERING":
         return "bg-purple-100 text-purple-700";
+      case "UNPAID":
+        return "bg-orange-100 text-orange-700";
       case "COMPLETED":
         return "bg-green-100 text-green-700";
       case "CANCELLED":
@@ -320,7 +320,7 @@ export default function AdminOrdersPage() {
   };
 
   const handleChangeStatus = async (order: Order, nextStatus: OrderStatus) => {
-    if (order.status === "READY" && nextStatus === "DELIVERING") {
+    if (order.status === "CONFIRMED" && nextStatus === "DELIVERING") {
       setPendingDeliveryOrderId(order.id);
       setAssigningType("ME");
       setSelectedShipperId("");
@@ -571,7 +571,7 @@ export default function AdminOrdersPage() {
           <DialogHeader>
             <DialogTitle>Chọn shipper cho đơn giao</DialogTitle>
             <DialogDescription>
-              Đơn READY chuyển sang DELIVERING bắt buộc phải gán shipper.
+              Đơn CONFIRMED chuyển sang DELIVERING bắt buộc phải gán shipper.
             </DialogDescription>
           </DialogHeader>
 
