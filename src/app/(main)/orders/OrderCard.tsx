@@ -9,9 +9,14 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 type OrderCardProps = {
   order: any;
   STATUS_STYLE_MAP: Record<string, { text: string; className: string }>;
+  onStatusClick: (order: any) => void;
 };
 
-export default function OrderCard({ order, STATUS_STYLE_MAP }: OrderCardProps) {
+export default function OrderCard({
+  order,
+  STATUS_STYLE_MAP,
+  onStatusClick,
+}: OrderCardProps) {
   const [expanded, setExpanded] = useState(false);
   const toggleExpanded = () => {
     setExpanded((prev) => !prev);
@@ -36,10 +41,11 @@ export default function OrderCard({ order, STATUS_STYLE_MAP }: OrderCardProps) {
           </div>
 
           <Badge
+            onClick={() => onStatusClick(order)}
             className={`px-2 py-1 text-xs font-medium rounded-md ${
               STATUS_STYLE_MAP[order.status]?.className ||
               "bg-gray-100 text-gray-700"
-            }`}
+            } cursor-pointer`}
           >
             {STATUS_STYLE_MAP[order.status]?.text || order.status}
           </Badge>
