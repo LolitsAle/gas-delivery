@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import { useCurrentUser } from "@/components/context/CurrentUserContext";
 import AdminOrderCard from "./AdminOrderCard";
@@ -45,6 +45,7 @@ import {
   showToastSuccess,
 } from "@/lib/helper/toast";
 import { CalendarDays, ChevronDown } from "lucide-react";
+import { ORDER_SOCKET_PATH } from "@/lib/socket/orderEvents";
 
 type OrderStatus =
   | "PENDING"
@@ -177,6 +178,7 @@ export default function AdminOrdersPage() {
   >(null);
 
   const [hydrated, setHydrated] = useState(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const { currentUser } = useCurrentUser();
 
@@ -277,6 +279,56 @@ export default function AdminOrdersPage() {
     if (!hydrated) return;
     loadOrders(1);
   }, [hydrated, loadOrders, selectedPreset, selectedDate, showCompleted]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const socket = new WebSocket(
+      `${protocol}://${window.location.host}${ORDER_SOCKET_PATH}`,
+    );
+
+    const playNotification = () => {
+      const context =
+        audioCtxRef.current ??
+        new (window.AudioContext || (window as any).webkitAudioContext)();
+
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = context;
+      }
+
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(880, context.currentTime);
+      gain.gain.setValueAtTime(0.0001, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.2, context.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.24);
+
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(context.currentTime);
+      oscillator.stop(context.currentTime + 0.25);
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data) as { type?: string };
+        loadOrders(pagination.page);
+
+        if (payload?.type === "ORDER_CREATED") {
+          playNotification();
+        }
+      } catch (error) {
+        console.error("Cannot parse realtime payload", error);
+      }
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, [hydrated, loadOrders, pagination.page]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
 import { OrderStatus, CartType } from "@prisma/client";
+import { emitOrderSocketEvent } from "@/lib/socket/orderEvents";
 
 export const GET = withAuth(["USER", "ADMIN"], async (req, ctx) => {
   try {
@@ -297,6 +298,11 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
       });
 
       return order;
+    });
+
+    emitOrderSocketEvent({
+      type: "ORDER_CREATED",
+      orderId: createdOrder.id,
     });
 
     return NextResponse.json(createdOrder, { status: 201 });
