@@ -382,8 +382,8 @@ enum Role {
 enum OrderStatus {
   PENDING
   CONFIRMED
-  READY
   DELIVERING
+  UNPAID
   COMPLETED
   CANCELLED
 }

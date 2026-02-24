@@ -24,8 +24,8 @@ import {
 type OrderStatus =
   | "PENDING"
   | "CONFIRMED"
-  | "READY"
   | "DELIVERING"
+  | "UNPAID"
   | "COMPLETED"
   | "CANCELLED";
 
@@ -60,15 +60,15 @@ export default function AdminOrderCard({
       icon: <CheckCircle2 size={14} />,
       style: "bg-blue-100 text-blue-700 border-blue-200",
     },
-    READY: {
-      label: "Sẵn sàng giao",
-      icon: <CheckCircle2 size={14} />,
-      style: "bg-indigo-100 text-indigo-700 border-indigo-200",
-    },
     DELIVERING: {
       label: "Đang giao",
       icon: <Truck size={14} />,
       style: "bg-purple-100 text-purple-700 border-purple-200",
+    },
+    UNPAID: {
+      label: "Chưa thanh toán",
+      icon: <Clock size={14} />,
+      style: "bg-orange-100 text-orange-700 border-orange-200",
     },
     COMPLETED: {
       label: "Hoàn tất",
