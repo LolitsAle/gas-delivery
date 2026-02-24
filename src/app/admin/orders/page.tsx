@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import { useCurrentUser } from "@/components/context/CurrentUserContext";
 import AdminOrderCard from "./AdminOrderCard";
@@ -46,6 +46,7 @@ import {
 } from "@/lib/helper/toast";
 import { CalendarDays, ChevronDown } from "lucide-react";
 import { ORDER_SOCKET_PATH } from "@/lib/socket/orderEvents";
+import { playAdminSound } from "@/lib/helper/adminAudioManager";
 
 type OrderStatus =
   | "PENDING"
@@ -112,7 +113,7 @@ const getFilterRange = (preset: DateFilterPreset, dateValue: string) => {
 
   if (preset === "THIS_WEEK") {
     const day = start.getDay();
-    const offset = day === 0 ? 6 : day - 1;
+    const offset = day === 0 ? 6 : day - 1; // Monday as week start
     start.setDate(start.getDate() - offset);
     start.setHours(0, 0, 0, 0);
     end.setTime(start.getTime());
@@ -178,7 +179,6 @@ export default function AdminOrdersPage() {
   >(null);
 
   const [hydrated, setHydrated] = useState(false);
-  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const { currentUser } = useCurrentUser();
 
@@ -280,6 +280,7 @@ export default function AdminOrdersPage() {
     loadOrders(1);
   }, [hydrated, loadOrders, selectedPreset, selectedDate, showCompleted]);
 
+  // ===== WS realtime =====
   useEffect(() => {
     if (!hydrated) return;
 
@@ -288,47 +289,38 @@ export default function AdminOrdersPage() {
       `${protocol}://${window.location.host}${ORDER_SOCKET_PATH}`,
     );
 
-    const playNotification = () => {
-      const context =
-        audioCtxRef.current ??
-        new (window.AudioContext || (window as any).webkitAudioContext)();
-
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = context;
-      }
-
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(880, context.currentTime);
-      gain.gain.setValueAtTime(0.0001, context.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.2, context.currentTime + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.24);
-
-      oscillator.connect(gain);
-      gain.connect(context.destination);
-      oscillator.start(context.currentTime);
-      oscillator.stop(context.currentTime + 0.25);
-    };
-
-    socket.onmessage = (event) => {
+    socket.onmessage = async (event) => {
       try {
         const payload = JSON.parse(event.data) as { type?: string };
+
+        // refresh current page
         loadOrders(pagination.page);
 
         if (payload?.type === "ORDER_CREATED") {
-          playNotification();
+          const ok = await playAdminSound();
+
+          if (!ok) {
+            // audio chưa được bật hoặc bị chặn => nhắc user bấm nút "Bật âm thanh" trên layout admin
+            // (nếu bạn có toast info thì dùng info, ở đây dùng success nhẹ cũng được)
+            showToastSuccess(
+              "Có đơn mới! (Bấm nút 🔕 Bật âm thanh ở thanh admin để nghe thông báo)",
+            );
+          }
         }
       } catch (error) {
         console.error("Cannot parse realtime payload", error);
       }
     };
 
+    socket.onerror = (e) => {
+      console.error("WS error", e);
+    };
+
     return () => {
       socket.close();
     };
   }, [hydrated, loadOrders, pagination.page]);
+  // =======================
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -426,11 +418,9 @@ export default function AdminOrdersPage() {
     }
     loadOrders(nextPage);
   };
+
   const pageItems = getPaginationItems(pagination.page, pagination.totalPages);
 
-  // Khi đổi preset bằng Select:
-  // - nếu không phải DATE thì clear date cho sạch state
-  // - nếu là DATE thì auto mở advanced để user thấy chọn ngày
   const onChangePreset = (value: DateFilterPreset) => {
     setSelectedPreset(value);
 
@@ -448,9 +438,8 @@ export default function AdminOrdersPage() {
       {/* FILTER */}
       <div className="mb-4 rounded-xl border p-3 md:p-4">
         <Collapsible open={openAdvanced} onOpenChange={setOpenAdvanced}>
-          {/* ROW 1 - All in one line */}
+          {/* ROW 1 */}
           <div className="flex items-center gap-3">
-            {/* Preset Select */}
             <Select value={selectedPreset} onValueChange={onChangePreset}>
               <SelectTrigger className="h-9 w-42.5 md:w-50 font-medium">
                 <div className="flex items-center gap-2">
@@ -470,7 +459,6 @@ export default function AdminOrdersPage() {
               </SelectContent>
             </Select>
 
-            {/* Completed Switch */}
             <label className="flex items-center gap-2 text-sm whitespace-nowrap">
               <Switch
                 trackClassName={showCompleted ? "bg-green-500" : "bg-red-500"}
@@ -483,7 +471,6 @@ export default function AdminOrdersPage() {
               </span>
             </label>
 
-            {/* Chevron only toggle */}
             <CollapsibleTrigger asChild>
               <Button
                 type="button"
@@ -500,7 +487,7 @@ export default function AdminOrdersPage() {
             </CollapsibleTrigger>
           </div>
 
-          {/* ROW 2 - Expandable */}
+          {/* ROW 2 */}
           <CollapsibleContent className="pt-3">
             <div className="flex items-center gap-2">
               <Input
@@ -531,7 +518,7 @@ export default function AdminOrdersPage() {
 
       {/* ORDERS WRAPPER */}
       <div className="relative">
-        {/* ================= MOBILE ================= */}
+        {/* MOBILE */}
         <div className="md:hidden flex flex-col gap-[3vw]">
           {orders.map((order) => (
             <AdminOrderCard
@@ -545,7 +532,7 @@ export default function AdminOrdersPage() {
           ))}
         </div>
 
-        {/* ================= DESKTOP ================= */}
+        {/* DESKTOP */}
         <div className="hidden md:block">
           <AdminOrderTable
             orders={orders}
@@ -556,7 +543,7 @@ export default function AdminOrdersPage() {
           />
         </div>
 
-        {/* LOADING OVERLAY (cover orders area only) */}
+        {/* LOADING OVERLAY */}
         {loading && (
           <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-white/70 backdrop-blur-sm">
             <div className="flex items-center gap-2 rounded-lg border bg-white px-3 py-2 shadow-sm">
@@ -567,6 +554,7 @@ export default function AdminOrdersPage() {
         )}
       </div>
 
+      {/* PAGINATION */}
       <div className="mt-4 space-y-2">
         <div className="text-sm text-muted-foreground text-center">
           Tổng {pagination.total} đơn hàng

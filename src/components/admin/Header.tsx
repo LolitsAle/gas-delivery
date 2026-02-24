@@ -5,6 +5,7 @@ import { Menu, User, LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { apiFetchAuth, apiLogoutClient } from "@/lib/api/apiClient";
 import { USER_STORAGE_KEY } from "@/constants/constants";
+import { AdminAudioGate } from "./AdminAudioButton";
 
 interface UserInfo {
   id: string;
@@ -106,6 +107,8 @@ function HeaderComponent({ onMenuClick }: HeaderProps) {
         </div>
 
         {/* Right */}
+        {/* <AdminAudioButton /> */}
+        <AdminAudioGate />
         <div className="relative">
           <button
             onClick={() => setOpen((v) => !v)}

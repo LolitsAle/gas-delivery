@@ -27,7 +27,7 @@ export default function RegisterPage() {
 
   function validatename(value: string) {
     if (!value) return "Vui lòng nhập tên gọi";
-    if (value.length < 5) return "Tên gọi quá ngắn";
+    if (value.length < 3) return "Tên gọi quá ngắn";
     return "";
   }
 
