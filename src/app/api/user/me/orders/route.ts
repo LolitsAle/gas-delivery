@@ -3,6 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
 import { OrderStatus, CartType } from "@prisma/client";
 import { emitOrderSocketEvent } from "@/lib/socket/orderEvents";
+import {
+  BUSINESS_BINDABLE_DISCOUNT_AMOUNT,
+  PROMO_BONUS_POINT_AMOUNT,
+  PROMO_DISCOUNT_CASH_AMOUNT,
+} from "@/constants/promotion";
 
 export const GET = withAuth(["USER", "ADMIN"], async (req, ctx) => {
   try {
@@ -134,8 +139,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         throw new Error("Cart đang trống");
       }
 
-      const EARN_POINT_CART_BINDABLE = 2000;
-      const EARN_POINT_STOVE_BINDABLE = 1000;
+      const isBusinessUser = user.tags.includes("BUSINESS");
 
       let subtotal = 0;
       let totalPointsUse = 0;
@@ -158,8 +162,8 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
 
         subtotal += price * qty;
 
-        if (bindable) {
-          totalPointsEarn += EARN_POINT_CART_BINDABLE * qty;
+        if (bindable && isBusinessUser) {
+          discountAmount += BUSINESS_BINDABLE_DISCOUNT_AMOUNT * qty;
         }
       }
 
@@ -177,16 +181,16 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         stoveUnitPrice = price;
         stoveQuantity = qty;
 
-        if (bindable) {
-          totalPointsEarn += EARN_POINT_STOVE_BINDABLE * qty;
+        if (bindable && isBusinessUser) {
+          discountAmount += BUSINESS_BINDABLE_DISCOUNT_AMOUNT * qty;
         }
 
         if (stove.defaultPromoChoice === "DISCOUNT_CASH") {
-          discountAmount += 10000 * qty;
+          discountAmount += PROMO_DISCOUNT_CASH_AMOUNT * qty;
         }
 
         if (stove.defaultPromoChoice === "BONUS_POINT") {
-          totalPointsEarn += 1000 * qty;
+          totalPointsEarn += PROMO_BONUS_POINT_AMOUNT * qty;
         }
       }
 

@@ -17,6 +17,11 @@ import {
   showToastSuccess,
 } from "@/lib/helper/toast";
 import InfoBanner from "@/components/common/InfoBanner";
+import {
+  BUSINESS_BINDABLE_DISCOUNT_AMOUNT,
+  PROMO_BONUS_POINT_AMOUNT,
+  PROMO_DISCOUNT_CASH_AMOUNT,
+} from "@/constants/promotion";
 
 export default function CartPage() {
   const { currentUser, refreshUser, activeStoveId } = useCurrentUser();
@@ -42,12 +47,9 @@ export default function CartPage() {
   } = useMemo(() => {
     let money = 0;
     let pointUse = 0;
-    let pointEarn = 0;
     let discount = 0;
     let bonus = 0;
-
-    const BASE_EARN_POINT = 1000;
-    const CART_BINDABLE_BONUS = 1000; // extra boost cho sản phẩm từ cart
+    const isBusinessUser = currentUser?.tags?.includes("BUSINESS");
 
     // 1️⃣ Tính từ cart items
     items.forEach((i) => {
@@ -67,13 +69,12 @@ export default function CartPage() {
       // tính tiền
       money += price * qty;
 
-      // 🔥 bindable từ cart → 2000 điểm / sản phẩm
-      if (bindable) {
-        pointEarn += (BASE_EARN_POINT + CART_BINDABLE_BONUS) * qty;
+      if (bindable && isBusinessUser) {
+        discount += BUSINESS_BINDABLE_DISCOUNT_AMOUNT * qty;
       }
     });
 
-    // 2️⃣ Gas từ stove (bindable nhưng chỉ 1000 điểm)
+    // 2️⃣ Gas từ stove
     if (isStoveActive && stove?.product && stove.defaultProductQuantity) {
       const qty = stove.defaultProductQuantity;
       const price = stove.product.currentPrice ?? 0;
@@ -81,28 +82,28 @@ export default function CartPage() {
 
       money += price * qty;
 
-      if (bindable) {
-        pointEarn += BASE_EARN_POINT * qty;
+      if (bindable && isBusinessUser) {
+        discount += BUSINESS_BINDABLE_DISCOUNT_AMOUNT * qty;
       }
 
       // 3️⃣ Promo theo số lượng gas
       if (stove.defaultPromoChoice === "DISCOUNT_CASH") {
-        discount = 10000 * qty;
+        discount += PROMO_DISCOUNT_CASH_AMOUNT * qty;
       }
 
       if (stove.defaultPromoChoice === "BONUS_POINT") {
-        bonus = 1000 * qty;
+        bonus = PROMO_BONUS_POINT_AMOUNT * qty;
       }
     }
 
     return {
       totalMoney: Math.max(money - discount, 0),
       totalPointsUse: pointUse,
-      totalPointsEarn: pointEarn + bonus,
+      totalPointsEarn: bonus,
       discountCash: discount,
       bonusPoints: bonus,
     };
-  }, [items, stove, isStoveActive]);
+  }, [items, stove, isStoveActive, currentUser?.tags]);
 
   const userPoints = currentUser?.points ?? 0;
   const notEnoughPoints = totalPointsUse > userPoints;

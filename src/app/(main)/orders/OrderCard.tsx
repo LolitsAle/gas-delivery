@@ -5,6 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/helper/helpers";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import {
+  PROMO_BONUS_POINT_AMOUNT,
+  PROMO_DISCOUNT_CASH_AMOUNT,
+} from "@/constants/promotion";
 
 type OrderCardProps = {
   order: any;
@@ -101,12 +105,14 @@ export default function OrderCard({
                     )}
                   {order.stoveSnapshot?.promoChoice === "BONUS_POINT" && (
                     <div className="text-[3vw] text-gas-orange-900">
-                      ⭐Cộng 1000 điểm thưởng
+                      ⭐Cộng {PROMO_BONUS_POINT_AMOUNT.toLocaleString()} điểm
+                      thưởng
                     </div>
                   )}
                   {order.stoveSnapshot?.promoChoice === "DISCOUNT_CASH" && (
                     <div className="text-[3vw] text-gas-green-900">
-                      💸Giảm 10,000đ tiền mặt
+                      💸Giảm {PROMO_DISCOUNT_CASH_AMOUNT.toLocaleString()}đ
+                      tiền mặt
                     </div>
                   )}
                 </div>

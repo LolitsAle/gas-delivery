@@ -35,6 +35,7 @@ export async function requireRole(req: Request, roles: string[]) {
       role: true,
       sessionVersion: true,
       points: true,
+      tags: true,
     },
   });
 
