@@ -59,6 +59,7 @@ export const GET = withAuth(["ADMIN"], async (req: NextRequest) => {
               select: {
                 id: true,
                 productName: true,
+                tags: true,
               },
             },
           },

@@ -9,6 +9,8 @@ import {
   PROMO_BONUS_POINT_AMOUNT,
   PROMO_DISCOUNT_CASH_AMOUNT,
 } from "@/constants/promotion";
+import ProductPrice from "@/components/common/ProductPrice";
+import { useCurrentUser } from "@/components/context/CurrentUserContext";
 
 type OrderCardProps = {
   order: any;
@@ -21,6 +23,8 @@ export default function OrderCard({
   STATUS_STYLE_MAP,
   onStatusClick,
 }: OrderCardProps) {
+  const { currentUser } = useCurrentUser();
+  const isBusinessUser = currentUser?.tags?.includes("BUSINESS") ?? false;
   const [expanded, setExpanded] = useState(false);
   const toggleExpanded = () => {
     setExpanded((prev) => !prev);
@@ -83,13 +87,18 @@ export default function OrderCard({
                       {order.stoveSnapshot.quantity}
                     </div>
 
-                    <div>
-                      {(
-                        (order.stoveSnapshot.unitPrice || 0) *
-                        (order.stoveSnapshot.quantity || 0)
-                      ).toLocaleString()}
-                      đ
-                    </div>
+                    <ProductPrice
+                      unitPrice={order.stoveSnapshot.unitPrice || 0}
+                      quantity={order.stoveSnapshot.quantity || 0}
+                      isBusinessUser={isBusinessUser}
+                      isBindableProduct
+                      stovePromoDiscountPerUnit={
+                        order.stoveSnapshot?.promoChoice === "DISCOUNT_CASH"
+                          ? PROMO_DISCOUNT_CASH_AMOUNT
+                          : 0
+                      }
+                      priceClassName="text-sm text-gas-green-700"
+                    />
                   </div>
                   {order.stoveSnapshot?.promoChoice === "GIFT_PRODUCT" &&
                     order.stoveSnapshot?.promoProductQuantity && (
@@ -131,7 +140,15 @@ export default function OrderCard({
                       <div className="whitespace-nowrap text-right font-medium tabular-nums">
                         {item.payByPoints
                           ? `${item.unitPointPrice * item.quantity} điểm`
-                          : `${(item.unitPrice * item.quantity).toLocaleString()}đ`}
+                          : (
+                            <ProductPrice
+                              unitPrice={item.unitPrice}
+                              quantity={item.quantity}
+                              isBusinessUser={isBusinessUser}
+                              isBindableProduct={item.product?.tags?.includes("BINDABLE")}
+                              priceClassName="text-sm"
+                            />
+                          )}
                       </div>
                     </div>
                   ))}
@@ -165,6 +182,13 @@ export default function OrderCard({
             <div>Tổng tiền</div>
             <div>{order.totalPrice.toLocaleString()}đ</div>
           </div>
+
+          {order.discountAmount > 0 && (
+            <div className="flex justify-between text-gas-green-700 mt-1">
+              <div>Giảm giá</div>
+              <div>-{order.discountAmount.toLocaleString()}đ</div>
+            </div>
+          )}
 
           {order.pointsUsed > 0 && (
             <div className="flex justify-between text-blue-600">

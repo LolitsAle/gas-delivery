@@ -5,6 +5,7 @@ import ProductImage from "../store/ProductImage";
 import {
   CartItemsWithProduct,
   StoveWithProducts,
+  useCurrentUser,
 } from "@/components/context/CurrentUserContext";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import { Button } from "@/components/admin/Commons";
@@ -16,6 +17,7 @@ import {
   showToastSuccess,
 } from "@/lib/helper/toast";
 import { useMemo } from "react";
+import ProductPrice from "@/components/common/ProductPrice";
 
 type Props = {
   stove: StoveWithProducts;
@@ -23,6 +25,8 @@ type Props = {
 };
 
 export default function NormalCartItems({ refreshUser, stove }: Props) {
+  const { currentUser } = useCurrentUser();
+  const isBusinessUser = currentUser?.tags?.includes("BUSINESS") ?? false;
   const items: CartItemsWithProduct[] = useMemo(() => {
     return (
       stove.cart?.items.filter((item) => !item.parentItemId && item.product) ??
@@ -111,12 +115,13 @@ export default function NormalCartItems({ refreshUser, stove }: Props) {
                       ⭐
                     </p>
                   ) : (
-                    <p className="text-sm text-gas-green-600">
-                      {(
-                        (item.product?.currentPrice ?? 0) * item.quantity
-                      ).toLocaleString()}
-                      đ
-                    </p>
+                    <ProductPrice
+                      unitPrice={item.product?.currentPrice ?? 0}
+                      quantity={item.quantity}
+                      isBusinessUser={isBusinessUser}
+                      isBindableProduct={item.product?.tags?.includes("BINDABLE")}
+                      priceClassName="text-sm text-gas-green-600"
+                    />
                   )}
                 </div>
                 <div className="flex items-center shrink-0 rounded-md px-[1vw]">

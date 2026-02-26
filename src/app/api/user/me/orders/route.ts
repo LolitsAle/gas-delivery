@@ -67,6 +67,7 @@ export const GET = withAuth(["USER", "ADMIN"], async (req, ctx) => {
                 select: {
                   id: true,
                   productName: true,
+                  tags: true,
                 },
               },
             },
