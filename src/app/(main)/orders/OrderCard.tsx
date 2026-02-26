@@ -10,7 +10,6 @@ import {
   PROMO_DISCOUNT_CASH_AMOUNT,
 } from "@/constants/promotion";
 import ProductPrice from "@/components/common/ProductPrice";
-import { useCurrentUser } from "@/components/context/CurrentUserContext";
 
 type OrderCardProps = {
   order: any;
@@ -23,8 +22,6 @@ export default function OrderCard({
   STATUS_STYLE_MAP,
   onStatusClick,
 }: OrderCardProps) {
-  const { currentUser } = useCurrentUser();
-  const isBusinessUser = currentUser?.tags?.includes("BUSINESS") ?? false;
   const [expanded, setExpanded] = useState(false);
   const toggleExpanded = () => {
     setExpanded((prev) => !prev);
@@ -90,12 +87,8 @@ export default function OrderCard({
                     <ProductPrice
                       unitPrice={order.stoveSnapshot.unitPrice || 0}
                       quantity={order.stoveSnapshot.quantity || 0}
-                      isBusinessUser={isBusinessUser}
-                      isBindableProduct
-                      stovePromoDiscountPerUnit={
-                        order.stoveSnapshot?.promoChoice === "DISCOUNT_CASH"
-                          ? PROMO_DISCOUNT_CASH_AMOUNT
-                          : 0
+                      snapshotDiscountPerUnit={
+                        order.stoveSnapshot.discountPerUnitSnapshot
                       }
                       priceClassName="text-sm text-gas-green-700"
                     />
@@ -144,8 +137,9 @@ export default function OrderCard({
                             <ProductPrice
                               unitPrice={item.unitPrice}
                               quantity={item.quantity}
-                              isBusinessUser={isBusinessUser}
-                              isBindableProduct={item.product?.tags?.includes("BINDABLE")}
+                              snapshotDiscountPerUnit={
+                                item.discountPerUnitSnapshot
+                              }
                               priceClassName="text-sm"
                             />
                           )}

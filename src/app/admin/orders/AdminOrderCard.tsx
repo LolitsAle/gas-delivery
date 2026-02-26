@@ -22,7 +22,6 @@ import {
   Eye,
 } from "lucide-react";
 import ProductPrice from "@/components/common/ProductPrice";
-import { PROMO_DISCOUNT_CASH_AMOUNT } from "@/constants/promotion";
 
 type OrderStatus =
   | "PENDING"
@@ -188,12 +187,8 @@ export default function AdminOrderCard({
               <ProductPrice
                 unitPrice={order.stoveSnapshot.unitPrice}
                 quantity={order.stoveSnapshot.quantity}
-                isBusinessUser={isBusiness}
-                isBindableProduct
-                stovePromoDiscountPerUnit={
-                  order.stoveSnapshot?.promoChoice === "DISCOUNT_CASH"
-                    ? PROMO_DISCOUNT_CASH_AMOUNT
-                    : 0
+                snapshotDiscountPerUnit={
+                  order.stoveSnapshot.discountPerUnitSnapshot
                 }
                 priceClassName="text-sm text-gas-green-700"
               />
@@ -217,8 +212,9 @@ export default function AdminOrderCard({
                         <ProductPrice
                           unitPrice={item.unitPrice}
                           quantity={item.quantity}
-                          isBusinessUser={isBusiness}
-                          isBindableProduct={item.product?.tags?.includes("BINDABLE")}
+                          snapshotDiscountPerUnit={
+                            item.discountPerUnitSnapshot
+                          }
                           priceClassName="text-sm"
                         />
                       )}

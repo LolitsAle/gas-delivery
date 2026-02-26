@@ -219,7 +219,8 @@ model Order {
   shipperId      String?
   pointsUsed     Int     @default(0)
   pointsEarned   Int     @default(0)
-  pointsSettled  Boolean @default(false)
+  pointsSettled  Boolean   @default(false)
+  userTagsSnapshot UserTag[] @default([])
 
   confirmedAt     DateTime?
   deliveredAt     DateTime?
@@ -249,6 +250,10 @@ model OrderItem {
   quantity       Int  @default(0)
   unitPrice      Int  @default(0)
   unitPointPrice Int? @default(0)
+
+  productTagsSnapshot   ProductTag[]     @default([])
+  discountPerUnitSnapshot Int            @default(0)
+  appliedDiscountSources DiscountSource[] @default([])
 
   type OrderItemType
 
@@ -280,6 +285,9 @@ model OrderStoveSnapshot {
   productName String? // ✅ thêm
   unitPrice   Int?
   quantity    Int?
+  productTagsSnapshot   ProductTag[]      @default([])
+  discountPerUnitSnapshot Int             @default(0)
+  appliedDiscountSources DiscountSource[] @default([])
 
   // snapshot promo
   promoChoice           PromoChoiceType?
@@ -420,6 +428,12 @@ enum ProductTag {
   POINT_EXCHANGABLE
   FREE_SHIP
   PROMO_ELIGIBLE
+}
+
+enum DiscountSource {
+  BUSINESS_BINDABLE
+  STOVE_PROMO_DISCOUNT
+  PROMOTION_RULE
 }
 
 enum PromotionConditionType {
