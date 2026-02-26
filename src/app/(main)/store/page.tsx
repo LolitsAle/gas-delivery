@@ -20,6 +20,7 @@ import { CATEGORIES_LIST_KEY, PRODUCTS_LIST_KEY } from "@/constants/constants";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useCurrentUser } from "@/components/context/CurrentUserContext";
 import InfoBanner from "@/components/common/InfoBanner";
+import ProductPrice from "@/components/common/ProductPrice";
 import {
   dismissToast,
   showToastError,
@@ -55,6 +56,7 @@ export default function ShopPage() {
   const [sort, setSort] = useState("default");
   const router = useRouter();
   const { currentUser, refreshUser, activeStoveId } = useCurrentUser();
+  const isBusinessUser = currentUser?.tags?.includes("BUSINESS") ?? false;
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [openDrawer, setOpenDrawer] = useState(false);
@@ -351,11 +353,18 @@ export default function ShopPage() {
                     </p>
                     <div className="flex justify-between items-end">
                       <div className="flex-1">
-                        <p className="text-xs font-bold text-gas-gray-400">
-                          {modePoint
-                            ? `${p.pointPrice} ⭐`
-                            : `${p.price.toLocaleString()}đ`}
-                        </p>
+                        <div className="text-xs font-bold text-gas-gray-400">
+                          {modePoint ? (
+                            `${p.pointPrice} ⭐`
+                          ) : (
+                            <ProductPrice
+                              unitPrice={p.price}
+                              isBusinessUser={isBusinessUser}
+                              isBindableProduct={p.tags.includes("BINDABLE")}
+                              priceClassName="text-xs text-gas-green-600"
+                            />
+                          )}
+                        </div>
 
                         <Badge
                           className={`text-[10px] ${ui.soft} ${ui.text} border ${ui.border}`}
@@ -394,11 +403,19 @@ export default function ShopPage() {
                   <h2 className="text-lg font-bold leading-tight">
                     {selectedProduct.name}
                   </h2>
-                  <p className={`text-xl font-extrabold ${ui.text}`}>
-                    {modePoint
-                      ? `${selectedProduct.pointPrice} ⭐`
-                      : `${selectedProduct.price.toLocaleString()}đ`}
-                  </p>
+                  <div className={`text-xl font-extrabold ${ui.text}`}>
+                    {modePoint ? (
+                      `${selectedProduct.pointPrice} ⭐`
+                    ) : (
+                      <ProductPrice
+                        unitPrice={selectedProduct.price}
+                        isBusinessUser={isBusinessUser}
+                        isBindableProduct={selectedProduct.tags.includes("BINDABLE")}
+                        priceClassName="text-xl font-extrabold text-gas-green-700"
+                        oldPriceClassName="text-sm"
+                      />
+                    )}
+                  </div>
                   <Badge
                     className={`${ui.soft} ${ui.text} border ${ui.border}`}
                   >
@@ -449,11 +466,19 @@ export default function ShopPage() {
                     className={`rounded-xl px-4 py-3 border ${ui.border} ${ui.soft}`}
                   >
                     <div className="flex justify-between text-sm">
-                      <span className="font-bold">
-                        {modePoint
-                          ? `${selectedProduct.pointPrice * quantity} ⭐`
-                          : `${(selectedProduct.price * quantity).toLocaleString()}đ`}
-                      </span>
+                      <div className="font-bold">
+                        {modePoint ? (
+                          `${selectedProduct.pointPrice * quantity} ⭐`
+                        ) : (
+                          <ProductPrice
+                            unitPrice={selectedProduct.price}
+                            quantity={quantity}
+                            isBusinessUser={isBusinessUser}
+                            isBindableProduct={selectedProduct.tags.includes("BINDABLE")}
+                            priceClassName="text-sm text-gas-green-700"
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
