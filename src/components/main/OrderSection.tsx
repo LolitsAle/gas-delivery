@@ -16,6 +16,10 @@ import {
   showToastLoading,
   showToastSuccess,
 } from "@/lib/helper/toast";
+import {
+  PROMO_BONUS_POINT_AMOUNT,
+  PROMO_DISCOUNT_CASH_AMOUNT,
+} from "@/constants/promotion";
 
 function OrderSection() {
   const {
@@ -110,14 +114,14 @@ function OrderSection() {
       case "DISCOUNT_CASH":
         return (
           <span className="bg-green-100 text-green-700 text-xs font-semibold px-1.5 py-0.5 rounded-md">
-            💸 Giảm tiền mặt
+            💸 Giảm {PROMO_DISCOUNT_CASH_AMOUNT.toLocaleString()}đ / bình
           </span>
         );
 
       case "BONUS_POINT":
         return (
           <span className="bg-green-100 text-green-700 text-xs font-semibold px-1.5 py-0.5 rounded-md">
-            ⭐ Cộng điểm thưởng
+            ⭐ Cộng {PROMO_BONUS_POINT_AMOUNT.toLocaleString()} điểm / bình
           </span>
         );
 

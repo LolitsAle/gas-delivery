@@ -1,5 +1,5 @@
 import { verifyJwt } from "@/lib/auth/jwt-node";
-import { Role } from "@prisma/client";
+import { Role, UserTag } from "@prisma/client";
 
 export function getAuthUser(req: Request) {
   const auth = req.headers.get("Authorization");
@@ -14,6 +14,7 @@ export interface AuthUser {
   role: Role;
   phoneNumber?: string;
   points: number;
+  tags: UserTag[];
 }
 
 export type AuthContext = {

@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { StoveWithProducts } from "@/components/context/CurrentUserContext";
 import UserStoveDrawer from "@/components/main/userInfo/StoveFormDrawer";
+import {
+  PROMO_BONUS_POINT_AMOUNT,
+  PROMO_DISCOUNT_CASH_AMOUNT,
+} from "@/constants/promotion";
 
 type CartStoveCardProps = {
   stove: StoveWithProducts | null;
@@ -20,10 +24,16 @@ export default function StoveSummary({ stove, onRemove }: CartStoveCardProps) {
   const renderPromoLabel = () => {
     switch (stove.defaultPromoChoice) {
       case "DISCOUNT_CASH":
-        return <div className="text-green-600 text-xs">💸 Giảm tiền mặt</div>;
+        return (
+          <div className="text-green-600 text-xs">
+            💸 Giảm {PROMO_DISCOUNT_CASH_AMOUNT.toLocaleString()}đ / bình
+          </div>
+        );
       case "BONUS_POINT":
         return (
-          <div className="text-green-600 text-xs">⭐ Cộng điểm thưởng</div>
+          <div className="text-green-600 text-xs">
+            ⭐ Cộng {PROMO_BONUS_POINT_AMOUNT.toLocaleString()} điểm thưởng / bình
+          </div>
         );
       case "GIFT_PRODUCT":
         return <div className="text-xs text-green-600">Sản phẩm tặng kèm</div>;
@@ -96,14 +106,18 @@ export default function StoveSummary({ stove, onRemove }: CartStoveCardProps) {
                       )}
                     {stove.defaultPromoChoice === "DISCOUNT_CASH" && (
                       <div className="text-green-600 text-xs flex justify-between">
-                        <div>-10,000đ x {stove.defaultProductQuantity}</div>
-                        <div>
-                          -
-                          {(
-                            10000 * stove.defaultProductQuantity
-                          ).toLocaleString()}
-                          đ
-                        </div>
+                          <div>
+                            -{PROMO_DISCOUNT_CASH_AMOUNT.toLocaleString()}đ x{" "}
+                            {stove.defaultProductQuantity}
+                          </div>
+                          <div>
+                            -
+                            {(
+                              PROMO_DISCOUNT_CASH_AMOUNT *
+                              stove.defaultProductQuantity
+                            ).toLocaleString()}
+                            đ
+                          </div>
                       </div>
                     )}
                   </div>
