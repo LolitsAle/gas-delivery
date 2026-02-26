@@ -87,8 +87,10 @@ const toIsoFromDateInput = (value: string) => {
   return date.toISOString();
 };
 
-const getActionValue = (actions: PromotionAction[], type: PromotionActionType) =>
-  actions.find((item) => item.type === type)?.value;
+const getActionValue = (
+  actions: PromotionAction[],
+  type: PromotionActionType,
+) => actions.find((item) => item.type === type)?.value;
 
 export default function AdminPromotionsPage() {
   const [promotions, setPromotions] = useState<PromotionFull[]>([]);
@@ -141,11 +143,14 @@ export default function AdminPromotionsPage() {
         promotion.conditions[0]?.type || PromotionConditionType.PRODUCT_TAG,
       conditionValue: promotion.conditions[0]?.value || "",
       discountAmount: String(
-        getActionValue(promotion.actions, PromotionActionType.DISCOUNT_AMOUNT) ||
-          "",
+        getActionValue(
+          promotion.actions,
+          PromotionActionType.DISCOUNT_AMOUNT,
+        ) || "",
       ),
       bonusPoint: String(
-        getActionValue(promotion.actions, PromotionActionType.BONUS_POINT) || "",
+        getActionValue(promotion.actions, PromotionActionType.BONUS_POINT) ||
+          "",
       ),
     });
     setDialogOpen(true);
@@ -206,12 +211,12 @@ export default function AdminPromotionsPage() {
       if (editingPromotion) {
         await apiFetchAuth(`/api/admin/promotions/${editingPromotion.id}`, {
           method: "PUT",
-          body: JSON.stringify(payload),
+          body: payload,
         });
       } else {
         await apiFetchAuth("/api/admin/promotions", {
           method: "POST",
-          body: JSON.stringify(payload),
+          body: payload,
         });
       }
 
@@ -318,14 +323,18 @@ export default function AdminPromotionsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        {discountAmount ? `- ${discountAmount.toLocaleString()}đ` : ""}
+                        {discountAmount
+                          ? `- ${discountAmount.toLocaleString()}đ`
+                          : ""}
                         {discountAmount && bonusPoint ? " + " : ""}
-                        {bonusPoint ? `${bonusPoint.toLocaleString()} điểm` : ""}
+                        {bonusPoint
+                          ? `${bonusPoint.toLocaleString()} điểm`
+                          : ""}
                       </div>
                     </TableCell>
                     <TableCell className="text-xs">
-                      {new Date(promotion.startAt).toLocaleDateString("vi-VN")} →{" "}
-                      {new Date(promotion.endAt).toLocaleDateString("vi-VN")}
+                      {new Date(promotion.startAt).toLocaleDateString("vi-VN")}{" "}
+                      → {new Date(promotion.endAt).toLocaleDateString("vi-VN")}
                     </TableCell>
                     <TableCell>{promotion.isActive ? "Bật" : "Tắt"}</TableCell>
                     <TableCell>
@@ -367,7 +376,9 @@ export default function AdminPromotionsPage() {
               <Label>Tên chương trình</Label>
               <Input
                 value={form.name}
-                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, name: e.target.value }))
+                }
               />
             </div>
 
@@ -398,7 +409,9 @@ export default function AdminPromotionsPage() {
                 <Input
                   type="datetime-local"
                   value={form.endAt}
-                  onChange={(e) => setForm((prev) => ({ ...prev, endAt: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, endAt: e.target.value }))
+                  }
                 />
               </div>
             </div>
@@ -430,7 +443,10 @@ export default function AdminPromotionsPage() {
                 <Input
                   value={form.conditionValue}
                   onChange={(e) =>
-                    setForm((prev) => ({ ...prev, conditionValue: e.target.value }))
+                    setForm((prev) => ({
+                      ...prev,
+                      conditionValue: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -444,7 +460,10 @@ export default function AdminPromotionsPage() {
                   min={0}
                   value={form.discountAmount}
                   onChange={(e) =>
-                    setForm((prev) => ({ ...prev, discountAmount: e.target.value }))
+                    setForm((prev) => ({
+                      ...prev,
+                      discountAmount: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -455,7 +474,9 @@ export default function AdminPromotionsPage() {
                   type="number"
                   min={0}
                   value={form.bonusPoint}
-                  onChange={(e) => setForm((prev) => ({ ...prev, bonusPoint: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, bonusPoint: e.target.value }))
+                  }
                 />
               </div>
             </div>
@@ -477,7 +498,10 @@ export default function AdminPromotionsPage() {
                 type="number"
                 value={form.priority}
                 onChange={(e) =>
-                  setForm((prev) => ({ ...prev, priority: Number(e.target.value || 0) }))
+                  setForm((prev) => ({
+                    ...prev,
+                    priority: Number(e.target.value || 0),
+                  }))
                 }
               />
             </div>

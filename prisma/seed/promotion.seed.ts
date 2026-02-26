@@ -12,7 +12,7 @@ export async function seedPromotions(prisma: PrismaClient) {
   promo1End.setMonth(promo1End.getMonth() + 3);
 
   const promo2Start = new Date(now);
-  promo2Start.setMonth(promo2Start.getMonth() - 3);
+  promo2Start.setMonth(promo2Start.getMonth() + 3);
   const promo2End = new Date(promo2Start);
   promo2End.setMonth(promo2End.getMonth() + 3);
 
