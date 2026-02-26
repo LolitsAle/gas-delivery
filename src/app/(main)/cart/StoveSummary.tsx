@@ -4,12 +4,13 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
-import { StoveWithProducts } from "@/components/context/CurrentUserContext";
+import { StoveWithProducts, useCurrentUser } from "@/components/context/CurrentUserContext";
 import UserStoveDrawer from "@/components/main/userInfo/StoveFormDrawer";
 import {
   PROMO_BONUS_POINT_AMOUNT,
   PROMO_DISCOUNT_CASH_AMOUNT,
 } from "@/constants/promotion";
+import ProductPrice from "@/components/common/ProductPrice";
 
 type CartStoveCardProps = {
   stove: StoveWithProducts | null;
@@ -18,6 +19,8 @@ type CartStoveCardProps = {
 
 export default function StoveSummary({ stove, onRemove }: CartStoveCardProps) {
   const [open, setOpen] = useState(false);
+  const { currentUser } = useCurrentUser();
+  const isBusinessUser = currentUser?.tags?.includes("BUSINESS") ?? false;
 
   if (!stove) return null;
 
@@ -80,17 +83,23 @@ export default function StoveSummary({ stove, onRemove }: CartStoveCardProps) {
                   <span>📦 {stove.product.productName}</span>
                   <span>x{stove.defaultProductQuantity}</span>
                 </div>
-                <div className="flex justify-between pl-[5vw]">
+                <div className="flex justify-between pl-[5vw] items-end">
                   <span>
                     Giá: {stove.product.currentPrice.toLocaleString()}đ x{" "}
                     {stove.defaultProductQuantity}
                   </span>
-                  <span>
-                    {(
-                      stove.product.currentPrice * stove.defaultProductQuantity
-                    ).toLocaleString()}
-                    đ
-                  </span>
+                  <ProductPrice
+                    unitPrice={stove.product.currentPrice}
+                    quantity={stove.defaultProductQuantity}
+                    isBusinessUser={isBusinessUser}
+                    isBindableProduct={stove.product.tags?.includes("BINDABLE")}
+                    stovePromoDiscountPerUnit={
+                      stove.defaultPromoChoice === "DISCOUNT_CASH"
+                        ? PROMO_DISCOUNT_CASH_AMOUNT
+                        : 0
+                    }
+                    priceClassName="text-sm text-gas-green-700"
+                  />
                 </div>
 
                 <div className="bg-green-50 rounded-lg p-2">

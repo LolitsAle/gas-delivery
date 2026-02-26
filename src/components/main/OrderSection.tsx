@@ -20,6 +20,7 @@ import {
   PROMO_BONUS_POINT_AMOUNT,
   PROMO_DISCOUNT_CASH_AMOUNT,
 } from "@/constants/promotion";
+import ProductPrice from "@/components/common/ProductPrice";
 
 function OrderSection() {
   const {
@@ -62,13 +63,6 @@ function OrderSection() {
     }
   };
 
-  const formatVND = (value: number) =>
-    new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-      maximumFractionDigits: 0,
-    }).format(value);
-
   const onCartClick = () => {
     router.push("/cart");
   };
@@ -84,28 +78,35 @@ function OrderSection() {
   };
 
   const calculatedPriceText = useMemo(() => {
-    if (!activeStove?.defaultProductQuantity || !activeStove?.product)
+    if (!activeStove?.defaultProductQuantity || !activeStove?.product) {
       return null;
-
-    if (activeStove.defaultProductQuantity === 1) {
-      return formatVND(activeStove.product.currentPrice);
     }
 
     return (
       <div className="flex justify-start items-end gap-[2vw]">
-        <span className="text-[4vw]">
-          {formatVND(
-            activeStove.product.currentPrice *
-              activeStove.defaultProductQuantity,
-          )}
-        </span>
-        <span className="block text-[2.8vw] font-normal">
-          {formatVND(activeStove.product.currentPrice)} x
-          {activeStove.defaultProductQuantity}
-        </span>
+        <ProductPrice
+          unitPrice={activeStove.product.currentPrice}
+          quantity={activeStove.defaultProductQuantity}
+          isBusinessUser={user?.tags?.includes("BUSINESS")}
+          isBindableProduct={activeStove.product.tags?.includes("BINDABLE")}
+          stovePromoDiscountPerUnit={
+            activeStove.defaultPromoChoice === "DISCOUNT_CASH"
+              ? PROMO_DISCOUNT_CASH_AMOUNT
+              : 0
+          }
+          priceClassName="text-[4vw] text-white"
+          oldPriceClassName="text-[2.8vw] text-gas-orange-100"
+        />
+
+        {activeStove.defaultProductQuantity > 1 && (
+          <span className="block text-[2.8vw] font-normal">
+            {activeStove.product.currentPrice.toLocaleString()}đ x
+            {activeStove.defaultProductQuantity}
+          </span>
+        )}
       </div>
     );
-  }, [activeStove]);
+  }, [activeStove, user?.tags]);
 
   const renderPromo = () => {
     if (!activeStove?.defaultPromoChoice) return null;
