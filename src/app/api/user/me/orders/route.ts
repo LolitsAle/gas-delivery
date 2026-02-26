@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
-import { OrderStatus, CartType } from "@prisma/client";
+import { DiscountSource, OrderStatus, CartType } from "@prisma/client";
 import { emitOrderSocketEvent } from "@/lib/socket/orderEvents";
 import {
   BUSINESS_BINDABLE_DISCOUNT_AMOUNT,
   PROMO_BONUS_POINT_AMOUNT,
   PROMO_DISCOUNT_CASH_AMOUNT,
 } from "@/constants/promotion";
+import { calculateDiscountedProductPrice } from "@/lib/pricing/productPrice";
 
 export const GET = withAuth(["USER", "ADMIN"], async (req, ctx) => {
   try {
@@ -146,6 +147,19 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
       let totalPointsEarn = 0;
       let discountAmount = 0;
 
+      const orderItemSnapshots: Array<{
+        productId: string;
+        quantity: number;
+        unitPrice: number;
+        unitPointPrice: number;
+        type: any;
+        payByPoints: boolean;
+        earnPoints: boolean;
+        productTagsSnapshot: any[];
+        discountPerUnitSnapshot: number;
+        appliedDiscountSources: DiscountSource[];
+      }> = [];
+
       // ===== 1️⃣ Cart items =====
       for (const item of cart.items) {
         if (!item.product || item.parentItemId) continue;
@@ -155,39 +169,92 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         const qty = item.quantity;
         const bindable = item.product.tags?.includes("BINDABLE");
 
+        const productTagsSnapshot = item.product.tags ?? [];
+
         if (item.payByPoints) {
           totalPointsUse += pointPrice * qty;
+          orderItemSnapshots.push({
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.product?.currentPrice ?? 0,
+            unitPointPrice: item.product?.pointValue ?? 0,
+            type: item.type,
+            payByPoints: item.payByPoints,
+            earnPoints: item.earnPoints,
+            productTagsSnapshot,
+            discountPerUnitSnapshot: 0,
+            appliedDiscountSources: [],
+          });
           continue;
         }
 
-        subtotal += price * qty;
-
+        const appliedDiscountSources: DiscountSource[] = [];
         if (bindable && isBusinessUser) {
-          discountAmount += BUSINESS_BINDABLE_DISCOUNT_AMOUNT * qty;
+          appliedDiscountSources.push(DiscountSource.BUSINESS_BINDABLE);
         }
+
+        const itemPricing = calculateDiscountedProductPrice({
+          unitPrice: price,
+          quantity: qty,
+          isBusinessUser,
+          isBindableProduct: bindable,
+        });
+
+        subtotal += itemPricing.originalTotalPrice;
+        discountAmount += itemPricing.totalDiscount;
+
+        orderItemSnapshots.push({
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.product?.currentPrice ?? 0,
+          unitPointPrice: item.product?.pointValue ?? 0,
+          type: item.type,
+          payByPoints: item.payByPoints,
+          earnPoints: item.earnPoints,
+          productTagsSnapshot,
+          discountPerUnitSnapshot: itemPricing.discountPerUnit,
+          appliedDiscountSources,
+        });
       }
 
       // ===== 2️⃣ Stove gas =====
       let stoveUnitPrice: number | null = null;
       let stoveQuantity: number | null = null;
+      let stoveProductTagsSnapshot: any[] = [];
+      let stoveDiscountPerUnitSnapshot = 0;
+      let stoveAppliedDiscountSources: DiscountSource[] = [];
 
       if (cart.isStoveActive && stove.product && stove.defaultProductQuantity) {
         const qty = stove.defaultProductQuantity;
         const price = stove.product.currentPrice ?? 0;
         const bindable = stove.product.tags?.includes("BINDABLE");
+        stoveProductTagsSnapshot = stove.product.tags ?? [];
 
-        subtotal += price * qty;
+        stoveAppliedDiscountSources = [];
+        if (bindable && isBusinessUser) {
+          stoveAppliedDiscountSources.push(DiscountSource.BUSINESS_BINDABLE);
+        }
+        if (stove.defaultPromoChoice === "DISCOUNT_CASH") {
+          stoveAppliedDiscountSources.push(DiscountSource.STOVE_PROMO_DISCOUNT);
+        }
+
+        const stovePricing = calculateDiscountedProductPrice({
+          unitPrice: price,
+          quantity: qty,
+          isBusinessUser,
+          isBindableProduct: bindable,
+          stovePromoDiscountPerUnit:
+            stove.defaultPromoChoice === "DISCOUNT_CASH"
+              ? PROMO_DISCOUNT_CASH_AMOUNT
+              : 0,
+        });
+
+        subtotal += stovePricing.originalTotalPrice;
+        discountAmount += stovePricing.totalDiscount;
 
         stoveUnitPrice = price;
         stoveQuantity = qty;
-
-        if (bindable && isBusinessUser) {
-          discountAmount += BUSINESS_BINDABLE_DISCOUNT_AMOUNT * qty;
-        }
-
-        if (stove.defaultPromoChoice === "DISCOUNT_CASH") {
-          discountAmount += PROMO_DISCOUNT_CASH_AMOUNT * qty;
-        }
+        stoveDiscountPerUnitSnapshot = stovePricing.discountPerUnit;
 
         if (stove.defaultPromoChoice === "BONUS_POINT") {
           totalPointsEarn += PROMO_BONUS_POINT_AMOUNT * qty;
@@ -239,16 +306,9 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
           pointsUsed: totalPointsUse,
           pointsEarned: totalPointsEarn,
           pointsSettled: false, // sẽ settle khi complete hoặc cancel
+          userTagsSnapshot: user.tags,
           items: {
-            create: cart.items.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              unitPrice: item.product?.currentPrice ?? 0,
-              unitPointPrice: item.product?.pointValue ?? 0,
-              type: item.type,
-              payByPoints: item.payByPoints,
-              earnPoints: item.earnPoints,
-            })),
+            create: orderItemSnapshots,
           },
           serviceItems: {
             create: cart.serviceItems.map((item) => ({
@@ -275,6 +335,9 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
           productName: stove.product?.productName ?? null,
           unitPrice: stoveUnitPrice,
           quantity: stoveQuantity,
+          productTagsSnapshot: stoveProductTagsSnapshot,
+          discountPerUnitSnapshot: stoveDiscountPerUnitSnapshot,
+          appliedDiscountSources: stoveAppliedDiscountSources,
 
           promoChoice: stove.defaultPromoChoice,
           promoProductId: stove.defaultPromoProductId ?? null,

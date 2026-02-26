@@ -9,6 +9,7 @@ import {
   PROMO_BONUS_POINT_AMOUNT,
   PROMO_DISCOUNT_CASH_AMOUNT,
 } from "@/constants/promotion";
+import ProductPrice from "@/components/common/ProductPrice";
 
 type OrderCardProps = {
   order: any;
@@ -83,13 +84,14 @@ export default function OrderCard({
                       {order.stoveSnapshot.quantity}
                     </div>
 
-                    <div>
-                      {(
-                        (order.stoveSnapshot.unitPrice || 0) *
-                        (order.stoveSnapshot.quantity || 0)
-                      ).toLocaleString()}
-                      đ
-                    </div>
+                    <ProductPrice
+                      unitPrice={order.stoveSnapshot.unitPrice || 0}
+                      quantity={order.stoveSnapshot.quantity || 0}
+                      snapshotDiscountPerUnit={
+                        order.stoveSnapshot.discountPerUnitSnapshot
+                      }
+                      priceClassName="text-sm text-gas-green-700"
+                    />
                   </div>
                   {order.stoveSnapshot?.promoChoice === "GIFT_PRODUCT" &&
                     order.stoveSnapshot?.promoProductQuantity && (
@@ -131,7 +133,16 @@ export default function OrderCard({
                       <div className="whitespace-nowrap text-right font-medium tabular-nums">
                         {item.payByPoints
                           ? `${item.unitPointPrice * item.quantity} điểm`
-                          : `${(item.unitPrice * item.quantity).toLocaleString()}đ`}
+                          : (
+                            <ProductPrice
+                              unitPrice={item.unitPrice}
+                              quantity={item.quantity}
+                              snapshotDiscountPerUnit={
+                                item.discountPerUnitSnapshot
+                              }
+                              priceClassName="text-sm"
+                            />
+                          )}
                       </div>
                     </div>
                   ))}
@@ -165,6 +176,13 @@ export default function OrderCard({
             <div>Tổng tiền</div>
             <div>{order.totalPrice.toLocaleString()}đ</div>
           </div>
+
+          {order.discountAmount > 0 && (
+            <div className="flex justify-between text-gas-green-700 mt-1">
+              <div>Giảm giá</div>
+              <div>-{order.discountAmount.toLocaleString()}đ</div>
+            </div>
+          )}
 
           {order.pointsUsed > 0 && (
             <div className="flex justify-between text-blue-600">

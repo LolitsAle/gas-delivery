@@ -3,6 +3,7 @@ import { BUSINESS_BINDABLE_DISCOUNT_AMOUNT } from "@/constants/promotion";
 export type ProductDiscountInput = {
   unitPrice: number;
   quantity?: number;
+  snapshotDiscountPerUnit?: number;
   isBusinessUser?: boolean;
   isBindableProduct?: boolean;
   promotionDiscountPerUnit?: number;
@@ -27,6 +28,7 @@ const toSafeMoney = (value: number) => {
 export const calculateDiscountedProductPrice = ({
   unitPrice,
   quantity = 1,
+  snapshotDiscountPerUnit,
   isBusinessUser = false,
   isBindableProduct = false,
   promotionDiscountPerUnit = 0,
@@ -35,6 +37,23 @@ export const calculateDiscountedProductPrice = ({
   const safeUnitPrice = toSafeMoney(unitPrice);
   const safeQuantity =
     Number.isFinite(quantity) && quantity > 0 ? Math.floor(quantity) : 1;
+
+  const explicitSnapshotDiscount = toSafeMoney(snapshotDiscountPerUnit ?? 0);
+
+  if (explicitSnapshotDiscount > 0) {
+    const discountPerUnit = Math.min(safeUnitPrice, explicitSnapshotDiscount);
+    const discountedUnitPrice = Math.max(safeUnitPrice - discountPerUnit, 0);
+
+    return {
+      quantity: safeQuantity,
+      originalUnitPrice: safeUnitPrice,
+      discountedUnitPrice,
+      originalTotalPrice: safeUnitPrice * safeQuantity,
+      discountedTotalPrice: discountedUnitPrice * safeQuantity,
+      discountPerUnit,
+      totalDiscount: discountPerUnit * safeQuantity,
+    };
+  }
 
   // Ưu tiên tính discount từ promotion trước.
   const promotionDiscount = toSafeMoney(promotionDiscountPerUnit);
@@ -64,4 +83,3 @@ export const calculateDiscountedProductPrice = ({
 
 export const formatVND = (value: number) =>
   `${Math.max(0, Math.floor(value)).toLocaleString()}đ`;
-

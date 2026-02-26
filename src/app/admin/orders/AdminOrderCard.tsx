@@ -21,6 +21,7 @@ import {
   XCircle,
   Eye,
 } from "lucide-react";
+import ProductPrice from "@/components/common/ProductPrice";
 
 type OrderStatus =
   | "PENDING"
@@ -183,12 +184,14 @@ export default function AdminOrderCard({
                 {order.stoveSnapshot.productName} x
                 {order.stoveSnapshot.quantity}
               </div>
-              <div>
-                {(
-                  order.stoveSnapshot.unitPrice * order.stoveSnapshot.quantity
-                ).toLocaleString()}
-                đ
-              </div>
+              <ProductPrice
+                unitPrice={order.stoveSnapshot.unitPrice}
+                quantity={order.stoveSnapshot.quantity}
+                snapshotDiscountPerUnit={
+                  order.stoveSnapshot.discountPerUnitSnapshot
+                }
+                priceClassName="text-sm text-gas-green-700"
+              />
             </div>
           )}
 
@@ -205,7 +208,16 @@ export default function AdminOrderCard({
                   <div className="text-right font-medium tabular-nums">
                     {item.payByPoints
                       ? `${item.unitPointPrice * item.quantity} điểm`
-                      : `${(item.unitPrice * item.quantity).toLocaleString()}đ`}
+                      : (
+                        <ProductPrice
+                          unitPrice={item.unitPrice}
+                          quantity={item.quantity}
+                          snapshotDiscountPerUnit={
+                            item.discountPerUnitSnapshot
+                          }
+                          priceClassName="text-sm"
+                        />
+                      )}
                   </div>
                 </div>
               ))}
@@ -233,6 +245,13 @@ export default function AdminOrderCard({
             <div>Tổng tiền</div>
             <div>{order.totalPrice.toLocaleString()}đ</div>
           </div>
+
+          {order.discountAmount > 0 && (
+            <div className="flex justify-between text-gas-green-700 mt-1">
+              <div>Giảm giá</div>
+              <div>-{order.discountAmount.toLocaleString()}đ</div>
+            </div>
+          )}
 
           {expanded && (
             <div className="mt-2 space-y-1">
