@@ -30,4 +30,5 @@ export async function sendOtpService(phone: string): Promise<void> {
   }
 
   console.log("OTP sent to", phone);
+  console.log("OTP content", content);
 }
