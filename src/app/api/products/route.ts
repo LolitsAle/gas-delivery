@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ProductTag } from "@prisma/client";
+import { calculatePromotionDiscountPerUnit } from "@/lib/pricing/promotionEngine";
 
 export async function GET(req: NextRequest) {
   try {
@@ -101,7 +102,38 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(products);
+    const now = new Date();
+    const promotions = await prisma.promotion.findMany({
+      where: {
+        isActive: true,
+        startAt: { lte: now },
+        endAt: { gte: now },
+      },
+      include: {
+        conditions: true,
+        actions: true,
+      },
+      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+    });
+
+    const productsWithPromotion = products.map((product) => {
+      const { discountPerUnit } = calculatePromotionDiscountPerUnit({
+        promotions,
+        unitPrice: product.currentPrice,
+        context: {
+          productTags: product.tags,
+          categoryId: product.category?.id,
+          categoryName: product.category?.name,
+        },
+      });
+
+      return {
+        ...product,
+        promotionDiscountPerUnit: discountPerUnit,
+      };
+    });
+
+    return NextResponse.json(productsWithPromotion);
   } catch (error) {
     console.error("GET PRODUCTS ERROR", error);
     return NextResponse.json(

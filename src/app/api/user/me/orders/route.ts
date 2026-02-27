@@ -1,14 +1,24 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
-import { DiscountSource, OrderStatus, CartType } from "@prisma/client";
+import {
+  DiscountSource,
+  OrderStatus,
+  CartType,
+  PromotionActionType,
+} from "@prisma/client";
 import { emitOrderSocketEvent } from "@/lib/socket/orderEvents";
 import {
-  BUSINESS_BINDABLE_DISCOUNT_AMOUNT,
   PROMO_BONUS_POINT_AMOUNT,
   PROMO_DISCOUNT_CASH_AMOUNT,
 } from "@/constants/promotion";
 import { calculateDiscountedProductPrice } from "@/lib/pricing/productPrice";
+import {
+  calculatePromotionBonusPoints,
+  calculatePromotionDiscountPerUnit,
+  getMatchedPromotions,
+} from "@/lib/pricing/promotionEngine";
+import { calculateCheckoutTotals } from "@/lib/pricing/orderPricing";
 
 export const GET = withAuth(["USER", "ADMIN"], async (req, ctx) => {
   try {
@@ -141,6 +151,19 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
       }
 
       const isBusinessUser = user.tags.includes("BUSINESS");
+      const now = new Date();
+      const activePromotions = await tx.promotion.findMany({
+        where: {
+          isActive: true,
+          startAt: { lte: now },
+          endAt: { gte: now },
+        },
+        include: {
+          conditions: true,
+          actions: true,
+        },
+        orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+      });
 
       let subtotal = 0;
       let totalPointsUse = 0;
@@ -193,11 +216,27 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
           appliedDiscountSources.push(DiscountSource.BUSINESS_BINDABLE);
         }
 
+        const { discountPerUnit: promotionDiscountPerUnit } =
+          calculatePromotionDiscountPerUnit({
+            promotions: activePromotions,
+            unitPrice: price,
+            context: {
+              productTags: item.product.tags,
+              categoryId: item.product.categoryId,
+              orderType: cart.type,
+            },
+          });
+
+        if (promotionDiscountPerUnit > 0) {
+          appliedDiscountSources.push(DiscountSource.PROMOTION_RULE);
+        }
+
         const itemPricing = calculateDiscountedProductPrice({
           unitPrice: price,
           quantity: qty,
           isBusinessUser,
           isBindableProduct: bindable,
+          promotionDiscountPerUnit,
         });
 
         subtotal += itemPricing.originalTotalPrice;
@@ -238,11 +277,27 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
           stoveAppliedDiscountSources.push(DiscountSource.STOVE_PROMO_DISCOUNT);
         }
 
+        const { discountPerUnit: stovePromotionDiscountPerUnit } =
+          calculatePromotionDiscountPerUnit({
+            promotions: activePromotions,
+            unitPrice: price,
+            context: {
+              productTags: stove.product.tags,
+              categoryId: stove.product.categoryId,
+              orderType: cart.type,
+            },
+          });
+
+        if (stovePromotionDiscountPerUnit > 0) {
+          stoveAppliedDiscountSources.push(DiscountSource.PROMOTION_RULE);
+        }
+
         const stovePricing = calculateDiscountedProductPrice({
           unitPrice: price,
           quantity: qty,
           isBusinessUser,
           isBindableProduct: bindable,
+          promotionDiscountPerUnit: stovePromotionDiscountPerUnit,
           stovePromoDiscountPerUnit:
             stove.defaultPromoChoice === "DISCOUNT_CASH"
               ? PROMO_DISCOUNT_CASH_AMOUNT
@@ -266,8 +321,49 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         subtotal += service.price * service.quantity;
       }
 
+      const matchedOrderPromotions = getMatchedPromotions(activePromotions, {
+        subtotal,
+        orderType: cart.type,
+        now,
+      });
+
+      const promotionBonusPoints = calculatePromotionBonusPoints({
+        promotions: activePromotions,
+        context: {
+          subtotal,
+          orderType: cart.type,
+          now,
+        },
+      });
+
+      totalPointsEarn += promotionBonusPoints;
+
       const shipFee = 0;
-      const totalPrice = Math.max(subtotal - discountAmount, 0);
+      const {
+        totalDiscount,
+        totalPrice,
+        perPromotionDiscount,
+      } = calculateCheckoutTotals({
+        itemsSubtotal: subtotal,
+        itemDiscountTotal: discountAmount,
+        orderPromotions: matchedOrderPromotions.map((promotion) => ({
+          id: promotion.id,
+          actions: promotion.actions
+            .filter(
+              (action) =>
+                action.type === PromotionActionType.DISCOUNT_AMOUNT ||
+                action.type === PromotionActionType.DISCOUNT_PERCENT,
+            )
+            .map((action) => ({
+              type: action.type,
+              value: action.value,
+              maxDiscount: action.maxDiscount,
+            })),
+        })),
+        shippingFee: shipFee,
+      });
+
+      // Apply matched order-level discounts before computing totalPrice.
 
       // ======================================================
       // 🔥 4️⃣ CHECK & DEDUCT POINTS (ANTI-RACE CONDITION)
@@ -299,7 +395,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
           stoveId,
           type: cart.type,
           subtotal,
-          discountAmount,
+          discountAmount: totalDiscount,
           shipFee,
           totalPrice,
           status: OrderStatus.PENDING,
@@ -318,6 +414,20 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
               unitPrice: item.price,
               quantity: item.quantity,
               note: item.note,
+            })),
+          },
+          promotions: {
+            create: matchedOrderPromotions.map((promotion) => ({
+              promotionId: promotion.id,
+              discountAmount:
+                perPromotionDiscount.find((item) => item.promotionId === promotion.id)
+                  ?.discountAmount ?? 0,
+              bonusPoint: promotion.actions
+                .filter((action) => action.type === PromotionActionType.BONUS_POINT)
+                .reduce((sum, action) => sum + (action.value ?? 0), 0),
+              freeShip: promotion.actions.some(
+                (action) => action.type === PromotionActionType.FREE_SHIP,
+              ),
             })),
           },
         },

@@ -120,6 +120,7 @@ export default function NormalCartItems({ refreshUser, stove }: Props) {
                       quantity={item.quantity}
                       isBusinessUser={isBusinessUser}
                       isBindableProduct={item.product?.tags?.includes("BINDABLE")}
+                      promotionDiscountPerUnit={item.product?.promotionDiscountPerUnit ?? 0}
                       priceClassName="text-sm text-gas-green-600"
                     />
                   )}

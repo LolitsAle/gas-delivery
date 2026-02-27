@@ -93,6 +93,7 @@ export default function StoveSummary({ stove, onRemove }: CartStoveCardProps) {
                     quantity={stove.defaultProductQuantity}
                     isBusinessUser={isBusinessUser}
                     isBindableProduct={stove.product.tags?.includes("BINDABLE")}
+                    promotionDiscountPerUnit={stove.product.promotionDiscountPerUnit ?? 0}
                     stovePromoDiscountPerUnit={
                       stove.defaultPromoChoice === "DISCOUNT_CASH"
                         ? PROMO_DISCOUNT_CASH_AMOUNT

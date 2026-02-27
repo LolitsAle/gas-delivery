@@ -38,6 +38,7 @@ type Product = {
   categoryName: string;
   description: string;
   tags: string[];
+  promotionDiscountPerUnit: number;
 };
 
 type Category = {
@@ -170,6 +171,7 @@ export default function ShopPage() {
           categoryName: p.category?.name,
           description: p.description,
           tags: p.tags || [],
+          promotionDiscountPerUnit: p.promotionDiscountPerUnit ?? 0,
         }));
         setAllProducts(mapped);
         localStorage.setItem(PRODUCTS_LIST_KEY, JSON.stringify(mapped));
@@ -361,6 +363,7 @@ export default function ShopPage() {
                               unitPrice={p.price}
                               isBusinessUser={isBusinessUser}
                               isBindableProduct={p.tags.includes("BINDABLE")}
+                              promotionDiscountPerUnit={p.promotionDiscountPerUnit}
                               priceClassName="text-xs text-gas-green-600"
                             />
                           )}
@@ -411,6 +414,7 @@ export default function ShopPage() {
                         unitPrice={selectedProduct.price}
                         isBusinessUser={isBusinessUser}
                         isBindableProduct={selectedProduct.tags.includes("BINDABLE")}
+                        promotionDiscountPerUnit={selectedProduct.promotionDiscountPerUnit}
                         priceClassName="text-xl font-extrabold text-gas-green-700"
                         oldPriceClassName="text-sm"
                       />
@@ -475,6 +479,7 @@ export default function ShopPage() {
                             quantity={quantity}
                             isBusinessUser={isBusinessUser}
                             isBindableProduct={selectedProduct.tags.includes("BINDABLE")}
+                            promotionDiscountPerUnit={selectedProduct.promotionDiscountPerUnit}
                             priceClassName="text-sm text-gas-green-700"
                           />
                         )}
