@@ -14,7 +14,7 @@ import { useMemo, useState } from "react";
 export default function Home() {
   const { currentUser, isFetchingUser, refreshUser, activeStove } =
     useCurrentUser();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   const renderUserData = useMemo(() => {
@@ -37,14 +37,7 @@ export default function Home() {
       );
     }
 
-    return (
-      <div
-        onClick={() => router.push("/login")}
-        className="cursor-pointer text-blue-600 underline"
-      >
-        Chưa đăng nhập
-      </div>
-    );
+    router.push("/login");
   }, [currentUser, isFetchingUser, router]);
 
   if (loading) {
