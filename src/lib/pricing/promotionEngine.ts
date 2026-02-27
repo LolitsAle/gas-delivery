@@ -6,6 +6,7 @@ import {
   PromotionCondition,
   ProductTag,
 } from "@prisma/client";
+import { calculateOrderLevelDiscount } from "./orderPricing";
 
 export type PromotionFull = Promotion & {
   conditions: PromotionCondition[];
@@ -141,4 +142,30 @@ export const calculatePromotionBonusPoints = ({
 
     return total + bonus;
   }, 0);
+};
+
+export const calculateOrderLevelPromotionDiscount = ({
+  promotions,
+  baseAmount,
+}: {
+  promotions: PromotionFull[];
+  baseAmount: number;
+}) => {
+  return calculateOrderLevelDiscount({
+    promotions: promotions.map((promotion) => ({
+      id: promotion.id,
+      actions: promotion.actions
+        .filter(
+          (action) =>
+            action.type === PromotionActionType.DISCOUNT_AMOUNT ||
+            action.type === PromotionActionType.DISCOUNT_PERCENT,
+        )
+        .map((action) => ({
+          type: action.type,
+          value: action.value,
+          maxDiscount: action.maxDiscount,
+        })),
+    })),
+    baseAmount,
+  });
 };

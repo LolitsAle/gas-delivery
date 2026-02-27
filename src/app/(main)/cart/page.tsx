@@ -40,6 +40,23 @@ export default function CartPage() {
 
   const { totalMoney, totalPointsUse, totalPointsEarn, discountCash, bonusPoints } =
     useMemo(() => {
+      const serverPricing = stove?.cart?.pricing;
+      if (serverPricing) {
+        let pointUse = 0;
+        items.forEach((item) => {
+          if (!item.product || item.parentItemId || !item.payByPoints) return;
+          pointUse += (item.product.pointValue ?? 0) * item.quantity;
+        });
+
+        return {
+          totalMoney: serverPricing.totalPrice,
+          totalPointsUse: pointUse,
+          totalPointsEarn: serverPricing.bonusPoint,
+          discountCash: serverPricing.discountAmount,
+          bonusPoints: serverPricing.bonusPoint,
+        };
+      }
+
       let subtotal = 0;
       let pointUse = 0;
       let discount = 0;

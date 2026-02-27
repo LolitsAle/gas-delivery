@@ -9,7 +9,6 @@ import {
 } from "@prisma/client";
 import { emitOrderSocketEvent } from "@/lib/socket/orderEvents";
 import {
-  BUSINESS_BINDABLE_DISCOUNT_AMOUNT,
   PROMO_BONUS_POINT_AMOUNT,
   PROMO_DISCOUNT_CASH_AMOUNT,
 } from "@/constants/promotion";
@@ -19,6 +18,7 @@ import {
   calculatePromotionDiscountPerUnit,
   getMatchedPromotions,
 } from "@/lib/pricing/promotionEngine";
+import { calculateCheckoutTotals } from "@/lib/pricing/orderPricing";
 
 export const GET = withAuth(["USER", "ADMIN"], async (req, ctx) => {
   try {
@@ -339,7 +339,31 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
       totalPointsEarn += promotionBonusPoints;
 
       const shipFee = 0;
-      const totalPrice = Math.max(subtotal - discountAmount, 0);
+      const {
+        totalDiscount,
+        totalPrice,
+        perPromotionDiscount,
+      } = calculateCheckoutTotals({
+        itemsSubtotal: subtotal,
+        itemDiscountTotal: discountAmount,
+        orderPromotions: matchedOrderPromotions.map((promotion) => ({
+          id: promotion.id,
+          actions: promotion.actions
+            .filter(
+              (action) =>
+                action.type === PromotionActionType.DISCOUNT_AMOUNT ||
+                action.type === PromotionActionType.DISCOUNT_PERCENT,
+            )
+            .map((action) => ({
+              type: action.type,
+              value: action.value,
+              maxDiscount: action.maxDiscount,
+            })),
+        })),
+        shippingFee: shipFee,
+      });
+
+      // Apply matched order-level discounts before computing totalPrice.
 
       // ======================================================
       // 🔥 4️⃣ CHECK & DEDUCT POINTS (ANTI-RACE CONDITION)
@@ -371,7 +395,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
           stoveId,
           type: cart.type,
           subtotal,
-          discountAmount,
+          discountAmount: totalDiscount,
           shipFee,
           totalPrice,
           status: OrderStatus.PENDING,
@@ -395,9 +419,9 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
           promotions: {
             create: matchedOrderPromotions.map((promotion) => ({
               promotionId: promotion.id,
-              discountAmount: promotion.actions
-                .filter((action) => action.type === PromotionActionType.DISCOUNT_AMOUNT)
-                .reduce((sum, action) => sum + (action.value ?? 0), 0),
+              discountAmount:
+                perPromotionDiscount.find((item) => item.promotionId === promotion.id)
+                  ?.discountAmount ?? 0,
               bonusPoint: promotion.actions
                 .filter((action) => action.type === PromotionActionType.BONUS_POINT)
                 .reduce((sum, action) => sum + (action.value ?? 0), 0),
