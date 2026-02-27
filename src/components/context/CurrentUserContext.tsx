@@ -13,6 +13,14 @@ import { apiFetchAuthNoRedirect } from "@/lib/api/apiClient";
 import { ACTIVE_STOVE_KEY, USER_STORAGE_KEY } from "@/constants/constants";
 import { Cart, CartItem, Product, Stove, User } from "@prisma/client";
 
+
+export type ProductWithPromotion = Product & {
+  promotionDiscountPerUnit?: number;
+  category?: {
+    id: string;
+    name: string;
+  } | null;
+};
 type UserContextType = {
   currentUser: UserInfoFullContext | null;
   isFetchingUser: boolean;
@@ -25,8 +33,8 @@ type UserContextType = {
 };
 
 export interface StoveWithProducts extends Stove {
-  product: Product | null;
-  promoProduct: Product | null;
+  product: ProductWithPromotion | null;
+  promoProduct: ProductWithPromotion | null;
   cart: {
     id: string;
     isStoveActive: true;
@@ -35,7 +43,7 @@ export interface StoveWithProducts extends Stove {
 }
 
 export interface CartItemsWithProduct extends CartItem {
-  product: Product;
+  product: ProductWithPromotion;
 }
 
 export interface CartWithItems extends Cart {

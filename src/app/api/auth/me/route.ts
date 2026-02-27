@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyJwt } from "@/lib/auth/jwt-node";
+import { calculatePromotionDiscountPerUnit } from "@/lib/pricing/promotionEngine";
 
 type AccessTokenPayload = {
   userId: string;
@@ -37,6 +38,20 @@ export async function GET(req: Request) {
   const userId = payload.userId;
 
   const user = await prisma.$transaction(async (tx) => {
+    const now = new Date();
+    const activePromotions = await tx.promotion.findMany({
+      where: {
+        isActive: true,
+        startAt: { lte: now },
+        endAt: { gte: now },
+      },
+      include: {
+        conditions: true,
+        actions: true,
+      },
+      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+    });
+
     const baseUser = await tx.user.findUnique({
       where: { id: userId },
       select: {
@@ -54,7 +69,6 @@ export async function GET(req: Request) {
 
     if (!baseUser) return null;
 
-    // 1️⃣ Đảm bảo có ít nhất 1 stove
     let stoves = await tx.stove.findMany({
       where: { userId },
       orderBy: { createdAt: "asc" },
@@ -74,7 +88,6 @@ export async function GET(req: Request) {
       stoves = [created];
     }
 
-    // 2️⃣ Đảm bảo mỗi stove có 1 cart
     for (const stove of stoves) {
       const existingCart = await tx.cart.findUnique({
         where: { stoveId: stove.id },
@@ -89,8 +102,7 @@ export async function GET(req: Request) {
       }
     }
 
-    // 3️⃣ Trả full user + stoves + cart trong stove
-    return tx.user.findUnique({
+    const fullUser = await tx.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -123,6 +135,12 @@ export async function GET(req: Request) {
                 pointValue: true,
                 previewImageUrl: true,
                 tags: true,
+                category: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             },
             product: {
@@ -133,6 +151,12 @@ export async function GET(req: Request) {
                 pointValue: true,
                 previewImageUrl: true,
                 tags: true,
+                category: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             },
             cart: {
@@ -157,6 +181,12 @@ export async function GET(req: Request) {
                         pointValue: true,
                         previewImageUrl: true,
                         tags: true,
+                        category: {
+                          select: {
+                            id: true,
+                            name: true,
+                          },
+                        },
                       },
                     },
                   },
@@ -167,6 +197,44 @@ export async function GET(req: Request) {
         },
       },
     });
+
+    if (!fullUser) return null;
+
+    const mapPromotionPrice = <T,>(product: T | null) => {
+      if (!product) return null;
+      const { discountPerUnit } = calculatePromotionDiscountPerUnit({
+        promotions: activePromotions,
+        unitPrice: product.currentPrice,
+        context: {
+          productTags: product.tags,
+          categoryId: product.category?.id,
+          categoryName: product.category?.name,
+        },
+      });
+
+      return {
+        ...product,
+        promotionDiscountPerUnit: discountPerUnit,
+      };
+    };
+
+    return {
+      ...fullUser,
+      stoves: fullUser.stoves.map((stove) => ({
+        ...stove,
+        product: mapPromotionPrice(stove.product),
+        promoProduct: mapPromotionPrice(stove.promoProduct),
+        cart: stove.cart
+          ? {
+              ...stove.cart,
+              items: stove.cart.items.map((item) => ({
+                ...item,
+                product: mapPromotionPrice(item.product) as any,
+              })),
+            }
+          : null,
+      })),
+    };
   });
 
   if (!user) {

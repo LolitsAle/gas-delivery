@@ -89,6 +89,7 @@ function OrderSection() {
           quantity={activeStove.defaultProductQuantity}
           isBusinessUser={user?.tags?.includes("BUSINESS")}
           isBindableProduct={activeStove.product.tags?.includes("BINDABLE")}
+          promotionDiscountPerUnit={activeStove.product.promotionDiscountPerUnit ?? 0}
           stovePromoDiscountPerUnit={
             activeStove.defaultPromoChoice === "DISCOUNT_CASH"
               ? PROMO_DISCOUNT_CASH_AMOUNT
