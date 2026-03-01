@@ -23,6 +23,9 @@ model User {
   isVerified     Boolean @default(false)
   sessionVersion Int     @default(1)
   isActive       Boolean @default(true)
+  authProvider   AuthProvider @default(PHONE_OTP)
+  providerUserId String?
+  needsPhoneNumber Boolean @default(false)
 
   tags UserTag[] @default([])
 
@@ -33,6 +36,15 @@ model User {
   ordersAsClient  Order[]        @relation("ClientRelation")
   ordersAsShipper Order[]        @relation("ShipperRelation")
   refreshTokens   RefreshToken[]
+
+  @@unique([authProvider, providerUserId])
+}
+
+enum AuthProvider {
+  PHONE_OTP
+  PASSWORD
+  ZALO
+  FACEBOOK
 }
 
 model RefreshToken {

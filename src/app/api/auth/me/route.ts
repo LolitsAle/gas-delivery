@@ -73,6 +73,7 @@ export async function GET(req: Request) {
         address: true,
         addressNote: true,
         tags: true,
+        needsPhoneNumber: true,
       },
     });
 
@@ -123,6 +124,7 @@ export async function GET(req: Request) {
         address: true,
         addressNote: true,
         tags: true,
+        needsPhoneNumber: true,
         stoves: {
           orderBy: { createdAt: "asc" },
           select: {
