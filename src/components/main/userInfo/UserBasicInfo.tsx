@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { apiLogoutClient } from "@/lib/api/apiClient";
-import type { User } from "@prisma/client";
+import type { User } from "@/lib/types/frontend";
 import { useRouter } from "next/navigation";
 
 type Props = {

@@ -19,7 +19,13 @@ import {
   getMatchedPromotions,
 } from "@/lib/pricing/promotionEngine";
 import { calculateCheckoutTotals } from "@/lib/pricing/orderPricing";
-import { isDiscountAction, toSafeMoney } from "@/lib/types/promotion";
+import {
+  isDiscountAction,
+  type ProductTag,
+  PRODUCT_TAG,
+  PROMOTION_ACTION,
+  toSafeMoney,
+} from "@/lib/types/promotion";
 
 export const GET = withAuth(["USER", "ADMIN"], async (req, ctx) => {
   try {
@@ -179,7 +185,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         type: CartItemType;
         payByPoints: boolean;
         earnPoints: boolean;
-        productTagsSnapshot: import("@prisma/client").ProductTag[];
+        productTagsSnapshot: ProductTag[];
         discountPerUnitSnapshot: number;
         appliedDiscountSources: DiscountSource[];
       }> = [];
@@ -191,7 +197,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         const price = item.product.currentPrice ?? 0;
         const pointPrice = item.product.pointValue ?? 0;
         const qty = item.quantity;
-        const bindable = item.product.tags?.includes("BINDABLE");
+        const bindable = item.product.tags?.includes(PRODUCT_TAG.BINDABLE);
 
         const productTagsSnapshot = item.product.tags ?? [];
 
@@ -260,14 +266,14 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
       // ===== 2️⃣ Stove gas =====
       let stoveUnitPrice: number | null = null;
       let stoveQuantity: number | null = null;
-      let stoveProductTagsSnapshot: import("@prisma/client").ProductTag[] = [];
+      let stoveProductTagsSnapshot: ProductTag[] = [];
       let stoveDiscountPerUnitSnapshot = 0;
       let stoveAppliedDiscountSources: DiscountSource[] = [];
 
       if (cart.isStoveActive && stove.product && stove.defaultProductQuantity) {
         const qty = stove.defaultProductQuantity;
         const price = stove.product.currentPrice ?? 0;
-        const bindable = stove.product.tags?.includes("BINDABLE");
+        const bindable = stove.product.tags?.includes(PRODUCT_TAG.BINDABLE);
         stoveProductTagsSnapshot = stove.product.tags ?? [];
 
         stoveAppliedDiscountSources = [];
@@ -312,7 +318,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         stoveQuantity = qty;
         stoveDiscountPerUnitSnapshot = stovePricing.discountPerUnit;
 
-        if (stove.defaultPromoChoice === "BONUS_POINT") {
+        if (stove.defaultPromoChoice === PROMOTION_ACTION.BONUS_POINT) {
           totalPointsEarn += PROMO_BONUS_POINT_AMOUNT * qty;
         }
       }
@@ -423,10 +429,10 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
                 perPromotionDiscount.find((item) => item.promotionId === promotion.id)
                   ?.discountAmount ?? 0,
               bonusPoint: promotion.actions
-                .filter((action) => action.type === "BONUS_POINT")
+                .filter((action) => action.type === PROMOTION_ACTION.BONUS_POINT)
                 .reduce((sum, action) => sum + (action.value ?? 0), 0),
               freeShip: promotion.actions.some(
-                (action) => action.type === "FREE_SHIP",
+                (action) => action.type === PROMOTION_ACTION.FREE_SHIP,
               ),
             })),
           },

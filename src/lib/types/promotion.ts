@@ -1,16 +1,46 @@
-import type {
-  ProductTag,
-  Promotion,
-  PromotionAction,
-  PromotionActionType,
-  PromotionCondition,
-  PromotionConditionType,
-} from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
-export type PromotionFull = Promotion & {
-  conditions: PromotionCondition[];
-  actions: PromotionAction[];
-};
+export const PROMOTION_CONDITION = {
+  PRODUCT_TAG: "PRODUCT_TAG",
+  CATEGORY: "CATEGORY",
+  MIN_SUBTOTAL: "MIN_SUBTOTAL",
+  ORDER_TYPE: "ORDER_TYPE",
+} as const;
+
+export const PROMOTION_ACTION = {
+  DISCOUNT_PERCENT: "DISCOUNT_PERCENT",
+  DISCOUNT_AMOUNT: "DISCOUNT_AMOUNT",
+  FREE_SHIP: "FREE_SHIP",
+  BONUS_POINT: "BONUS_POINT",
+} as const;
+
+export const PRODUCT_TAG = {
+  BINDABLE: "BINDABLE",
+  POINT_EARNABLE: "POINT_EARNABLE",
+  POINT_EXCHANGABLE: "POINT_EXCHANGABLE",
+  FREE_SHIP: "FREE_SHIP",
+  PROMO_ELIGIBLE: "PROMO_ELIGIBLE",
+} as const;
+
+export type PromotionConditionType =
+  (typeof PROMOTION_CONDITION)[keyof typeof PROMOTION_CONDITION];
+export type PromotionActionType =
+  (typeof PROMOTION_ACTION)[keyof typeof PROMOTION_ACTION];
+export type ProductTag = (typeof PRODUCT_TAG)[keyof typeof PRODUCT_TAG];
+
+export const PROMOTION_CONDITION_TYPES = Object.values(PROMOTION_CONDITION);
+export const PROMOTION_ACTION_TYPES = Object.values(PROMOTION_ACTION);
+export const PRODUCT_TAGS = Object.values(PRODUCT_TAG);
+
+export type PromotionFull = Prisma.PromotionGetPayload<{
+  include: {
+    conditions: true;
+    actions: true;
+  };
+}>;
+
+export type PromotionAction = PromotionFull["actions"][number];
+export type PromotionCondition = PromotionFull["conditions"][number];
 
 export type PromotionContext = {
   productTags?: ProductTag[];
@@ -20,28 +50,6 @@ export type PromotionContext = {
   orderType?: string;
   now?: Date;
 };
-
-export const PROMOTION_CONDITION_TYPES = [
-  "PRODUCT_TAG",
-  "CATEGORY",
-  "MIN_SUBTOTAL",
-  "ORDER_TYPE",
-] as const satisfies readonly PromotionConditionType[];
-
-export const PROMOTION_ACTION_TYPES = [
-  "DISCOUNT_PERCENT",
-  "DISCOUNT_AMOUNT",
-  "FREE_SHIP",
-  "BONUS_POINT",
-] as const satisfies readonly PromotionActionType[];
-
-export const PRODUCT_TAGS = [
-  "BINDABLE",
-  "POINT_EARNABLE",
-  "POINT_EXCHANGABLE",
-  "FREE_SHIP",
-  "PROMO_ELIGIBLE",
-] as const satisfies readonly ProductTag[];
 
 export type OrderDiscountActionType = Extract<
   PromotionActionType,
@@ -78,7 +86,8 @@ export const isPromotionActive = (promotion: PromotionFull, now: Date) =>
 export const isDiscountAction = (
   action: Pick<PromotionAction, "type">,
 ): action is Pick<OrderDiscountAction, "type"> =>
-  action.type === "DISCOUNT_AMOUNT" || action.type === "DISCOUNT_PERCENT";
+  action.type === PROMOTION_ACTION.DISCOUNT_AMOUNT ||
+  action.type === PROMOTION_ACTION.DISCOUNT_PERCENT;
 
 export const isPromotionActionType = (
   value: unknown,

@@ -110,7 +110,7 @@ export default function AdminProductsPage() {
        FETCH CATEGORIES
     ============================== */
   useEffect(() => {
-    apiFetchAuth<{ categories: Category[] }>("/api/admin/categories")
+    apiFetchAuth<{ categories: CategoryOption[] }>("/api/admin/categories")
       .then((res) => setCategories(res.categories))
       .catch(console.error);
   }, []);

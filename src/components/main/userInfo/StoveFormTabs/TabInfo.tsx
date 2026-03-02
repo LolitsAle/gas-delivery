@@ -1,4 +1,4 @@
-import type { Stove } from "@prisma/client";
+import type { Stove } from "@/lib/types/frontend";
 import { FieldCustomed } from "@/components/common/FieldCustom";
 
 export default function TabInfo({

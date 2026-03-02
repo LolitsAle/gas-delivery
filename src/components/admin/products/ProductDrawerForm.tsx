@@ -9,7 +9,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import type { ProductTag } from "@prisma/client";
+import type { ProductTag } from "@/lib/types/promotion";
 import { PRODUCT_TAGS } from "@/lib/types/promotion";
 import type { CategoryOption, ProductBase } from "./types";
 import { apiFetchAuth } from "@/lib/api/apiClient";

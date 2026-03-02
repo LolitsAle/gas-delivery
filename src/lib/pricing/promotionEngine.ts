@@ -1,5 +1,7 @@
-import type { PromotionAction, PromotionCondition, ProductTag } from "@prisma/client";
 import {
+  type ProductTag,
+  type PromotionAction,
+  type PromotionCondition,
   PromotionContext,
   PromotionFull,
   isDiscountAction,

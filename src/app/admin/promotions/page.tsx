@@ -1,11 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  type PromotionAction,
-  type PromotionActionType,
-  type PromotionConditionType,
-} from "@prisma/client";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import { Button } from "@/components/ui/button";
@@ -40,7 +35,16 @@ import {
   showToastLoading,
   showToastSuccess,
 } from "@/lib/helper/toast";
-import { PROMOTION_CONDITION_TYPES, type PromotionFull } from "@/lib/types/promotion";
+import {
+  PROMOTION_ACTION,
+  PROMOTION_CONDITION,
+  PROMOTION_CONDITION_TYPES,
+  PRODUCT_TAG,
+  type PromotionAction,
+  type PromotionActionType,
+  type PromotionConditionType,
+  type PromotionFull,
+} from "@/lib/types/promotion";
 
 type PromotionForm = {
   name: string;
@@ -62,8 +66,8 @@ const emptyForm: PromotionForm = {
   endAt: "",
   isActive: true,
   priority: 0,
-  conditionType: "PRODUCT_TAG",
-  conditionValue: "BINDABLE",
+  conditionType: PROMOTION_CONDITION.PRODUCT_TAG,
+  conditionValue: PRODUCT_TAG.BINDABLE,
   discountAmount: "",
   bonusPoint: "",
 };
@@ -133,16 +137,16 @@ export default function AdminPromotionsPage() {
       endAt: toDateInputValue(promotion.endAt),
       isActive: promotion.isActive,
       priority: promotion.priority,
-      conditionType: promotion.conditions[0]?.type || "PRODUCT_TAG",
+      conditionType: promotion.conditions[0]?.type || PROMOTION_CONDITION.PRODUCT_TAG,
       conditionValue: promotion.conditions[0]?.value || "",
       discountAmount: String(
         getActionValue(
           promotion.actions,
-          "DISCOUNT_AMOUNT",
+          PROMOTION_ACTION.DISCOUNT_AMOUNT,
         ) || "",
       ),
       bonusPoint: String(
-        getActionValue(promotion.actions, "BONUS_POINT") ||
+        getActionValue(promotion.actions, PROMOTION_ACTION.BONUS_POINT) ||
           "",
       ),
     });
@@ -158,14 +162,14 @@ export default function AdminPromotionsPage() {
 
     if (form.discountAmount) {
       actions.push({
-        type: "DISCOUNT_AMOUNT",
+        type: PROMOTION_ACTION.DISCOUNT_AMOUNT,
         value: Number(form.discountAmount),
       });
     }
 
     if (form.bonusPoint) {
       actions.push({
-        type: "BONUS_POINT",
+        type: PROMOTION_ACTION.BONUS_POINT,
         value: Number(form.bonusPoint),
       });
     }
@@ -291,11 +295,11 @@ export default function AdminPromotionsPage() {
               promotions.map((promotion) => {
                 const discountAmount = getActionValue(
                   promotion.actions,
-                  "DISCOUNT_AMOUNT",
+                  PROMOTION_ACTION.DISCOUNT_AMOUNT,
                 );
                 const bonusPoint = getActionValue(
                   promotion.actions,
-                  "BONUS_POINT",
+                  PROMOTION_ACTION.BONUS_POINT,
                 );
 
                 return (

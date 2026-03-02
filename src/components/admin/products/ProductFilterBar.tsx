@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Search, Plus } from "lucide-react";
-import type { ProductTag } from "@prisma/client";
+import type { ProductTag } from "@/lib/types/promotion";
 import { PRODUCT_TAGS } from "@/lib/types/promotion";
 import { CategoryOption, ProductFilters } from "./types";
 

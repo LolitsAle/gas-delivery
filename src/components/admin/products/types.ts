@@ -1,4 +1,4 @@
-import type { ProductTag } from "@prisma/client";
+import type { ProductTag } from "@/lib/types/promotion";
 
 export type CategoryOption = {
   id: string;

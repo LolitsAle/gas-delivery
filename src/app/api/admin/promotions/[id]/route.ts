@@ -11,27 +11,43 @@ type Params = {
   params: { id: string };
 };
 
-type PromotionRequestBody = {
-  name?: unknown;
-  description?: unknown;
-  startAt?: unknown;
-  endAt?: unknown;
-  isActive?: unknown;
-  priority?: unknown;
-  conditions?: Array<{ type?: unknown; value?: unknown }>;
-  actions?: Array<{ type?: unknown; value?: unknown; maxDiscount?: unknown }>;
+type InputScalar = string | number | boolean | null | undefined;
+
+type PromotionConditionInput = {
+  type?: string | null;
+  value?: InputScalar;
 };
 
-const toNullableString = (value: unknown) => {
+type PromotionActionInput = {
+  type?: string | null;
+  value?: InputScalar;
+  maxDiscount?: InputScalar;
+};
+
+type PromotionRequestBody = {
+  name?: InputScalar;
+  description?: InputScalar;
+  startAt?: InputScalar;
+  endAt?: InputScalar;
+  isActive?: boolean;
+  priority?: InputScalar;
+  conditions?: PromotionConditionInput[];
+  actions?: PromotionActionInput[];
+};
+
+const toNullableString = (value: InputScalar) => {
   if (value === undefined || value === null || value === "") return null;
   return String(value);
 };
 
-const toNullableNumber = (value: unknown) => {
+const toNullableNumber = (value: InputScalar) => {
   if (value === undefined || value === null || value === "") return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 };
+
+const toDateValue = (value: InputScalar) =>
+  typeof value === "string" || value instanceof Date ? new Date(value) : new Date("");
 
 const mapPromotionInput = (body: PromotionRequestBody) => {
   const conditions = Array.isArray(body.conditions) ? body.conditions : [];
@@ -43,17 +59,14 @@ const mapPromotionInput = (body: PromotionRequestBody) => {
       typeof body.description === "string" && body.description.trim()
         ? body.description.trim()
         : null,
-    startAt: new Date(body.startAt as string),
-    endAt: new Date(body.endAt as string),
+    startAt: toDateValue(body.startAt),
+    endAt: toDateValue(body.endAt),
     isActive: body.isActive !== false,
-    priority:
-      typeof body.priority === "number"
-        ? body.priority
-        : Number(body.priority || 0),
+    priority: Number(body.priority || 0),
     conditions: conditions
       .map((item) => ({
-        type: item?.type,
-        value: toNullableString(item?.value),
+        type: item.type,
+        value: toNullableString(item.value),
       }))
       .filter(
         (
@@ -65,9 +78,9 @@ const mapPromotionInput = (body: PromotionRequestBody) => {
       ),
     actions: actions
       .map((item) => ({
-        type: item?.type,
-        value: toNullableNumber(item?.value),
-        maxDiscount: toNullableNumber(item?.maxDiscount),
+        type: item.type,
+        value: toNullableNumber(item.value),
+        maxDiscount: toNullableNumber(item.maxDiscount),
       }))
       .filter(
         (

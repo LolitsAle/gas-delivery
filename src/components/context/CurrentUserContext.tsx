@@ -11,7 +11,14 @@ import {
 } from "react";
 import { apiFetchAuthNoRedirect } from "@/lib/api/apiClient";
 import { ACTIVE_STOVE_KEY, USER_STORAGE_KEY } from "@/constants/constants";
-import type { Cart, CartItem, CartType, Product, Stove, User } from "@prisma/client";
+import type {
+  Cart,
+  CartItem,
+  CartType,
+  Product,
+  Stove,
+  User,
+} from "@/lib/types/frontend";
 
 
 export type ProductWithPromotion = Product & {
