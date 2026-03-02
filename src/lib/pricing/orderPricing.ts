@@ -1,5 +1,7 @@
+import { PromotionActionType } from "@prisma/client";
+
 export type OrderDiscountAction = {
-  type: "DISCOUNT_AMOUNT" | "DISCOUNT_PERCENT";
+  type: PromotionActionType;
   value?: number | null;
   maxDiscount?: number | null;
 };
@@ -24,7 +26,10 @@ export const calculateOrderLevelDiscount = ({
   if (safeBaseAmount <= 0) {
     return {
       totalDiscount: 0,
-      perPromotionDiscount: [] as Array<{ promotionId: string; discountAmount: number }>,
+      perPromotionDiscount: [] as Array<{
+        promotionId: string;
+        discountAmount: number;
+      }>,
     };
   }
 
@@ -77,7 +82,10 @@ export const calculateCheckoutTotals = ({
   serviceFee?: number;
 }) => {
   const safeItemsSubtotal = toSafeMoney(itemsSubtotal);
-  const safeItemDiscountTotal = Math.min(toSafeMoney(itemDiscountTotal), safeItemsSubtotal);
+  const safeItemDiscountTotal = Math.min(
+    toSafeMoney(itemDiscountTotal),
+    safeItemsSubtotal,
+  );
 
   const subtotalAfterItemDiscount = Math.max(
     safeItemsSubtotal - safeItemDiscountTotal,
@@ -96,7 +104,10 @@ export const calculateCheckoutTotals = ({
   );
 
   const totalPrice = Math.max(
-    safeItemsSubtotal - totalDiscount + toSafeMoney(shippingFee) + toSafeMoney(serviceFee),
+    safeItemsSubtotal -
+      totalDiscount +
+      toSafeMoney(shippingFee) +
+      toSafeMoney(serviceFee),
     0,
   );
 

@@ -1,4 +1,0 @@
--- AlterTable
-ALTER TABLE "OrderItem" ADD COLUMN     "unitPointPrice" INTEGER DEFAULT 0,
-ALTER COLUMN "quantity" SET DEFAULT 0,
-ALTER COLUMN "unitPrice" SET DEFAULT 0;

@@ -53,7 +53,9 @@ const doesConditionMatch = (
       if (!values.length) return true;
       const categoryId = (context.categoryId || "").toLowerCase();
       const categoryName = (context.categoryName || "").toLowerCase();
-      return values.some((value) => value === categoryId || value === categoryName);
+      return values.some(
+        (value) => value === categoryId || value === categoryName,
+      );
     }
 
     case PromotionConditionType.MIN_SUBTOTAL: {
@@ -81,7 +83,9 @@ export const getMatchedPromotions = (
   return promotions
     .filter((promotion) => isPromotionActive(promotion, now))
     .filter((promotion) =>
-      promotion.conditions.every((condition) => doesConditionMatch(condition, context)),
+      promotion.conditions.every((condition) =>
+        doesConditionMatch(condition, context),
+      ),
     )
     .sort((a, b) => b.priority - a.priority);
 };
@@ -96,7 +100,8 @@ export const calculatePromotionDiscountPerUnit = ({
   unitPrice: number;
 }) => {
   const safeUnitPrice = toSafeMoney(unitPrice);
-  if (safeUnitPrice <= 0) return { discountPerUnit: 0, promotionIds: [] as string[] };
+  if (safeUnitPrice <= 0)
+    return { discountPerUnit: 0, promotionIds: [] as string[] };
 
   const matched = getMatchedPromotions(promotions, context);
 

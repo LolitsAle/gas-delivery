@@ -1,2 +1,0 @@
--- AlterEnum
-ALTER TYPE "CartItemType" ADD VALUE 'GIFT_PRODUCT';
