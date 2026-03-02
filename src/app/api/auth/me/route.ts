@@ -12,6 +12,9 @@ import {
   PROMO_BONUS_POINT_AMOUNT,
   PROMO_DISCOUNT_CASH_AMOUNT,
 } from "@/constants/promotion";
+import type { PromotionDiscountableProduct } from "@/lib/types/promotion";
+
+type TxClient = typeof prisma;
 
 type AccessTokenPayload = {
   userId: string;
@@ -46,7 +49,7 @@ export async function GET(req: Request) {
 
   const userId = payload.userId;
 
-  const user = await prisma.$transaction(async (tx) => {
+  const user = await prisma.$transaction(async (tx: TxClient) => {
     const now = new Date();
     const activePromotions = await tx.promotion.findMany({
       where: {
@@ -210,11 +213,13 @@ export async function GET(req: Request) {
 
     if (!fullUser) return null;
 
-    const mapPromotionPrice = <T,>(product: T | null) => {
+    const mapPromotionPrice = <T extends PromotionDiscountableProduct>(
+      product: T | null,
+    ): (T & { promotionDiscountPerUnit: number }) | null => {
       if (!product) return null;
       const { discountPerUnit } = calculatePromotionDiscountPerUnit({
         promotions: activePromotions,
-        unitPrice: product.currentPrice,
+        unitPrice: product.currentPrice ?? 0,
         context: {
           productTags: product.tags,
           categoryId: product.category?.id,
@@ -230,15 +235,15 @@ export async function GET(req: Request) {
 
     return {
       ...fullUser,
-      stoves: fullUser.stoves.map((stove) => {
+      stoves: fullUser.stoves.map((stove: any) => {
         const mappedCart = stove.cart
           ? (() => {
               const isBusinessUser = fullUser.tags.includes("BUSINESS");
               let subtotal = 0;
               let itemDiscountTotal = 0;
 
-              const pricedItems = stove.cart.items.map((item) => {
-                const product = mapPromotionPrice(item.product) as any;
+              const pricedItems = stove.cart.items.map((item: any) => {
+                const product = mapPromotionPrice(item.product);
 
                 if (item.payByPoints || item.parentItemId || !product) {
                   return { ...item, product };
@@ -259,7 +264,22 @@ export async function GET(req: Request) {
               });
 
               if (stove.cart.isStoveActive && stove.product && stove.defaultProductQuantity) {
-                const pricedStoveProduct = mapPromotionPrice(stove.product) as any;
+                const pricedStoveProduct = mapPromotionPrice(stove.product);
+                if (!pricedStoveProduct) {
+                  return {
+                    ...stove.cart,
+                    items: pricedItems,
+                    pricing: {
+                      subtotal,
+                      itemDiscountTotal,
+                      orderDiscountTotal: 0,
+                      discountAmount: itemDiscountTotal,
+                      totalPrice: Math.max(subtotal - itemDiscountTotal, 0),
+                      bonusPoint: 0,
+                    },
+                  };
+                }
+
                 const stovePricing = calculateDiscountedProductPrice({
                   unitPrice: pricedStoveProduct.currentPrice ?? 0,
                   quantity: stove.defaultProductQuantity,

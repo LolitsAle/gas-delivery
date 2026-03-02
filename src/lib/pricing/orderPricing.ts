@@ -1,18 +1,6 @@
-import { PromotionActionType } from "@prisma/client";
+import { OrderLevelPromotionLike, toSafeMoney } from "@/lib/types/promotion";
 
-export type OrderDiscountAction = {
-  type: PromotionActionType;
-  value?: number | null;
-  maxDiscount?: number | null;
-};
-
-export type OrderLevelPromotionLike = {
-  id: string;
-  actions: OrderDiscountAction[];
-};
-
-const toSafeMoney = (value: number) =>
-  Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+export type { OrderDiscountAction, OrderLevelPromotionLike } from "@/lib/types/promotion";
 
 export const calculateOrderLevelDiscount = ({
   promotions,

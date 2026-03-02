@@ -1,13 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  PromotionActionType,
-  PromotionConditionType,
-  type Promotion,
-  type PromotionAction,
-  type PromotionCondition,
-} from "@prisma/client";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import { Button } from "@/components/ui/button";
@@ -42,11 +35,16 @@ import {
   showToastLoading,
   showToastSuccess,
 } from "@/lib/helper/toast";
-
-type PromotionFull = Promotion & {
-  conditions: PromotionCondition[];
-  actions: PromotionAction[];
-};
+import {
+  PROMOTION_ACTION,
+  PROMOTION_CONDITION,
+  PROMOTION_CONDITION_TYPES,
+  PRODUCT_TAG,
+  type PromotionAction,
+  type PromotionActionType,
+  type PromotionConditionType,
+  type PromotionFull,
+} from "@/lib/types/promotion";
 
 type PromotionForm = {
   name: string;
@@ -68,8 +66,8 @@ const emptyForm: PromotionForm = {
   endAt: "",
   isActive: true,
   priority: 0,
-  conditionType: PromotionConditionType.PRODUCT_TAG,
-  conditionValue: "BINDABLE",
+  conditionType: PROMOTION_CONDITION.PRODUCT_TAG,
+  conditionValue: PRODUCT_TAG.BINDABLE,
   discountAmount: "",
   bonusPoint: "",
 };
@@ -139,17 +137,16 @@ export default function AdminPromotionsPage() {
       endAt: toDateInputValue(promotion.endAt),
       isActive: promotion.isActive,
       priority: promotion.priority,
-      conditionType:
-        promotion.conditions[0]?.type || PromotionConditionType.PRODUCT_TAG,
+      conditionType: promotion.conditions[0]?.type || PROMOTION_CONDITION.PRODUCT_TAG,
       conditionValue: promotion.conditions[0]?.value || "",
       discountAmount: String(
         getActionValue(
           promotion.actions,
-          PromotionActionType.DISCOUNT_AMOUNT,
+          PROMOTION_ACTION.DISCOUNT_AMOUNT,
         ) || "",
       ),
       bonusPoint: String(
-        getActionValue(promotion.actions, PromotionActionType.BONUS_POINT) ||
+        getActionValue(promotion.actions, PROMOTION_ACTION.BONUS_POINT) ||
           "",
       ),
     });
@@ -165,14 +162,14 @@ export default function AdminPromotionsPage() {
 
     if (form.discountAmount) {
       actions.push({
-        type: PromotionActionType.DISCOUNT_AMOUNT,
+        type: PROMOTION_ACTION.DISCOUNT_AMOUNT,
         value: Number(form.discountAmount),
       });
     }
 
     if (form.bonusPoint) {
       actions.push({
-        type: PromotionActionType.BONUS_POINT,
+        type: PROMOTION_ACTION.BONUS_POINT,
         value: Number(form.bonusPoint),
       });
     }
@@ -298,11 +295,11 @@ export default function AdminPromotionsPage() {
               promotions.map((promotion) => {
                 const discountAmount = getActionValue(
                   promotion.actions,
-                  PromotionActionType.DISCOUNT_AMOUNT,
+                  PROMOTION_ACTION.DISCOUNT_AMOUNT,
                 );
                 const bonusPoint = getActionValue(
                   promotion.actions,
-                  PromotionActionType.BONUS_POINT,
+                  PROMOTION_ACTION.BONUS_POINT,
                 );
 
                 return (
@@ -429,7 +426,7 @@ export default function AdminPromotionsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.values(PromotionConditionType).map((type) => (
+                    {PROMOTION_CONDITION_TYPES.map((type) => (
                       <SelectItem key={type} value={type}>
                         {type}
                       </SelectItem>

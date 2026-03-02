@@ -80,7 +80,7 @@ export default function ProductTable({
                 </td>
 
                 <td className="px-4 py-3">
-                  {product.pointValue.toLocaleString()} điểm
+                  {(product.pointValue ?? 0).toLocaleString()} điểm
                 </td>
 
                 <td className="px-4 py-3">
@@ -98,7 +98,7 @@ export default function ProductTable({
                 </td>
 
                 <td className="px-4 py-3">
-                  {new Date(product.createdAt).toLocaleDateString("vi-VN")}
+                  {new Date(product.createdAt ?? Date.now()).toLocaleDateString("vi-VN")}
                 </td>
 
                 <td className="px-4 py-3 text-right space-x-2">

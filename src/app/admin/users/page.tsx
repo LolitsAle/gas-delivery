@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { AdminCard, StatusBadge } from "@/components/admin/Commons";
 import { apiFetchAuth } from "@/lib/api/apiClient";
-import { User } from "@prisma/client";
+import type { User } from "@/lib/types/frontend";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -155,8 +155,8 @@ function Page(props: Props) {
   /* FILTER */
   const filtered = users.filter((u) => {
     const matchSearch =
-      u.nickname.toLowerCase().includes(search.toLowerCase()) ||
-      u.phoneNumber.includes(search);
+      (u.nickname || "").toLowerCase().includes(search.toLowerCase()) ||
+      (u.phoneNumber || "").includes(search);
 
     const matchStatus =
       status === "ALL" ||

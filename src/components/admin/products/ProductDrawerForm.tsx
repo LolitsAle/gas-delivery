@@ -9,7 +9,9 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { Category, Product, ProductTag } from "@prisma/client";
+import type { ProductTag } from "@/lib/types/promotion";
+import { PRODUCT_TAGS } from "@/lib/types/promotion";
+import type { CategoryOption, ProductBase } from "./types";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import Image from "next/image";
 import { r2Url } from "@/lib/helper/helpers";
@@ -18,9 +20,9 @@ import { FieldCustomed } from "@/components/common/FieldCustom";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  product?: Product | null;
+  product?: ProductBase | null;
   onSuccess: () => void;
-  categories: Category[];
+  categories: CategoryOption[];
 }
 
 export default function ProductDrawerForm({
@@ -32,7 +34,7 @@ export default function ProductDrawerForm({
 }: Props) {
   const isEdit = !!product;
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const [form, setForm] = useState<Partial<Product>>({
+  const [form, setForm] = useState<Partial<ProductBase>>({
     productName: "",
     currentPrice: 0,
     pointValue: 0,
@@ -189,7 +191,7 @@ export default function ProductDrawerForm({
           <FieldCustomed
             id="points"
             label="Điểm"
-            value={form.pointValue}
+            value={form.pointValue ?? ""}
             onChange={(e) =>
               setForm({ ...form, pointValue: Number(e.target.value) })
             }
@@ -199,7 +201,7 @@ export default function ProductDrawerForm({
             as="textarea"
             id="description"
             label="Mô tả"
-            value={form.description}
+            value={form.description ?? ""}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
 
@@ -207,7 +209,7 @@ export default function ProductDrawerForm({
           <div>
             <label className="text-sm font-medium">Danh mục</label>
             <select
-              value={form.categoryId}
+              value={form.categoryId ?? ""}
               onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
               className="input w-full mt-1"
             >
@@ -224,7 +226,7 @@ export default function ProductDrawerForm({
           <div>
             <div className="text-sm font-medium mb-1">Tags</div>
             <div className="flex flex-wrap gap-2">
-              {Object.values(ProductTag).map((tag) => {
+              {PRODUCT_TAGS.map((tag) => {
                 const active = form.tags?.includes(tag);
                 return (
                   <button

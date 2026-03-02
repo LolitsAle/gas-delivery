@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { ProductTag } from "@prisma/client";
+import { PRODUCT_TAG } from "@/lib/types/promotion";
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     if (excludeBindable === "true") {
       where.NOT = {
         tags: {
-          has: ProductTag.BINDABLE,
+          has: PRODUCT_TAG.BINDABLE,
         },
       };
     }
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const result = categories.map((c) => ({
+    const result = categories.map((c: any) => ({
       id: c.id,
       name: c.name,
       productCount: c._count.products,

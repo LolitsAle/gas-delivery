@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Stove } from "@prisma/client";
+import type { Stove } from "@/lib/types/frontend";
 import { r2Url } from "@/lib/helper/helpers";
 import { DialogDescription } from "@radix-ui/react-dialog";
 import Image from "next/image";

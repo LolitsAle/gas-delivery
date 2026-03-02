@@ -1,17 +1,40 @@
-import { PrismaClient, ProductTag } from "@prisma/client";
+// src/prisma/seeds/productAndCategorySeed.ts
+import { PrismaClient } from "@prisma/client";
+import type { ProductTag } from "@prisma/client";
+
+type SeedCategory = {
+  id: string;
+  name: string;
+  tags: ProductTag[];
+};
+
+type SeedProduct = {
+  id: string;
+  productName: string;
+  currentPrice: number;
+  pointValue: number;
+  categoryId: string;
+  tags: ProductTag[];
+  previewImageUrl: string;
+  description?: string;
+};
+
+export const ProductTagEnum = {
+  BINDABLE: "BINDABLE",
+  POINT_EARNABLE: "POINT_EARNABLE",
+  POINT_EXCHANGABLE: "POINT_EXCHANGABLE",
+  PROMO_ELIGIBLE: "PROMO_ELIGIBLE",
+  FREE_SHIP: "FREE_SHIP",
+} as const;
 
 export async function seedCategoriesAndProducts(prisma: PrismaClient) {
-  console.log("🌱 Seeding Categories & Products...");
+  console.log("🌱 Seeding Categories & Products (UPSERT MODE)...");
 
   /* =========================
-     CATEGORY
+     CATEGORY (from Category.csv)
   ========================= */
 
-  const categories: Array<{
-    id: string;
-    name: string;
-    tags: ProductTag[];
-  }> = [
+  const categories: SeedCategory[] = [
     {
       id: "6181f0e0-c92a-4cba-9ccf-a481864c3c2a",
       name: "Hàng tiêu dùng",
@@ -20,7 +43,7 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
     {
       id: "677577ad-b73a-4ce2-88e7-aeda9b52bc5d",
       name: "Gas Bình",
-      tags: [ProductTag.BINDABLE],
+      tags: [ProductTagEnum.BINDABLE],
     },
     {
       id: "aa52109a-4bf6-4198-bc08-6c688aa51248",
@@ -40,7 +63,6 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
   ];
 
   for (const c of categories) {
-    // ✅ Không set createdAt/updatedAt → Prisma tự set now
     await prisma.category.upsert({
       where: { id: c.id },
       update: {
@@ -55,29 +77,20 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
     });
   }
 
-  console.log(`✅ Categories: upserted ${categories.length}`);
+  console.log(`✅ Categories upserted: ${categories.length}`);
 
   /* =========================
-     PRODUCTS
+     PRODUCTS (from Product.csv)
   ========================= */
 
-  const products: Array<{
-    id: string;
-    productName: string;
-    currentPrice: number;
-    pointValue: number;
-    categoryId: string;
-    tags: ProductTag[];
-    previewImageUrl: string;
-    description: string | undefined;
-  }> = [
+  const products: SeedProduct[] = [
     {
       id: "1e8ecd27-9bfa-499d-9952-e618a8f7764c",
       productName: "Gas mini chất lượng cao",
       currentPrice: 20000,
       pointValue: 2000,
       categoryId: "6181f0e0-c92a-4cba-9ccf-a481864c3c2a",
-      tags: [ProductTag.POINT_EXCHANGABLE],
+      tags: [ProductTagEnum.POINT_EXCHANGABLE],
       previewImageUrl: "products/new/821553b4-3cfe-450b-bf1c-b2b8eb11ab70.jpeg",
       description:
         "Gas mini dùng cho bếp du lịch, hàng chất lượng. Nếu dùng để đổi với lon gas mini nhỏ đã qua sử dụng sẽ được giảm 5 nghìn đồng.",
@@ -111,14 +124,14 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
       pointValue: 0,
       categoryId: "e924053d-26d6-47c4-866b-179d5200becd",
       tags: [
-        ProductTag.BINDABLE,
-        ProductTag.POINT_EARNABLE,
-        ProductTag.FREE_SHIP,
+        ProductTagEnum.BINDABLE,
+        ProductTagEnum.POINT_EARNABLE,
+        ProductTagEnum.FREE_SHIP,
       ],
       previewImageUrl:
-        "products/5c9d7634-7d3b-4ac5-8569-6e1c4356aaa1/26e81472-4898-4eda-a871-8a3ca3a0ab24.jpeg",
+        "products/5c9d7634-7d3b-4ac5-8569-6e1c4356aaa1/7a9418bb-80f1-4350-ae72-2f0c1d0275d4.jpeg",
       description:
-        "Sản phẩm loại 2 van chụp gas H từ cty Hồng mộc gas. giá gas rẻ hơn so với bình gas loại 1. Có giao hàng tận nơi.",
+        "Sản phẩm loại 2 van chụp gas H từ cty Hồng mộc, chất lượng tốt, dùng trung bình 1 tháng 10 ngày",
     },
     {
       id: "6d6e926e-4929-4401-920d-bb07e2e96adf",
@@ -127,9 +140,9 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
       pointValue: 0,
       categoryId: "e924053d-26d6-47c4-866b-179d5200becd",
       tags: [
-        ProductTag.BINDABLE,
-        ProductTag.POINT_EARNABLE,
-        ProductTag.FREE_SHIP,
+        ProductTagEnum.BINDABLE,
+        ProductTagEnum.POINT_EARNABLE,
+        ProductTagEnum.FREE_SHIP,
       ],
       previewImageUrl: "products/new/b193478e-200f-4f38-b3d5-b2309cb11bc4.jpeg",
       description:
@@ -142,12 +155,11 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
       pointValue: 0,
       categoryId: "677577ad-b73a-4ce2-88e7-aeda9b52bc5d",
       tags: [
-        ProductTag.BINDABLE,
-        ProductTag.PROMO_ELIGIBLE,
-        ProductTag.POINT_EARNABLE,
+        ProductTagEnum.BINDABLE,
+        ProductTagEnum.PROMO_ELIGIBLE,
+        ProductTagEnum.POINT_EARNABLE,
       ],
       previewImageUrl: "products/new/total-12kg.jpeg",
-      description: undefined,
     },
     {
       id: "8e7f8c3e-3c6a-45fd-9f64-5d5f3b0b8f34",
@@ -156,12 +168,11 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
       pointValue: 0,
       categoryId: "677577ad-b73a-4ce2-88e7-aeda9b52bc5d",
       tags: [
-        ProductTag.BINDABLE,
-        ProductTag.PROMO_ELIGIBLE,
-        ProductTag.POINT_EARNABLE,
+        ProductTagEnum.BINDABLE,
+        ProductTagEnum.PROMO_ELIGIBLE,
+        ProductTagEnum.POINT_EARNABLE,
       ],
       previewImageUrl: "products/new/saigonpetrol-12kg.jpeg",
-      description: undefined,
     },
     {
       id: "9d7d6f3a-0fd3-4e4a-99df-0f10b8b2b2b0",
@@ -170,12 +181,11 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
       pointValue: 0,
       categoryId: "677577ad-b73a-4ce2-88e7-aeda9b52bc5d",
       tags: [
-        ProductTag.BINDABLE,
-        ProductTag.PROMO_ELIGIBLE,
-        ProductTag.POINT_EARNABLE,
+        ProductTagEnum.BINDABLE,
+        ProductTagEnum.PROMO_ELIGIBLE,
+        ProductTagEnum.POINT_EARNABLE,
       ],
       previewImageUrl: "products/new/gas-h-12kg.jpeg",
-      description: undefined,
     },
     {
       id: "a1f2b3c4-d5e6-47a8-9b10-11c12d13e14f",
@@ -183,9 +193,8 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
       currentPrice: 0,
       pointValue: 1000,
       categoryId: "aa52109a-4bf6-4198-bc08-6c688aa51248",
-      tags: [ProductTag.PROMO_ELIGIBLE, ProductTag.FREE_SHIP],
+      tags: [ProductTagEnum.PROMO_ELIGIBLE, ProductTagEnum.FREE_SHIP],
       previewImageUrl: "products/new/nuoc-rua-chen-750ml.jpeg",
-      description: undefined,
     },
     {
       id: "b2c3d4e5-f607-48a9-9011-121314151617",
@@ -193,9 +202,8 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
       currentPrice: 0,
       pointValue: 1000,
       categoryId: "aa52109a-4bf6-4198-bc08-6c688aa51248",
-      tags: [ProductTag.PROMO_ELIGIBLE, ProductTag.FREE_SHIP],
+      tags: [ProductTagEnum.PROMO_ELIGIBLE, ProductTagEnum.FREE_SHIP],
       previewImageUrl: "products/new/dau-an-1l.jpeg",
-      description: undefined,
     },
     {
       id: "c3d4e5f6-0718-49ba-0121-131415161718",
@@ -203,9 +211,8 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
       currentPrice: 0,
       pointValue: 1000,
       categoryId: "aa52109a-4bf6-4198-bc08-6c688aa51248",
-      tags: [ProductTag.PROMO_ELIGIBLE, ProductTag.FREE_SHIP],
+      tags: [ProductTagEnum.PROMO_ELIGIBLE, ProductTagEnum.FREE_SHIP],
       previewImageUrl: "products/new/duong-500g.jpeg",
-      description: undefined,
     },
     {
       id: "d4e5f607-1829-4acb-1231-141516171819",
@@ -213,9 +220,8 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
       currentPrice: 90000,
       pointValue: 0,
       categoryId: "d5669da1-0c58-4156-bfc3-bf2ede71a190",
-      tags: [ProductTag.POINT_EARNABLE],
+      tags: [ProductTagEnum.POINT_EARNABLE],
       previewImageUrl: "products/new/day-gas-chong-chay.jpeg",
-      description: undefined,
     },
     {
       id: "e5f60718-293a-4bdc-2341-151617181920",
@@ -223,9 +229,8 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
       currentPrice: 120000,
       pointValue: 0,
       categoryId: "d5669da1-0c58-4156-bfc3-bf2ede71a190",
-      tags: [ProductTag.POINT_EARNABLE],
+      tags: [ProductTagEnum.POINT_EARNABLE],
       previewImageUrl: "products/new/van-gas-an-toan.jpeg",
-      description: undefined,
     },
     {
       id: "f01a2b3c-4d5e-4f60-8123-456789abcdef",
@@ -233,9 +238,8 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
       currentPrice: 0,
       pointValue: 800,
       categoryId: "6181f0e0-c92a-4cba-9ccf-a481864c3c2a",
-      tags: [ProductTag.POINT_EXCHANGABLE, ProductTag.FREE_SHIP],
+      tags: [ProductTagEnum.POINT_EXCHANGABLE, ProductTagEnum.FREE_SHIP],
       previewImageUrl: "products/new/ly-su-cao-cap.jpeg",
-      description: undefined,
     },
     {
       id: "f834490c-e939-4ff0-b3c8-69f043c47e37",
@@ -251,7 +255,6 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
   ];
 
   for (const p of products) {
-    // ✅ Không set createdAt/updatedAt → Prisma tự set now + updatedAt tự bump khi update
     await prisma.product.upsert({
       where: { id: p.id },
       update: {
@@ -276,6 +279,6 @@ export async function seedCategoriesAndProducts(prisma: PrismaClient) {
     });
   }
 
-  console.log(`✅ Products: upserted ${products.length}`);
-  console.log("✅ Seeded Categories & Products");
+  console.log(`✅ Products upserted: ${products.length}`);
+  console.log("✅ Seed completed (UPSERT MODE)");
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
-import { ProductTag } from "@prisma/client";
+import { type ProductTag, isProductTag } from "@/lib/types/promotion";
 
 export const GET = withAuth(["ADMIN"], async (req) => {
   const { searchParams } = new URL(req.url);
@@ -16,7 +16,7 @@ export const GET = withAuth(["ADMIN"], async (req) => {
   const pageSize = Number(searchParams.get("pageSize") || 20);
 
   const tags: ProductTag[] = tagsParam
-    ? (tagsParam.split(",") as ProductTag[])
+    ? tagsParam.split(",").filter(isProductTag)
     : [];
 
   const where: any = {

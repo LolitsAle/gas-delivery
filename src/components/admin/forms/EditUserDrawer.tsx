@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User } from "@prisma/client";
+import type { User } from "@/lib/types/frontend";
 import {
   Drawer,
   DrawerContent,

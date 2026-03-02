@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ProductTag } from "@prisma/client";
+import {
+  type ProductTag,
+  isProductTag,
+  PRODUCT_TAG,
+} from "@/lib/types/promotion";
 import { calculatePromotionDiscountPerUnit } from "@/lib/pricing/promotionEngine";
 
 export async function GET(req: NextRequest) {
@@ -41,11 +45,11 @@ export async function GET(req: NextRequest) {
     let finalTags: ProductTag[] = [];
 
     if (tagParams) {
-      finalTags.push(...(tagParams.split(",") as ProductTag[]));
+      finalTags.push(...tagParams.split(",").filter(isProductTag));
     }
 
     if (bindable === "true") {
-      finalTags.push(ProductTag.BINDABLE);
+      finalTags.push(PRODUCT_TAG.BINDABLE);
     }
 
     if (finalTags.length > 0) {
@@ -62,13 +66,13 @@ export async function GET(req: NextRequest) {
         AND: [
           {
             NOT: {
-              tags: { has: ProductTag.BINDABLE },
+              tags: { has: PRODUCT_TAG.BINDABLE },
             },
           },
           {
             NOT: {
               category: {
-                tags: { has: ProductTag.BINDABLE },
+                tags: { has: PRODUCT_TAG.BINDABLE },
               },
             },
           },
@@ -116,7 +120,7 @@ export async function GET(req: NextRequest) {
       orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
     });
 
-    const productsWithPromotion = products.map((product) => {
+    const productsWithPromotion = products.map((product: any) => {
       const { discountPerUnit } = calculatePromotionDiscountPerUnit({
         promotions,
         unitPrice: product.currentPrice,

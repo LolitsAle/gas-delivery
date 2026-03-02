@@ -1,54 +1,93 @@
 import { NextResponse } from "next/server";
-import {
-  PromotionActionType,
-  PromotionConditionType,
-  Prisma,
-} from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
+import {
+  isPromotionActionType,
+  isPromotionConditionType,
+  type PromotionActionType,
+  type PromotionConditionType,
+} from "@/lib/types/promotion";
 
-const validConditionTypes = Object.values(PromotionConditionType);
-const validActionTypes = Object.values(PromotionActionType);
+type InputScalar = string | number | boolean | null | undefined;
 
-const mapPromotionInput = (body: any) => {
-  const conditions = Array.isArray(body?.conditions) ? body.conditions : [];
-  const actions = Array.isArray(body?.actions) ? body.actions : [];
+type PromotionConditionInput = {
+  type?: string | null;
+  value?: InputScalar;
+};
+
+type PromotionActionInput = {
+  type?: string | null;
+  value?: InputScalar;
+  maxDiscount?: InputScalar;
+};
+
+type PromotionRequestBody = {
+  name?: InputScalar;
+  description?: InputScalar;
+  startAt?: InputScalar;
+  endAt?: InputScalar;
+  isActive?: boolean;
+  priority?: InputScalar;
+  conditions?: PromotionConditionInput[];
+  actions?: PromotionActionInput[];
+};
+
+const toNullableString = (value: InputScalar) => {
+  if (value === undefined || value === null || value === "") return null;
+  return String(value);
+};
+
+const toNullableNumber = (value: InputScalar) => {
+  if (value === undefined || value === null || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const toDateValue = (value: InputScalar) =>
+  typeof value === "string" ? new Date(value) : new Date("");
+
+const mapPromotionInput = (body: PromotionRequestBody) => {
+  const conditions = Array.isArray(body.conditions) ? body.conditions : [];
+  const actions = Array.isArray(body.actions) ? body.actions : [];
 
   return {
-    name: String(body?.name || "").trim(),
+    name: String(body.name || "").trim(),
     description:
-      typeof body?.description === "string" && body.description.trim()
+      typeof body.description === "string" && body.description.trim()
         ? body.description.trim()
         : null,
-    startAt: new Date(body?.startAt),
-    endAt: new Date(body?.endAt),
-    isActive: body?.isActive !== false,
-    priority:
-      typeof body?.priority === "number" ? body.priority : Number(body?.priority || 0),
+    startAt: toDateValue(body.startAt),
+    endAt: toDateValue(body.endAt),
+    isActive: body.isActive !== false,
+    priority: Number(body.priority || 0),
     conditions: conditions
-      .map((item: any) => ({
-        type: item?.type,
-        value:
-          item?.value === undefined || item?.value === null || item?.value === ""
-            ? null
-            : String(item.value),
+      .map((item) => ({
+        type: item.type,
+        value: toNullableString(item.value),
       }))
-      .filter((item: any) => validConditionTypes.includes(item.type)),
+      .filter(
+        (
+          item,
+        ): item is {
+          type: PromotionConditionType;
+          value: string | null;
+        } => isPromotionConditionType(item.type),
+      ),
     actions: actions
-      .map((item: any) => ({
-        type: item?.type,
-        value:
-          item?.value === undefined || item?.value === null || item?.value === ""
-            ? null
-            : Number(item.value),
-        maxDiscount:
-          item?.maxDiscount === undefined ||
-          item?.maxDiscount === null ||
-          item?.maxDiscount === ""
-            ? null
-            : Number(item.maxDiscount),
+      .map((item) => ({
+        type: item.type,
+        value: toNullableNumber(item.value),
+        maxDiscount: toNullableNumber(item.maxDiscount),
       }))
-      .filter((item: any) => validActionTypes.includes(item.type)),
+      .filter(
+        (
+          item,
+        ): item is {
+          type: PromotionActionType;
+          value: number | null;
+          maxDiscount: number | null;
+        } => isPromotionActionType(item.type),
+      ),
   };
 };
 
@@ -65,7 +104,7 @@ const validatePromotionInput = (input: ReturnType<typeof mapPromotionInput>) => 
 const promotionInclude = {
   conditions: true,
   actions: true,
-} satisfies Prisma.PromotionInclude;
+};
 
 export const GET = withAuth(["ADMIN"], async () => {
   const promotions = await prisma.promotion.findMany({
@@ -78,7 +117,7 @@ export const GET = withAuth(["ADMIN"], async () => {
 
 export const POST = withAuth(["ADMIN"], async (req) => {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as PromotionRequestBody;
     const input = mapPromotionInput(body);
     const validationError = validatePromotionInput(input);
 

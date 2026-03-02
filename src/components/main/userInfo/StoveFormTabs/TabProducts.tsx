@@ -1,4 +1,4 @@
-import { PromoChoiceType } from "@prisma/client";
+import type { PromoChoiceType } from "@/lib/types/frontend";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
