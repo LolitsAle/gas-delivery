@@ -85,7 +85,7 @@ export const isPromotionActive = (promotion: PromotionFull, now: Date) =>
 
 export const isDiscountAction = (
   action: Pick<PromotionAction, "type">,
-): action is Pick<OrderDiscountAction, "type"> =>
+ ): action is OrderDiscountAction =>
   action.type === PROMOTION_ACTION.DISCOUNT_AMOUNT ||
   action.type === PROMOTION_ACTION.DISCOUNT_PERCENT;
 

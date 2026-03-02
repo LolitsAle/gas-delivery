@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
 
-const BUSINESS_TAGS = ["BUSINESS", "BUSSINESS"];
+const BUSINESS_TAGS = ["BUSINESS", "BUSSINESS"] as const;
 
 export const GET = withAuth(["ADMIN"], async (req: NextRequest) => {
   try {
@@ -73,8 +73,10 @@ export const GET = withAuth(["ADMIN"], async (req: NextRequest) => {
     });
 
     const sortedOrders = [...orders].sort((a, b) => {
-      const aBusiness = a.user?.tags?.some((tag) => BUSINESS_TAGS.includes(tag));
-      const bBusiness = b.user?.tags?.some((tag) => BUSINESS_TAGS.includes(tag));
+      const aTags = Array.isArray(a.user?.tags) ? a.user.tags : [];
+      const bTags = Array.isArray(b.user?.tags) ? b.user.tags : [];
+      const aBusiness = aTags.some((tag: string) => BUSINESS_TAGS.includes(tag as (typeof BUSINESS_TAGS)[number]));
+      const bBusiness = bTags.some((tag: string) => BUSINESS_TAGS.includes(tag as (typeof BUSINESS_TAGS)[number]));
 
       if (aBusiness === bBusiness) {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();

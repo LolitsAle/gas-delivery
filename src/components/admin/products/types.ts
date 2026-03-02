@@ -15,6 +15,7 @@ export type ProductBase = {
   categoryId?: string | null;
   tags: ProductTag[];
   previewImageUrl?: string | null;
+  createdAt?: string | Date;
 };
 
 export type ProductWithCategory = ProductBase & {

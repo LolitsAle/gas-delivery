@@ -18,6 +18,7 @@ import type {
   Product,
   Stove,
   User,
+  PromoChoiceType,
 } from "@/lib/types/frontend";
 
 
@@ -44,7 +45,7 @@ export interface StoveWithProducts extends Stove {
   name: string;
   address?: string | null;
   note?: string | null;
-  defaultPromoChoice?: string | null;
+  defaultPromoChoice?: PromoChoiceType | null;
   defaultProductQuantity: number;
   defaultPromoProductId?: string | null;
   product: ProductWithPromotion | null;

@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
       orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
     });
 
-    const productsWithPromotion = products.map((product) => {
+    const productsWithPromotion = products.map((product: any) => {
       const { discountPerUnit } = calculatePromotionDiscountPerUnit({
         promotions,
         unitPrice: product.currentPrice,

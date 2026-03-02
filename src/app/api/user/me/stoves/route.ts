@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
 import { NextResponse } from "next/server";
-import { PromoChoiceType } from "@prisma/client";
+import { PROMO_CHOICE_TYPE } from "@/lib/types/order";
 
 /* ======================
    GET: list stoves
@@ -79,7 +79,7 @@ export const POST = withAuth(
           houseImage: houseImage ?? [],
           houseImageCount: (houseImage ?? []).length,
           defaultProductQuantity: defaultProductQuantity ?? 1,
-          defaultPromoChoice: defaultPromoChoice || PromoChoiceType.BONUS_POINT,
+          defaultPromoChoice: defaultPromoChoice || PROMO_CHOICE_TYPE.BONUS_POINT,
           defaultPromoProductId: defaultPromoProductId || null,
         },
         include: {

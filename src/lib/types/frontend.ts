@@ -11,7 +11,9 @@ export type User = {
   points?: number;
   tags?: string[];
   isActive?: boolean;
-  [key: string]: string | number | boolean | string[] | null | undefined;
+  isVerified?: boolean;
+  address?: string | null;
+  addressNote?: string | null;
 };
 
 export type Product = PromotionDiscountableProduct & {

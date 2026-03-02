@@ -14,6 +14,8 @@ import {
 } from "@/constants/promotion";
 import type { PromotionDiscountableProduct } from "@/lib/types/promotion";
 
+type TxClient = typeof prisma;
+
 type AccessTokenPayload = {
   userId: string;
   role: "USER" | "ADMIN" | "STAFF";
@@ -47,7 +49,7 @@ export async function GET(req: Request) {
 
   const userId = payload.userId;
 
-  const user = await prisma.$transaction(async (tx) => {
+  const user = await prisma.$transaction(async (tx: TxClient) => {
     const now = new Date();
     const activePromotions = await tx.promotion.findMany({
       where: {
@@ -233,14 +235,14 @@ export async function GET(req: Request) {
 
     return {
       ...fullUser,
-      stoves: fullUser.stoves.map((stove) => {
+      stoves: fullUser.stoves.map((stove: any) => {
         const mappedCart = stove.cart
           ? (() => {
               const isBusinessUser = fullUser.tags.includes("BUSINESS");
               let subtotal = 0;
               let itemDiscountTotal = 0;
 
-              const pricedItems = stove.cart.items.map((item) => {
+              const pricedItems = stove.cart.items.map((item: any) => {
                 const product = mapPromotionPrice(item.product);
 
                 if (item.payByPoints || item.parentItemId || !product) {

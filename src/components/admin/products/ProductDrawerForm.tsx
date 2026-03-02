@@ -191,7 +191,7 @@ export default function ProductDrawerForm({
           <FieldCustomed
             id="points"
             label="Điểm"
-            value={form.pointValue}
+            value={form.pointValue ?? ""}
             onChange={(e) =>
               setForm({ ...form, pointValue: Number(e.target.value) })
             }
@@ -201,7 +201,7 @@ export default function ProductDrawerForm({
             as="textarea"
             id="description"
             label="Mô tả"
-            value={form.description}
+            value={form.description ?? ""}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
 
@@ -209,7 +209,7 @@ export default function ProductDrawerForm({
           <div>
             <label className="text-sm font-medium">Danh mục</label>
             <select
-              value={form.categoryId}
+              value={form.categoryId ?? ""}
               onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
               className="input w-full mt-1"
             >

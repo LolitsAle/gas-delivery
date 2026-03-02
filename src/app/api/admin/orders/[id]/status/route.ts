@@ -1,12 +1,26 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
-import { OrderStatus } from "@prisma/client";
 import { emitOrderSocketEvent } from "@/lib/socket/orderEvents";
+
+const ORDER_STATUS = {
+  PENDING: "PENDING",
+  CONFIRMED: "CONFIRMED",
+  DELIVERING: "DELIVERING",
+  UNPAID: "UNPAID",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED",
+} as const;
+
+type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
+type TxClient = typeof prisma;
 
 type Params = {
   params: { id: string };
 };
+
+const isOrderStatus = (value: unknown): value is OrderStatus =>
+  typeof value === "string" && Object.values(ORDER_STATUS).includes(value as OrderStatus);
 
 const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ["CONFIRMED", "CANCELLED"],
@@ -20,7 +34,10 @@ const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
 export const PATCH = withAuth(["ADMIN"], async (req, { params }) => {
   try {
     const { id } = params as Params["params"];
-    const { status, cancelledReason, shipperId } = await req.json();
+    const { status: rawStatus, cancelledReason, shipperId } = await req.json();
+    const status: OrderStatus | null = isOrderStatus(rawStatus)
+      ? (rawStatus as OrderStatus)
+      : null;
 
     if (!id) {
       return NextResponse.json(
@@ -29,11 +46,11 @@ export const PATCH = withAuth(["ADMIN"], async (req, { params }) => {
       );
     }
 
-    if (!status || !Object.values(OrderStatus).includes(status)) {
+    if (!status) {
       return NextResponse.json({ message: "Invalid status" }, { status: 400 });
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: TxClient) => {
       const order = await tx.order.findUnique({
         where: { id },
         include: { user: true },
@@ -43,19 +60,26 @@ export const PATCH = withAuth(["ADMIN"], async (req, { params }) => {
         throw new Error("Order not found");
       }
 
-      if (!allowedTransitions[order.status].includes(status)) {
+      const currentStatus: OrderStatus | null = isOrderStatus(order.status)
+        ? (order.status as OrderStatus)
+        : null;
+      if (!currentStatus) {
+        throw new Error("Invalid order status in database");
+      }
+
+      if (!allowedTransitions[currentStatus].includes(status)) {
         throw new Error(
           `Cannot change status from ${order.status} to ${status}`,
         );
       }
 
-      if (order.status === OrderStatus.COMPLETED) {
+      if (order.status === ORDER_STATUS.COMPLETED) {
         throw new Error("Completed order cannot be modified");
       }
 
       if (
-        order.status === OrderStatus.CONFIRMED &&
-        status === OrderStatus.DELIVERING &&
+        order.status === ORDER_STATUS.CONFIRMED &&
+        status === ORDER_STATUS.DELIVERING &&
         !shipperId &&
         !order.shipperId
       ) {
@@ -64,15 +88,15 @@ export const PATCH = withAuth(["ADMIN"], async (req, { params }) => {
 
       const updateData: any = { status };
 
-      if (status === OrderStatus.CONFIRMED) {
+      if (status === ORDER_STATUS.CONFIRMED) {
         updateData.confirmedAt = new Date();
       }
 
-      if (status === OrderStatus.UNPAID || status === OrderStatus.COMPLETED) {
+      if (status === ORDER_STATUS.UNPAID || status === ORDER_STATUS.COMPLETED) {
         updateData.deliveredAt = new Date();
       }
 
-      if (status === OrderStatus.CANCELLED) {
+      if (status === ORDER_STATUS.CANCELLED) {
         updateData.cancelledReason = cancelledReason || "Cancelled by admin";
       }
 
@@ -92,7 +116,7 @@ export const PATCH = withAuth(["ADMIN"], async (req, { params }) => {
        */
 
       // ✅ COMPLETE → chỉ cộng điểm thưởng
-      if (status === OrderStatus.COMPLETED && !order.pointsSettled) {
+      if (status === ORDER_STATUS.COMPLETED && !order.pointsSettled) {
         const pointsEarned = order.pointsEarned ?? 0;
 
         if (pointsEarned > 0) {
@@ -115,7 +139,7 @@ export const PATCH = withAuth(["ADMIN"], async (req, { params }) => {
       }
 
       // 🔴 CANCEL → refund điểm đã trừ lúc tạo đơn
-      if (status === OrderStatus.CANCELLED && !order.pointsSettled) {
+      if (status === ORDER_STATUS.CANCELLED && !order.pointsSettled) {
         const pointsUsed = order.pointsUsed ?? 0;
 
         if (pointsUsed > 0) {

@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
 import {
-  DiscountSource,
-  OrderStatus,
-  CartType,
-  CartItemType,
-} from "@prisma/client";
+  CART_TYPE,
+  DISCOUNT_SOURCE,
+  ORDER_STATUS,
+  type CartItemType,
+  type DiscountSource,
+} from "@/lib/types/order";
 import { emitOrderSocketEvent } from "@/lib/socket/orderEvents";
 import {
   PROMO_BONUS_POINT_AMOUNT,
@@ -26,6 +27,8 @@ import {
   PROMOTION_ACTION,
   toSafeMoney,
 } from "@/lib/types/promotion";
+
+type TxClient = typeof prisma;
 
 export const GET = withAuth(["USER", "ADMIN"], async (req, ctx) => {
   try {
@@ -121,7 +124,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
       throw new Error("stoveId is required");
     }
 
-    const createdOrder = await prisma.$transaction(async (tx) => {
+    const createdOrder = await prisma.$transaction(async (tx: TxClient) => {
       // 1️⃣ Verify stove
       const stove = await tx.stove.findFirst({
         where: {
@@ -220,7 +223,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
 
         const appliedDiscountSources: DiscountSource[] = [];
         if (bindable && isBusinessUser) {
-          appliedDiscountSources.push(DiscountSource.BUSINESS_BINDABLE);
+          appliedDiscountSources.push(DISCOUNT_SOURCE.BUSINESS_BINDABLE);
         }
 
         const { discountPerUnit: promotionDiscountPerUnit } =
@@ -235,7 +238,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
           });
 
         if (promotionDiscountPerUnit > 0) {
-          appliedDiscountSources.push(DiscountSource.PROMOTION_RULE);
+          appliedDiscountSources.push(DISCOUNT_SOURCE.PROMOTION_RULE);
         }
 
         const itemPricing = calculateDiscountedProductPrice({
@@ -278,10 +281,10 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
 
         stoveAppliedDiscountSources = [];
         if (bindable && isBusinessUser) {
-          stoveAppliedDiscountSources.push(DiscountSource.BUSINESS_BINDABLE);
+          stoveAppliedDiscountSources.push(DISCOUNT_SOURCE.BUSINESS_BINDABLE);
         }
         if (stove.defaultPromoChoice === "DISCOUNT_CASH") {
-          stoveAppliedDiscountSources.push(DiscountSource.STOVE_PROMO_DISCOUNT);
+          stoveAppliedDiscountSources.push(DISCOUNT_SOURCE.STOVE_PROMO_DISCOUNT);
         }
 
         const { discountPerUnit: stovePromotionDiscountPerUnit } =
@@ -296,7 +299,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
           });
 
         if (stovePromotionDiscountPerUnit > 0) {
-          stoveAppliedDiscountSources.push(DiscountSource.PROMOTION_RULE);
+          stoveAppliedDiscountSources.push(DISCOUNT_SOURCE.PROMOTION_RULE);
         }
 
         const stovePricing = calculateDiscountedProductPrice({
@@ -356,11 +359,8 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         orderPromotions: matchedOrderPromotions.map((promotion) => ({
           id: promotion.id,
           actions: promotion.actions
-            .filter(
-              (action) =>
-                isDiscountAction(action),
-            )
-            .map((action) => ({
+            .filter((action: any) => isDiscountAction(action))
+            .map((action: any) => ({
               type: action.type,
               value: action.value,
               maxDiscount: action.maxDiscount,
@@ -404,7 +404,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
           discountAmount: totalDiscount,
           shipFee,
           totalPrice,
-          status: OrderStatus.PENDING,
+          status: ORDER_STATUS.PENDING,
           pointsUsed: totalPointsUse,
           pointsEarned: totalPointsEarn,
           pointsSettled: false, // sẽ settle khi complete hoặc cancel
@@ -413,7 +413,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
             create: orderItemSnapshots,
           },
           serviceItems: {
-            create: cart.serviceItems.map((item) => ({
+            create: cart.serviceItems.map((item: any) => ({
               serviceId: item.serviceId,
               stoveId,
               serviceName: item.service.name,
@@ -426,14 +426,12 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
             create: matchedOrderPromotions.map((promotion) => ({
               promotionId: promotion.id,
               discountAmount:
-                perPromotionDiscount.find((item) => item.promotionId === promotion.id)
+                perPromotionDiscount.find((item: any) => item.promotionId === promotion.id)
                   ?.discountAmount ?? 0,
               bonusPoint: promotion.actions
-                .filter((action) => action.type === PROMOTION_ACTION.BONUS_POINT)
-                .reduce((sum, action) => sum + (action.value ?? 0), 0),
-              freeShip: promotion.actions.some(
-                (action) => action.type === PROMOTION_ACTION.FREE_SHIP,
-              ),
+                 .filter((action: any) => action.type === PROMOTION_ACTION.BONUS_POINT)
+                 .reduce((sum: number, action: any) => sum + (action.value ?? 0), 0),
+              freeShip: promotion.actions.some((action: any) => action.type === PROMOTION_ACTION.FREE_SHIP),
             })),
           },
         },
@@ -475,7 +473,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
       await tx.cart.update({
         where: { id: cart.id },
         data: {
-          type: CartType.NORMAL,
+          type: CART_TYPE.NORMAL,
           isStoveActive: false,
         },
       });

@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
-import { CartItemType, CartType } from "@prisma/client";
+import {
+  CART_ITEM_TYPE,
+  CART_TYPE,
+  type CartItemType,
+  type CartType,
+} from "@/lib/types/order";
+
+type TxClient = typeof prisma;
 
 type UpdateCartPayload = {
   stoveId?: string | null;
@@ -30,7 +37,7 @@ export const PATCH = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
       throw new Error("stoveId is required");
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: TxClient) => {
       // 1️⃣ Verify stove belongs to user
       const stove = await tx.stove.findFirst({
         where: {
@@ -52,7 +59,7 @@ export const PATCH = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
         cart = await tx.cart.create({
           data: {
             stoveId: stove.id,
-            type: body.cartType ?? CartType.NORMAL,
+            type: body.cartType ?? CART_TYPE.NORMAL,
             isStoveActive: body.isStoveActive ?? false,
           },
         });
@@ -137,7 +144,7 @@ export const PATCH = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
           // 🎁 Handle promo gift
           if (
             item.promo &&
-            item.promo.type === CartItemType.GIFT_PRODUCT &&
+            item.promo.type === CART_ITEM_TYPE.GIFT_PRODUCT &&
             item.promo.productId
           ) {
             const giftProduct = await tx.product.findUnique({
@@ -151,7 +158,7 @@ export const PATCH = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
               where: {
                 cartId: cart.id,
                 productId: item.promo.productId,
-                type: CartItemType.GIFT_PRODUCT,
+                type: CART_ITEM_TYPE.GIFT_PRODUCT,
                 parentItemId: parentItem.id,
               },
             });
@@ -169,7 +176,7 @@ export const PATCH = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
                   quantity: item.quantity,
                   payByPoints: false,
                   earnPoints: false,
-                  type: CartItemType.GIFT_PRODUCT,
+                  type: CART_ITEM_TYPE.GIFT_PRODUCT,
                   parentItemId: parentItem.id,
                 },
               });

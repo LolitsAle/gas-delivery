@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
 import {
   isPromotionActionType,
   isPromotionConditionType,
+  type PromotionActionType,
+  type PromotionConditionType,
 } from "@/lib/types/promotion";
 
 type InputScalar = string | number | boolean | null | undefined;
@@ -43,7 +44,7 @@ const toNullableNumber = (value: InputScalar) => {
 };
 
 const toDateValue = (value: InputScalar) =>
-  typeof value === "string" || value instanceof Date ? new Date(value) : new Date("");
+  typeof value === "string" ? new Date(value) : new Date("");
 
 const mapPromotionInput = (body: PromotionRequestBody) => {
   const conditions = Array.isArray(body.conditions) ? body.conditions : [];
@@ -68,7 +69,7 @@ const mapPromotionInput = (body: PromotionRequestBody) => {
         (
           item,
         ): item is {
-          type: Prisma.PromotionConditionCreateWithoutPromotionInput["type"];
+          type: PromotionConditionType;
           value: string | null;
         } => isPromotionConditionType(item.type),
       ),
@@ -82,7 +83,7 @@ const mapPromotionInput = (body: PromotionRequestBody) => {
         (
           item,
         ): item is {
-          type: Prisma.PromotionActionCreateWithoutPromotionInput["type"];
+          type: PromotionActionType;
           value: number | null;
           maxDiscount: number | null;
         } => isPromotionActionType(item.type),
@@ -103,7 +104,7 @@ const validatePromotionInput = (input: ReturnType<typeof mapPromotionInput>) => 
 const promotionInclude = {
   conditions: true,
   actions: true,
-} satisfies Prisma.PromotionInclude;
+};
 
 export const GET = withAuth(["ADMIN"], async () => {
   const promotions = await prisma.promotion.findMany({

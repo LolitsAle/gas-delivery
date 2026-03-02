@@ -55,7 +55,7 @@ export const DELETE = withAuth(["ADMIN", "STAFF"], async (_req, { params }) => {
         new DeleteObjectsCommand({
           Bucket: process.env.R2_BUCKET!,
           Delete: {
-            Objects: stove.houseImage.map((key) => ({ Key: key })),
+            Objects: stove.houseImage.map((key: string) => ({ Key: key })),
           },
         }),
       );

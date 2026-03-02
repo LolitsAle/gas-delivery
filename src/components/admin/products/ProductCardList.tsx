@@ -73,7 +73,7 @@ export default function ProductCardList({
                 <div className="text-sm">
                   Điểm:{" "}
                   <span className="font-medium">
-                    {product.pointValue.toLocaleString()}
+                    {(product.pointValue ?? 0).toLocaleString()}
                   </span>
                 </div>
               </div>

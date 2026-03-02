@@ -62,7 +62,7 @@ export const getMatchedPromotions = (
   return promotions
     .filter((promotion) => isPromotionActive(promotion, now))
     .filter((promotion) =>
-      promotion.conditions.every((condition) =>
+      promotion.conditions.every((condition: PromotionCondition) =>
         doesConditionMatch(condition, context),
       ),
     )
@@ -122,8 +122,8 @@ export const calculatePromotionBonusPoints = ({
   const matched = getMatchedPromotions(promotions, context);
   return matched.reduce((total, promotion) => {
     const bonus = promotion.actions
-      .filter((action) => action.type === "BONUS_POINT")
-      .reduce((sum, action) => sum + toSafeMoney(action.value ?? 0), 0);
+      .filter((action: PromotionAction) => action.type === "BONUS_POINT")
+      .reduce((sum: number, action: PromotionAction) => sum + toSafeMoney(action.value ?? 0), 0);
 
     return total + bonus;
   }, 0);
