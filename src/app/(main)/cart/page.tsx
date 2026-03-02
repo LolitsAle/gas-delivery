@@ -38,82 +38,87 @@ export default function CartPage() {
   const cart = stove?.cart ?? null;
   const isStoveActive = cart?.isStoveActive ?? false;
 
-  const { totalMoney, totalPointsUse, totalPointsEarn, discountCash, bonusPoints } =
-    useMemo(() => {
-      const serverPricing = stove?.cart?.pricing;
-      if (serverPricing) {
-        let pointUse = 0;
-        items.forEach((item) => {
-          if (!item.product || item.parentItemId || !item.payByPoints) return;
-          pointUse += (item.product.pointValue ?? 0) * item.quantity;
-        });
-
-        return {
-          totalMoney: serverPricing.totalPrice,
-          totalPointsUse: pointUse,
-          totalPointsEarn: serverPricing.bonusPoint,
-          discountCash: serverPricing.discountAmount,
-          bonusPoints: serverPricing.bonusPoint,
-        };
-      }
-
-      let subtotal = 0;
+  const {
+    totalMoney,
+    totalPointsUse,
+    totalPointsEarn,
+    discountCash,
+    bonusPoints,
+  } = useMemo(() => {
+    const serverPricing = stove?.cart?.pricing;
+    if (serverPricing) {
       let pointUse = 0;
-      let discount = 0;
-      let bonus = 0;
-      const isBusinessUser = currentUser?.tags?.includes("BUSINESS") ?? false;
-
       items.forEach((item) => {
-        if (!item.product || item.parentItemId) return;
-
-        const qty = item.quantity;
-        if (item.payByPoints) {
-          pointUse += (item.product.pointValue ?? 0) * qty;
-          return;
-        }
-
-        const pricing = calculateDiscountedProductPrice({
-          unitPrice: item.product.currentPrice ?? 0,
-          quantity: qty,
-          isBusinessUser,
-          isBindableProduct: item.product.tags?.includes("BINDABLE"),
-          promotionDiscountPerUnit: item.product.promotionDiscountPerUnit ?? 0,
-        });
-
-        subtotal += pricing.originalTotalPrice;
-        discount += pricing.totalDiscount;
+        if (!item.product || item.parentItemId || !item.payByPoints) return;
+        pointUse += (item.product.pointValue ?? 0) * item.quantity;
       });
 
-      if (isStoveActive && stove?.product && stove.defaultProductQuantity) {
-        const qty = stove.defaultProductQuantity;
-        const stovePricing = calculateDiscountedProductPrice({
-          unitPrice: stove.product.currentPrice ?? 0,
-          quantity: qty,
-          isBusinessUser,
-          isBindableProduct: stove.product.tags?.includes("BINDABLE"),
-          promotionDiscountPerUnit: stove.product.promotionDiscountPerUnit ?? 0,
-          stovePromoDiscountPerUnit:
-            stove.defaultPromoChoice === "DISCOUNT_CASH"
-              ? PROMO_DISCOUNT_CASH_AMOUNT
-              : 0,
-        });
+      return {
+        totalMoney: serverPricing.totalPrice,
+        totalPointsUse: pointUse,
+        totalPointsEarn: serverPricing.bonusPoint,
+        discountCash: serverPricing.discountAmount,
+        bonusPoints: serverPricing.bonusPoint,
+      };
+    }
 
-        subtotal += stovePricing.originalTotalPrice;
-        discount += stovePricing.totalDiscount;
+    let subtotal = 0;
+    let pointUse = 0;
+    let discount = 0;
+    let bonus = 0;
+    const isBusinessUser = currentUser?.tags?.includes("BUSINESS") ?? false;
 
-        if (stove.defaultPromoChoice === "BONUS_POINT") {
-          bonus = PROMO_BONUS_POINT_AMOUNT * qty;
-        }
+    items.forEach((item) => {
+      if (!item.product || item.parentItemId) return;
+
+      const qty = item.quantity;
+      if (item.payByPoints) {
+        pointUse += (item.product.pointValue ?? 0) * qty;
+        return;
       }
 
-      return {
-        totalMoney: Math.max(subtotal - discount, 0),
-        totalPointsUse: pointUse,
-        totalPointsEarn: bonus,
-        discountCash: discount,
-        bonusPoints: bonus,
-      };
-    }, [items, stove, isStoveActive, currentUser?.tags]);
+      const pricing = calculateDiscountedProductPrice({
+        unitPrice: item.product.currentPrice ?? 0,
+        quantity: qty,
+        isBusinessUser,
+        isBindableProduct: item.product.tags?.includes("BINDABLE"),
+        promotionDiscountPerUnit: item.product.promotionDiscountPerUnit ?? 0,
+      });
+
+      subtotal += pricing.originalTotalPrice;
+      discount += pricing.totalDiscount;
+    });
+
+    if (isStoveActive && stove?.product && stove.defaultProductQuantity) {
+      const qty = stove.defaultProductQuantity;
+      const stovePricing = calculateDiscountedProductPrice({
+        unitPrice: stove.product.currentPrice ?? 0,
+        quantity: qty,
+        isBusinessUser,
+        isBindableProduct: stove.product.tags?.includes("BINDABLE"),
+        promotionDiscountPerUnit: stove.product.promotionDiscountPerUnit ?? 0,
+        stovePromoDiscountPerUnit:
+          stove.defaultPromoChoice === "DISCOUNT_CASH"
+            ? PROMO_DISCOUNT_CASH_AMOUNT
+            : 0,
+      });
+
+      subtotal += stovePricing.originalTotalPrice;
+      discount += stovePricing.totalDiscount;
+
+      if (stove.defaultPromoChoice === "BONUS_POINT") {
+        bonus = PROMO_BONUS_POINT_AMOUNT * qty;
+      }
+    }
+
+    return {
+      totalMoney: Math.max(subtotal - discount, 0),
+      totalPointsUse: pointUse,
+      totalPointsEarn: bonus,
+      discountCash: discount,
+      bonusPoints: bonus,
+    };
+  }, [items, stove, isStoveActive, currentUser?.tags]);
 
   const userPoints = currentUser?.points ?? 0;
   const notEnoughPoints = totalPointsUse > userPoints;
@@ -216,6 +221,12 @@ export default function CartPage() {
       </div>
 
       <div className="bg-white p-[5vw] overflow-auto flex-1 pb-[30vw] flex flex-col gap-[3vw]">
+        <InfoBanner>
+          <p>Số ưu đã áp dụng (3)</p>
+          <p>+ Giảm từ bếp (không lấy khuyến mãi) -10k/bình</p>
+          <p>+ Giảm từ khách hàng kinh doanh -10k/bình</p>
+          <p>+ Chương trình khuyến mãi 30 năm -20k/bình</p>
+        </InfoBanner>
         {stove && (
           <>
             {isStoveActive ? (

@@ -97,6 +97,7 @@ export const POST = withAuth(["ADMIN"], async (req) => {
         isActive: body.isActive ?? true,
         address: body.address || null,
         addressNote: body.addressNote || null,
+        tags: body.tags || [],
       },
       select: {
         id: true,

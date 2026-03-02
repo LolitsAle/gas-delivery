@@ -26,7 +26,8 @@ export async function sendOtpService(phone: string): Promise<void> {
   const smsType: SendSmsPayload["sms_type"] = 2; // OTP
 
   if (process.env.NODE_ENV === "production") {
-    await sendSMS([phone], content, smsType);
+    // DISABLED OPT SEND
+    // await sendSMS([phone], content, smsType);
   }
 
   console.log("OTP sent to", phone);
