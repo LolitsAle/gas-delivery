@@ -1,9 +1,24 @@
-import { Category, ProductTag } from "@prisma/client";
+import type { ProductTag } from "@prisma/client";
 
-import { Product } from "@prisma/client";
+export type CategoryOption = {
+  id: string;
+  name: string;
+  tags?: ProductTag[];
+};
 
-export type ProductWithCategory = Product & {
-  category: Category;
+export type ProductBase = {
+  id: string;
+  productName: string;
+  currentPrice: number;
+  pointValue?: number | null;
+  description?: string | null;
+  categoryId?: string | null;
+  tags: ProductTag[];
+  previewImageUrl?: string | null;
+};
+
+export type ProductWithCategory = ProductBase & {
+  category: CategoryOption;
 };
 
 export interface ProductFilters {

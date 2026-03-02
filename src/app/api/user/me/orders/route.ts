@@ -5,7 +5,7 @@ import {
   DiscountSource,
   OrderStatus,
   CartType,
-  PromotionActionType,
+  CartItemType,
 } from "@prisma/client";
 import { emitOrderSocketEvent } from "@/lib/socket/orderEvents";
 import {
@@ -19,6 +19,7 @@ import {
   getMatchedPromotions,
 } from "@/lib/pricing/promotionEngine";
 import { calculateCheckoutTotals } from "@/lib/pricing/orderPricing";
+import { isDiscountAction, toSafeMoney } from "@/lib/types/promotion";
 
 export const GET = withAuth(["USER", "ADMIN"], async (req, ctx) => {
   try {
@@ -175,10 +176,10 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
         quantity: number;
         unitPrice: number;
         unitPointPrice: number;
-        type: any;
+        type: CartItemType;
         payByPoints: boolean;
         earnPoints: boolean;
-        productTagsSnapshot: any[];
+        productTagsSnapshot: import("@prisma/client").ProductTag[];
         discountPerUnitSnapshot: number;
         appliedDiscountSources: DiscountSource[];
       }> = [];
@@ -259,7 +260,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
       // ===== 2️⃣ Stove gas =====
       let stoveUnitPrice: number | null = null;
       let stoveQuantity: number | null = null;
-      let stoveProductTagsSnapshot: any[] = [];
+      let stoveProductTagsSnapshot: import("@prisma/client").ProductTag[] = [];
       let stoveDiscountPerUnitSnapshot = 0;
       let stoveAppliedDiscountSources: DiscountSource[] = [];
 
@@ -318,7 +319,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
 
       // ===== 3️⃣ Service items =====
       for (const service of cart.serviceItems) {
-        subtotal += service.price * service.quantity;
+        subtotal += toSafeMoney(service.price) * Math.max(service.quantity, 0);
       }
 
       const matchedOrderPromotions = getMatchedPromotions(activePromotions, {
@@ -351,8 +352,7 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
           actions: promotion.actions
             .filter(
               (action) =>
-                action.type === PromotionActionType.DISCOUNT_AMOUNT ||
-                action.type === PromotionActionType.DISCOUNT_PERCENT,
+                isDiscountAction(action),
             )
             .map((action) => ({
               type: action.type,
@@ -423,10 +423,10 @@ export const POST = withAuth(["USER", "ADMIN"], async (req, ctx) => {
                 perPromotionDiscount.find((item) => item.promotionId === promotion.id)
                   ?.discountAmount ?? 0,
               bonusPoint: promotion.actions
-                .filter((action) => action.type === PromotionActionType.BONUS_POINT)
+                .filter((action) => action.type === "BONUS_POINT")
                 .reduce((sum, action) => sum + (action.value ?? 0), 0),
               freeShip: promotion.actions.some(
-                (action) => action.type === PromotionActionType.FREE_SHIP,
+                (action) => action.type === "FREE_SHIP",
               ),
             })),
           },

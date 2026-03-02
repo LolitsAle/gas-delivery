@@ -12,6 +12,7 @@ import {
   PROMO_BONUS_POINT_AMOUNT,
   PROMO_DISCOUNT_CASH_AMOUNT,
 } from "@/constants/promotion";
+import type { PromotionDiscountableProduct } from "@/lib/types/promotion";
 
 type AccessTokenPayload = {
   userId: string;
@@ -210,11 +211,13 @@ export async function GET(req: Request) {
 
     if (!fullUser) return null;
 
-    const mapPromotionPrice = <T,>(product: T | null) => {
+    const mapPromotionPrice = <T extends PromotionDiscountableProduct>(
+      product: T | null,
+    ): (T & { promotionDiscountPerUnit: number }) | null => {
       if (!product) return null;
       const { discountPerUnit } = calculatePromotionDiscountPerUnit({
         promotions: activePromotions,
-        unitPrice: product.currentPrice,
+        unitPrice: product.currentPrice ?? 0,
         context: {
           productTags: product.tags,
           categoryId: product.category?.id,
@@ -238,7 +241,7 @@ export async function GET(req: Request) {
               let itemDiscountTotal = 0;
 
               const pricedItems = stove.cart.items.map((item) => {
-                const product = mapPromotionPrice(item.product) as any;
+                const product = mapPromotionPrice(item.product);
 
                 if (item.payByPoints || item.parentItemId || !product) {
                   return { ...item, product };
@@ -259,7 +262,22 @@ export async function GET(req: Request) {
               });
 
               if (stove.cart.isStoveActive && stove.product && stove.defaultProductQuantity) {
-                const pricedStoveProduct = mapPromotionPrice(stove.product) as any;
+                const pricedStoveProduct = mapPromotionPrice(stove.product);
+                if (!pricedStoveProduct) {
+                  return {
+                    ...stove.cart,
+                    items: pricedItems,
+                    pricing: {
+                      subtotal,
+                      itemDiscountTotal,
+                      orderDiscountTotal: 0,
+                      discountAmount: itemDiscountTotal,
+                      totalPrice: Math.max(subtotal - itemDiscountTotal, 0),
+                      bonusPoint: 0,
+                    },
+                  };
+                }
+
                 const stovePricing = calculateDiscountedProductPrice({
                   unitPrice: pricedStoveProduct.currentPrice ?? 0,
                   quantity: stove.defaultProductQuantity,

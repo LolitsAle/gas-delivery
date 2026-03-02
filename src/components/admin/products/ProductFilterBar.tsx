@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { Search, Plus } from "lucide-react";
-import { Category, ProductTag } from "@prisma/client";
-import { ProductFilters } from "./types";
+import type { ProductTag } from "@prisma/client";
+import { PRODUCT_TAGS } from "@/lib/types/promotion";
+import { CategoryOption, ProductFilters } from "./types";
 
 interface Props {
   filters: ProductFilters;
   onChange: (filters: Partial<ProductFilters>) => void;
   onAdd: () => void;
-  categories: Category[];
+  categories: CategoryOption[];
 }
 
 export default function ProductFilterBar({
@@ -123,7 +124,7 @@ export default function ProductFilterBar({
 
       {/* TAG FILTER */}
       <div className="flex flex-wrap gap-2">
-        {Object.values(ProductTag).map((tag) => {
+        {PRODUCT_TAGS.map((tag) => {
           const active = (filters.tags ?? []).includes(tag);
 
           return (

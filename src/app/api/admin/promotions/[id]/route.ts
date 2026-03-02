@@ -1,58 +1,83 @@
 import { NextResponse } from "next/server";
-import {
-  PromotionActionType,
-  PromotionConditionType,
-  Prisma,
-} from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth/withAuth";
+import {
+  isPromotionActionType,
+  isPromotionConditionType,
+} from "@/lib/types/promotion";
 
 type Params = {
   params: { id: string };
 };
 
-const validConditionTypes = Object.values(PromotionConditionType);
-const validActionTypes = Object.values(PromotionActionType);
+type PromotionRequestBody = {
+  name?: unknown;
+  description?: unknown;
+  startAt?: unknown;
+  endAt?: unknown;
+  isActive?: unknown;
+  priority?: unknown;
+  conditions?: Array<{ type?: unknown; value?: unknown }>;
+  actions?: Array<{ type?: unknown; value?: unknown; maxDiscount?: unknown }>;
+};
 
-const mapPromotionInput = (body: any) => {
-  const conditions = Array.isArray(body?.conditions) ? body.conditions : [];
-  const actions = Array.isArray(body?.actions) ? body.actions : [];
+const toNullableString = (value: unknown) => {
+  if (value === undefined || value === null || value === "") return null;
+  return String(value);
+};
+
+const toNullableNumber = (value: unknown) => {
+  if (value === undefined || value === null || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const mapPromotionInput = (body: PromotionRequestBody) => {
+  const conditions = Array.isArray(body.conditions) ? body.conditions : [];
+  const actions = Array.isArray(body.actions) ? body.actions : [];
 
   return {
-    name: String(body?.name || "").trim(),
+    name: String(body.name || "").trim(),
     description:
-      typeof body?.description === "string" && body.description.trim()
+      typeof body.description === "string" && body.description.trim()
         ? body.description.trim()
         : null,
-    startAt: new Date(body?.startAt),
-    endAt: new Date(body?.endAt),
-    isActive: body?.isActive !== false,
+    startAt: new Date(body.startAt as string),
+    endAt: new Date(body.endAt as string),
+    isActive: body.isActive !== false,
     priority:
-      typeof body?.priority === "number" ? body.priority : Number(body?.priority || 0),
+      typeof body.priority === "number"
+        ? body.priority
+        : Number(body.priority || 0),
     conditions: conditions
-      .map((item: any) => ({
+      .map((item) => ({
         type: item?.type,
-        value:
-          item?.value === undefined || item?.value === null || item?.value === ""
-            ? null
-            : String(item.value),
+        value: toNullableString(item?.value),
       }))
-      .filter((item: any) => validConditionTypes.includes(item.type)),
+      .filter(
+        (
+          item,
+        ): item is {
+          type: Prisma.PromotionConditionCreateWithoutPromotionInput["type"];
+          value: string | null;
+        } => isPromotionConditionType(item.type),
+      ),
     actions: actions
-      .map((item: any) => ({
+      .map((item) => ({
         type: item?.type,
-        value:
-          item?.value === undefined || item?.value === null || item?.value === ""
-            ? null
-            : Number(item.value),
-        maxDiscount:
-          item?.maxDiscount === undefined ||
-          item?.maxDiscount === null ||
-          item?.maxDiscount === ""
-            ? null
-            : Number(item.maxDiscount),
+        value: toNullableNumber(item?.value),
+        maxDiscount: toNullableNumber(item?.maxDiscount),
       }))
-      .filter((item: any) => validActionTypes.includes(item.type)),
+      .filter(
+        (
+          item,
+        ): item is {
+          type: Prisma.PromotionActionCreateWithoutPromotionInput["type"];
+          value: number | null;
+          maxDiscount: number | null;
+        } => isPromotionActionType(item.type),
+      ),
   };
 };
 
@@ -101,7 +126,7 @@ export const PUT = withAuth(["ADMIN"], async (req, { params }) => {
       );
     }
 
-    const body = await req.json();
+    const body = (await req.json()) as PromotionRequestBody;
     const input = mapPromotionInput(body);
     const validationError = validatePromotionInput(input);
 

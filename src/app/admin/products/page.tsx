@@ -7,12 +7,12 @@ import ProductFilterBar from "@/components/admin/products/ProductFilterBar";
 import ProductTable from "@/components/admin/products/ProductTable";
 
 import {
+  CategoryOption,
   ProductFilters,
   ProductWithCategory,
 } from "@/components/admin/products/types";
 import ProductCardList from "@/components/admin/products/ProductCardList";
 import ProductDrawerForm from "@/components/admin/products/ProductDrawerForm";
-import { Category } from "@prisma/client";
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<ProductWithCategory[]>([]);
@@ -34,7 +34,7 @@ export default function AdminProductsPage() {
   });
 
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [editingProduct, setEditingProduct] =
     useState<ProductWithCategory | null>(null);
 

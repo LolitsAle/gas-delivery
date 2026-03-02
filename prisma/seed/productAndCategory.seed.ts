@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { PrismaClient, ProductTag } from "@prisma/client";
 
 export async function seedCategoriesAndProducts(prisma: PrismaClient) {

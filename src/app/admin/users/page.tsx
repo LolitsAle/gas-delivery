@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { AdminCard, StatusBadge } from "@/components/admin/Commons";
 import { apiFetchAuth } from "@/lib/api/apiClient";
-import { User } from "@prisma/client";
+import type { User } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import {
   Select,

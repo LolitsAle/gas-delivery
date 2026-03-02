@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Product, Stove } from "@prisma/client";
+import type { Product, Stove } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Pencil, Trash2 } from "lucide-react";

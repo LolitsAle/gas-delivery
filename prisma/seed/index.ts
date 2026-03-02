@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { seedCategoriesAndProducts } from "./productAndCategory.seed";
 import { seedPromotions } from "./promotion.seed";
 

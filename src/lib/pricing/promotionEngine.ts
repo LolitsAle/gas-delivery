@@ -1,38 +1,13 @@
+import type { PromotionAction, PromotionCondition, ProductTag } from "@prisma/client";
 import {
-  PromotionActionType,
-  PromotionConditionType,
-  Promotion,
-  PromotionAction,
-  PromotionCondition,
-  ProductTag,
-} from "@prisma/client";
+  PromotionContext,
+  PromotionFull,
+  isDiscountAction,
+  isPromotionActive,
+  splitValues,
+  toSafeMoney,
+} from "@/lib/types/promotion";
 import { calculateOrderLevelDiscount } from "./orderPricing";
-
-export type PromotionFull = Promotion & {
-  conditions: PromotionCondition[];
-  actions: PromotionAction[];
-};
-
-type PromotionContext = {
-  productTags?: ProductTag[];
-  categoryId?: string | null;
-  categoryName?: string | null;
-  subtotal?: number;
-  orderType?: string;
-  now?: Date;
-};
-
-const toSafeMoney = (value: number) =>
-  Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
-
-const splitValues = (value?: string | null) =>
-  (value || "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-const isPromotionActive = (promotion: PromotionFull, now: Date) =>
-  promotion.isActive && promotion.startAt <= now && promotion.endAt >= now;
 
 const doesConditionMatch = (
   condition: PromotionCondition,
@@ -41,14 +16,16 @@ const doesConditionMatch = (
   const rawValue = condition.value || "";
 
   switch (condition.type) {
-    case PromotionConditionType.PRODUCT_TAG: {
-      const tags = splitValues(rawValue);
+    case "PRODUCT_TAG": {
+      const tags = splitValues(rawValue).filter(
+        (tag): tag is ProductTag => !!tag,
+      );
       if (!tags.length) return true;
       const productTags = context.productTags || [];
-      return tags.some((tag) => productTags.includes(tag as ProductTag));
+      return tags.some((tag) => productTags.includes(tag));
     }
 
-    case PromotionConditionType.CATEGORY: {
+    case "CATEGORY": {
       const values = splitValues(rawValue).map((item) => item.toLowerCase());
       if (!values.length) return true;
       const categoryId = (context.categoryId || "").toLowerCase();
@@ -58,13 +35,13 @@ const doesConditionMatch = (
       );
     }
 
-    case PromotionConditionType.MIN_SUBTOTAL: {
+    case "MIN_SUBTOTAL": {
       const minSubtotal = Number(rawValue);
       if (!Number.isFinite(minSubtotal) || minSubtotal <= 0) return true;
       return (context.subtotal || 0) >= minSubtotal;
     }
 
-    case PromotionConditionType.ORDER_TYPE: {
+    case "ORDER_TYPE": {
       if (!rawValue) return true;
       return (context.orderType || "").toUpperCase() === rawValue.toUpperCase();
     }
@@ -97,11 +74,12 @@ export const calculatePromotionDiscountPerUnit = ({
 }: {
   promotions: PromotionFull[];
   context: PromotionContext;
-  unitPrice: number;
+  unitPrice: number | null | undefined;
 }) => {
-  const safeUnitPrice = toSafeMoney(unitPrice);
-  if (safeUnitPrice <= 0)
+  const safeUnitPrice = toSafeMoney(unitPrice ?? 0);
+  if (safeUnitPrice <= 0) {
     return { discountPerUnit: 0, promotionIds: [] as string[] };
+  }
 
   const matched = getMatchedPromotions(promotions, context);
 
@@ -109,11 +87,11 @@ export const calculatePromotionDiscountPerUnit = ({
 
   for (const promotion of matched) {
     for (const action of promotion.actions) {
-      if (action.type === PromotionActionType.DISCOUNT_AMOUNT) {
+      if (action.type === "DISCOUNT_AMOUNT") {
         discountPerUnit += toSafeMoney(action.value ?? 0);
       }
 
-      if (action.type === PromotionActionType.DISCOUNT_PERCENT) {
+      if (action.type === "DISCOUNT_PERCENT") {
         const percent = Number(action.value ?? 0);
         if (!Number.isFinite(percent) || percent <= 0) continue;
 
@@ -142,12 +120,27 @@ export const calculatePromotionBonusPoints = ({
   const matched = getMatchedPromotions(promotions, context);
   return matched.reduce((total, promotion) => {
     const bonus = promotion.actions
-      .filter((action) => action.type === PromotionActionType.BONUS_POINT)
+      .filter((action) => action.type === "BONUS_POINT")
       .reduce((sum, action) => sum + toSafeMoney(action.value ?? 0), 0);
 
     return total + bonus;
   }, 0);
 };
+
+const toOrderDiscountAction = (action: PromotionAction) => {
+  if (!isDiscountAction(action)) return null;
+
+  return {
+    type: action.type,
+    value: action.value ?? 0,
+    maxDiscount: action.maxDiscount ?? 0,
+  };
+};
+
+const isOrderDiscountAction = (
+  action: ReturnType<typeof toOrderDiscountAction>,
+): action is NonNullable<ReturnType<typeof toOrderDiscountAction>> =>
+  action !== null;
 
 export const calculateOrderLevelPromotionDiscount = ({
   promotions,
@@ -159,18 +152,10 @@ export const calculateOrderLevelPromotionDiscount = ({
   return calculateOrderLevelDiscount({
     promotions: promotions.map((promotion) => ({
       id: promotion.id,
-      actions: promotion.actions
-        .filter(
-          (action) =>
-            action.type === PromotionActionType.DISCOUNT_AMOUNT ||
-            action.type === PromotionActionType.DISCOUNT_PERCENT,
-        )
-        .map((action) => ({
-          type: action.type,
-          value: action.value,
-          maxDiscount: action.maxDiscount,
-        })),
+      actions: promotion.actions.map(toOrderDiscountAction).filter(isOrderDiscountAction),
     })),
     baseAmount,
   });
 };
+
+export type { PromotionContext, PromotionFull } from "@/lib/types/promotion";

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ProductTag } from "@prisma/client";
+import type { ProductTag } from "@prisma/client";
+import { isProductTag } from "@/lib/types/promotion";
 import { calculatePromotionDiscountPerUnit } from "@/lib/pricing/promotionEngine";
 
 export async function GET(req: NextRequest) {
@@ -41,11 +42,11 @@ export async function GET(req: NextRequest) {
     let finalTags: ProductTag[] = [];
 
     if (tagParams) {
-      finalTags.push(...(tagParams.split(",") as ProductTag[]));
+      finalTags.push(...tagParams.split(",").filter(isProductTag));
     }
 
     if (bindable === "true") {
-      finalTags.push(ProductTag.BINDABLE);
+      finalTags.push("BINDABLE");
     }
 
     if (finalTags.length > 0) {
@@ -62,13 +63,13 @@ export async function GET(req: NextRequest) {
         AND: [
           {
             NOT: {
-              tags: { has: ProductTag.BINDABLE },
+              tags: { has: "BINDABLE" },
             },
           },
           {
             NOT: {
               category: {
-                tags: { has: ProductTag.BINDABLE },
+                tags: { has: "BINDABLE" },
               },
             },
           },
