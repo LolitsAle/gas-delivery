@@ -1,9 +1,11 @@
-// @ts-nocheck
-import {
-  PrismaClient,
-  PromotionActionType,
-  PromotionConditionType,
-} from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
+const PromotionConditionTypeEnum = {
+  PRODUCT_TAG: "PRODUCT_TAG",
+} as const;
+const PromotionActionTypeEnum = {
+  DISCOUNT_AMOUNT: "DISCOUNT_AMOUNT",
+  BONUS_POINT: "BONUS_POINT",
+};
 
 export async function seedPromotions(prisma: PrismaClient) {
   const now = new Date();
@@ -30,7 +32,7 @@ export async function seedPromotions(prisma: PrismaClient) {
       conditions: {
         create: [
           {
-            type: PromotionConditionType.PRODUCT_TAG,
+            type: PromotionConditionTypeEnum.PRODUCT_TAG,
             value: "BINDABLE",
           },
         ],
@@ -38,7 +40,7 @@ export async function seedPromotions(prisma: PrismaClient) {
       actions: {
         create: [
           {
-            type: PromotionActionType.DISCOUNT_AMOUNT,
+            type: PromotionActionTypeEnum.DISCOUNT_AMOUNT,
             value: 20000,
           },
         ],
@@ -57,7 +59,7 @@ export async function seedPromotions(prisma: PrismaClient) {
       conditions: {
         create: [
           {
-            type: PromotionConditionType.PRODUCT_TAG,
+            type: PromotionConditionTypeEnum.PRODUCT_TAG,
             value: "BINDABLE",
           },
         ],
@@ -65,11 +67,11 @@ export async function seedPromotions(prisma: PrismaClient) {
       actions: {
         create: [
           {
-            type: PromotionActionType.DISCOUNT_AMOUNT,
+            type: PromotionActionTypeEnum.DISCOUNT_AMOUNT,
             value: 10000,
           },
           {
-            type: PromotionActionType.BONUS_POINT,
+            type: PromotionActionTypeEnum.BONUS_POINT,
             value: 1000,
           },
         ],
