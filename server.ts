@@ -1,4 +1,6 @@
 // server.ts
+import dotenv from "dotenv";
+dotenv.config();
 import http from "node:http";
 import next from "next";
 import type { IncomingMessage } from "node:http";
