@@ -20,6 +20,11 @@ const nextConfig: NextConfig = {
             hostname: new URL(r2Url).hostname,
             pathname: "/**",
           },
+          {
+            protocol: "https",
+            hostname: "img.gasngoc.com",
+            pathname: "/**",
+          },
         ]
       : [],
   },
