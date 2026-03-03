@@ -41,4 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
-/public/uploads/
+public/uploads/
+public/sw.js
+public/workbox-*.js
