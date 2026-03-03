@@ -14,6 +14,15 @@ type UploadFile = {
 
 export const POST = withAuth(["USER", "ADMIN", "STAFF"], async (req, ctx) => {
   try {
+    // DEBUG:
+    console.log("[R2_ENV_CHECK]", {
+      hasAccount: !!process.env.CLOUDFLARE_ACCOUNT_ID,
+      hasToken: !!process.env.R2_TOKEN_VALUE,
+      hasAccessKey: !!process.env.R2_ACCESS_KEY,
+      hasSecretKey: !!process.env.R2_SECRET_KEY,
+      hasBucket: !!process.env.R2_BUCKET,
+      hasPublicUrl: !!process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL,
+    });
     const { target, ownerId, files } = await req.json();
     const me = ctx.user;
 
