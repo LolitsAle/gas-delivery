@@ -9,10 +9,10 @@ export const r2Client = new S3Client({
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
   },
 
-  // ✅ FIX 403 do checksum headers/query
-  requestChecksumCalculation: "WHEN_REQUIRED",
-  responseChecksumValidation: "WHEN_REQUIRED",
+  // // ✅ FIX 403 do checksum headers/query
+  // requestChecksumCalculation: "WHEN_REQUIRED",
+  // responseChecksumValidation: "WHEN_REQUIRED",
 
-  // optional (hay dùng với R2):
-  forcePathStyle: false,
+  // // optional (hay dùng với R2):
+  // forcePathStyle: false,
 });
