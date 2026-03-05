@@ -62,6 +62,8 @@ export async function POST(req: Request) {
         passwordHash: "",
         name: name,
         nickname: `User${phone.slice(-4)}`,
+        authProvider: "PHONE_OTP",
+        needsPhoneNumber: false,
         points: process.env.FIRST_CREATED_USER_BONUS_POINTS
           ? parseInt(process.env.FIRST_CREATED_USER_BONUS_POINTS)
           : 0, //tạo lần đầu sẽ được 1000 điểm (set trong env)
