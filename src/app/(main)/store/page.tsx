@@ -160,7 +160,6 @@ export default function ShopPage() {
         }
         //  ?excludeBindable=true
         const data = await apiFetchPublic("/api/products");
-        console.log("data", data);
         const mapped: Product[] = data.map((p: any) => ({
           id: p.id,
           name: p.productName,
@@ -363,7 +362,9 @@ export default function ShopPage() {
                               unitPrice={p.price}
                               isBusinessUser={isBusinessUser}
                               isBindableProduct={p.tags.includes("BINDABLE")}
-                              promotionDiscountPerUnit={p.promotionDiscountPerUnit}
+                              promotionDiscountPerUnit={
+                                p.promotionDiscountPerUnit
+                              }
                               priceClassName="text-xs text-gas-green-600"
                             />
                           )}
@@ -413,8 +414,12 @@ export default function ShopPage() {
                       <ProductPrice
                         unitPrice={selectedProduct.price}
                         isBusinessUser={isBusinessUser}
-                        isBindableProduct={selectedProduct.tags.includes("BINDABLE")}
-                        promotionDiscountPerUnit={selectedProduct.promotionDiscountPerUnit}
+                        isBindableProduct={selectedProduct.tags.includes(
+                          "BINDABLE",
+                        )}
+                        promotionDiscountPerUnit={
+                          selectedProduct.promotionDiscountPerUnit
+                        }
                         priceClassName="text-xl font-extrabold text-gas-green-700"
                         oldPriceClassName="text-sm"
                       />
@@ -478,8 +483,12 @@ export default function ShopPage() {
                             unitPrice={selectedProduct.price}
                             quantity={quantity}
                             isBusinessUser={isBusinessUser}
-                            isBindableProduct={selectedProduct.tags.includes("BINDABLE")}
-                            promotionDiscountPerUnit={selectedProduct.promotionDiscountPerUnit}
+                            isBindableProduct={selectedProduct.tags.includes(
+                              "BINDABLE",
+                            )}
+                            promotionDiscountPerUnit={
+                              selectedProduct.promotionDiscountPerUnit
+                            }
                             priceClassName="text-sm text-gas-green-700"
                           />
                         )}

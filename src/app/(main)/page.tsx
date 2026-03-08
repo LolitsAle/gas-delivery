@@ -6,15 +6,13 @@ import { useCurrentUser } from "@/components/context/CurrentUserContext";
 import ImageCarousel from "@/components/main/ImageCarousel";
 import OrderSection from "@/components/main/OrderSection";
 import PhoneCall from "@/components/main/PhoneCall";
-import SplashScreen from "@/components/main/SplashScreen";
-import { Pencil, Sun, User } from "lucide-react";
+import { Pencil, User } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 export default function Home() {
   const { currentUser, isFetchingUser, refreshUser, activeStove } =
     useCurrentUser();
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   const renderUserData = useMemo(() => {
@@ -39,10 +37,6 @@ export default function Home() {
 
     router.push("/login");
   }, [currentUser, isFetchingUser, router]);
-
-  if (loading) {
-    return <SplashScreen onFinish={() => setLoading(false)} />;
-  }
 
   return (
     <div className="relative w-screen h-screen bg-linear-to-b from-gas-green-500 to-white text-[3vw] select-none text-white">

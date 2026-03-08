@@ -10,5 +10,4 @@ export const r2Client = new S3Client({
   },
   requestChecksumCalculation: "WHEN_REQUIRED",
   responseChecksumValidation: "WHEN_REQUIRED",
-  forcePathStyle: false,
 });
