@@ -6,23 +6,40 @@ import {
   SECRET_OTP_CODE,
 } from "@/lib/auth/authConfig";
 import { generateRefreshToken, hashToken } from "@/lib/auth/helpers";
+import { hashPassword } from "@/lib/password";
 
 export async function POST(req: Request) {
   const {
     phone,
     otp,
-    type,
+    name,
+    password,
   }: {
     phone: string;
     otp: string;
-    type: "LOGIN" | "VERIFY_OTP_ONLY";
+    name?: string;
+    password: string;
   } = await req.json();
 
-  if (!phone || !otp || !type) {
+  if (!phone || !otp || !name || !password) {
     return Response.json({ message: "Thiếu thông tin" }, { status: 400 });
   }
 
-  // fast otp for bypass
+  if (password.length < 6) {
+    return Response.json(
+      { message: "Mật khẩu tối thiểu 6 ký tự" },
+      { status: 400 },
+    );
+  }
+
+  const existedUser = await prisma.user.findUnique({
+    where: { phoneNumber: phone },
+  });
+
+  if (existedUser) {
+    return Response.json({ message: "Số điện thoại đã tồn tại" }, { status: 409 });
+  }
+
   if (otp !== SECRET_OTP_CODE) {
     const record = await prisma.phoneOtp.findFirst({
       where: { phone },
@@ -42,28 +59,28 @@ export async function POST(req: Request) {
     }
   }
 
-  const user = await prisma.user.findUnique({
-    where: { phoneNumber: phone },
-  });
+  const passwordHash = await hashPassword(password);
 
-  if (type === "LOGIN" && !user) {
-    return Response.json(
-      { message: "Tài khoản không tồn tại" },
-      { status: 404 },
-    );
-  }
+  const user = await prisma.user.create({
+    data: {
+      phoneNumber: phone,
+      passwordHash,
+      name,
+      nickname: `User${phone.slice(-4)}`,
+      isVerified: true,
+      points: process.env.FIRST_CREATED_USER_BONUS_POINTS
+        ? parseInt(process.env.FIRST_CREATED_USER_BONUS_POINTS)
+        : 0,
+    },
+  });
 
   await prisma.phoneOtp.deleteMany({ where: { phone } });
 
-  if (type === "VERIFY_OTP_ONLY") {
-    return Response.json({ message: "Xác minh OTP thành công" });
-  }
-
   const access_token = signJwt(
     {
-      userId: user!.id,
-      role: user!.role,
-      sessionVersion: user!.sessionVersion,
+      userId: user.id,
+      role: user.role,
+      sessionVersion: user.sessionVersion,
     },
     ACCESS_TOKEN_EXPIRES,
   );
@@ -73,7 +90,7 @@ export async function POST(req: Request) {
 
   await prisma.refreshToken.create({
     data: {
-      userId: user!.id,
+      userId: user.id,
       tokenHash: refreshTokenHash,
       expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRES * 1000),
     },

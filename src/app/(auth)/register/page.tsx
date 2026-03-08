@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { apiFetchPublic } from "@/lib/api/apiClient";
 import { tokenStorage } from "@/lib/auth/token";
 
@@ -14,6 +15,8 @@ export default function RegisterPage() {
 
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [loading, setLoading] = useState(false);
@@ -31,13 +34,20 @@ export default function RegisterPage() {
     return "";
   }
 
+  function validatePassword(value: string) {
+    if (!value) return "Vui lòng nhập mật khẩu";
+    if (value.length < 6) return "Mật khẩu tối thiểu 6 ký tự";
+    return "";
+  }
+
   /* ================= SEND OTP ================= */
   async function sendOtp() {
     const phoneError = validatePhone(phone);
     const nameError = validatename(name);
+    const passwordError = validatePassword(password);
 
-    if (phoneError || nameError) {
-      setError(phoneError || nameError);
+    if (phoneError || nameError || passwordError) {
+      setError(phoneError || nameError || passwordError);
       return;
     }
 
@@ -66,9 +76,9 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const data = await apiFetchPublic<any>("/api/auth/verify-otp", {
+      const data = await apiFetchPublic<any>("/api/auth/register-password", {
         method: "POST",
-        body: { phone, otp, name, type: "REGISTER" },
+        body: { phone, otp, name, password },
       });
 
       tokenStorage.setTokens(data.access_token, data.refresh_token);
@@ -124,6 +134,27 @@ export default function RegisterPage() {
               }}
               className="w-full rounded-lg border px-4 py-3 mb-3 focus:outline-none focus:ring-2 focus:ring-gas-green-400"
             />
+
+            <div className="relative mb-3">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Mật khẩu"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError("");
+                }}
+                className="w-full rounded-lg border px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-gas-green-400"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
 
             <button
               onClick={sendOtp}
