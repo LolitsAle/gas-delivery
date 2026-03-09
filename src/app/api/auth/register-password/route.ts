@@ -3,7 +3,6 @@ import { signJwt } from "@/lib/auth/jwt-node";
 import {
   ACCESS_TOKEN_EXPIRES,
   REFRESH_TOKEN_EXPIRES,
-  SECRET_OTP_CODE,
 } from "@/lib/auth/authConfig";
 import { generateRefreshToken, hashToken } from "@/lib/auth/helpers";
 import { hashPassword } from "@/lib/password";
@@ -11,17 +10,15 @@ import { hashPassword } from "@/lib/password";
 export async function POST(req: Request) {
   const {
     phone,
-    otp,
     name,
     password,
   }: {
     phone: string;
-    otp: string;
     name?: string;
     password: string;
   } = await req.json();
 
-  if (!phone || !otp || !name || !password) {
+  if (!phone || !name || !password) {
     return Response.json({ message: "Thiếu thông tin" }, { status: 400 });
   }
 
@@ -40,25 +37,6 @@ export async function POST(req: Request) {
     return Response.json({ message: "Số điện thoại đã tồn tại" }, { status: 409 });
   }
 
-  if (otp !== SECRET_OTP_CODE) {
-    const record = await prisma.phoneOtp.findFirst({
-      where: { phone },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (!record) {
-      return Response.json({ message: "OTP không tìm thấy" }, { status: 400 });
-    }
-
-    if (record.expiresAt < new Date()) {
-      return Response.json({ message: "OTP đã hết hạn" }, { status: 400 });
-    }
-
-    if (record.code !== otp) {
-      return Response.json({ message: "OTP không hợp lệ" }, { status: 400 });
-    }
-  }
-
   const passwordHash = await hashPassword(password);
 
   const user = await prisma.user.create({
@@ -73,8 +51,6 @@ export async function POST(req: Request) {
         : 0,
     },
   });
-
-  await prisma.phoneOtp.deleteMany({ where: { phone } });
 
   const access_token = signJwt(
     {
