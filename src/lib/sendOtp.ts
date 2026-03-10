@@ -8,7 +8,7 @@ export async function sendOtpService(phone: string): Promise<void> {
     throw new Error("Phone number is required");
   }
 
-  const otp = randomInt(100000, 1000000).toString();
+  const otp = randomInt(1000, 10000).toString();
 
   await prisma.phoneOtp.deleteMany({
     where: { phone },

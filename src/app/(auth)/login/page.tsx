@@ -3,224 +3,423 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { apiFetchPublic } from "@/lib/api/apiClient";
 import { tokenStorage } from "@/lib/auth/token";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import InfoBanner from "@/components/common/InfoBanner";
+import { FloatingLabelInput } from "@/components/auth/FloatingLabelInput";
 
 type LoginMode = "otp" | "password";
+type OtpStep = "phone" | "otp";
 
 const PHONE_REGEX = /^(?:\+84|0)(?:3|5|7|8|9)\d{8}$/;
+const OTP_REGEX = /^\d{4,5}$/;
+const OTP_RESEND_COOLDOWN = 120;
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const [mode, setMode] = useState<LoginMode>("otp");
+  const [mode, setMode] = useState<LoginMode>("password");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
-  const [step, setStep] = useState<"phone" | "otp">("phone");
-  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<OtpStep>("phone");
+  const [showPassword, setShowPassword] = useState(false);
+
   const [error, setError] = useState("");
+  const [phoneFieldError, setPhoneFieldError] = useState(false);
+  const [passwordFieldError, setPasswordFieldError] = useState(false);
+  const [otpFieldError, setOtpFieldError] = useState(false);
+
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+
+    const timer = window.setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
+
+  const clearGlobalError = () => {
+    setError("");
+  };
+
+  const clearFieldErrors = () => {
+    setPhoneFieldError(false);
+    setPasswordFieldError(false);
+    setOtpFieldError(false);
+  };
+
+  const clearAllErrors = () => {
+    clearGlobalError();
+    clearFieldErrors();
+  };
 
   const validatePhone = () => {
-    if (!phoneNumber) return "Vui lòng nhập số điện thoại";
-    if (!PHONE_REGEX.test(phoneNumber)) return "Số điện thoại không hợp lệ";
+    if (!phoneNumber.trim()) return "Vui lòng nhập số điện thoại";
+    if (!PHONE_REGEX.test(phoneNumber.trim()))
+      return "Số điện thoại không hợp lệ";
     return "";
   };
 
-  const handleLoginSuccess = (user: any) => {
+  const validatePassword = () => {
+    if (!password) return "Vui lòng nhập mật khẩu";
+    return "";
+  };
+
+  const validateOtp = () => {
+    if (!otp.trim()) return "Vui lòng nhập OTP";
+    if (!OTP_REGEX.test(otp.trim())) return "OTP phải gồm 4 hoặc 5 số";
+    return "";
+  };
+
+  const handleLoginSuccess = (user: { role?: string }) => {
     router.push(user.role === "ADMIN" ? "/admin" : "/");
   };
 
-  /* ================= OTP LOGIN ================= */
-  const sendOtp = async () => {
-    const err = validatePhone();
-    if (err) return setError(err);
+  const startOtpCooldown = () => {
+    setResendCooldown(OTP_RESEND_COOLDOWN);
+  };
 
-    setLoading(true);
-    setError("");
+  const handleModeChange = (nextMode: string) => {
+    setMode(nextMode as LoginMode);
+    clearAllErrors();
+  };
+
+  const handlePhoneChange = (value: string) => {
+    setPhoneNumber(value);
+    clearGlobalError();
+    setPhoneFieldError(false);
+
+    if (passwordFieldError) {
+      setPasswordFieldError(false);
+    }
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    clearGlobalError();
+    setPasswordFieldError(false);
+
+    if (phoneFieldError) {
+      setPhoneFieldError(false);
+    }
+  };
+
+  const handleOtpChange = (value: string) => {
+    const next = value.replace(/\D/g, "").slice(0, 5);
+    setOtp(next);
+    clearGlobalError();
+    setOtpFieldError(false);
+  };
+
+  const sendOtp = async () => {
+    clearAllErrors();
+
+    const phoneErr = validatePhone();
+    if (phoneErr) {
+      setPhoneFieldError(true);
+      setError(phoneErr);
+      return;
+    }
+
+    setIsSendingOtp(true);
 
     try {
       await apiFetchPublic("/api/auth/login-otp", {
         method: "POST",
-        body: { phone: phoneNumber },
+        body: { phone: phoneNumber.trim() },
       });
+
       setStep("otp");
+      startOtpCooldown();
     } catch (e: any) {
-      setError(e.message || "Không thể gửi OTP");
+      setPhoneFieldError(true);
+      setError(e?.message || "Không thể gửi OTP");
     } finally {
-      setLoading(false);
+      setIsSendingOtp(false);
     }
+  };
+
+  const resendOtp = async () => {
+    if (resendCooldown > 0 || isSendingOtp || isVerifyingOtp) return;
+    await sendOtp();
   };
 
   const verifyOtp = async () => {
-    if (!otp) return setError("Vui lòng nhập OTP");
+    clearAllErrors();
 
-    setLoading(true);
-    setError("");
+    const phoneErr = validatePhone();
+    if (phoneErr) {
+      setPhoneFieldError(true);
+      setError(phoneErr);
+      return;
+    }
+
+    const otpErr = validateOtp();
+    if (otpErr) {
+      setOtpFieldError(true);
+      setError(otpErr);
+      return;
+    }
+
+    setIsVerifyingOtp(true);
 
     try {
-      const data = await apiFetchPublic<any>("/api/auth/verify-otp", {
+      const data = await apiFetchPublic<{
+        access_token: string;
+        refresh_token: string;
+        user: { role?: string };
+      }>("/api/auth/verify-otp", {
         method: "POST",
-        body: { phone: phoneNumber, otp, type: "LOGIN" },
+        body: { phone: phoneNumber.trim(), otp: otp.trim(), type: "LOGIN" },
       });
 
       tokenStorage.setTokens(data.access_token, data.refresh_token);
       handleLoginSuccess(data.user);
     } catch (e: any) {
-      setError(e.message || "OTP không hợp lệ");
+      setPhoneFieldError(true);
+      setOtpFieldError(true);
+      setError(e?.message || "OTP không hợp lệ");
     } finally {
-      setLoading(false);
+      setIsVerifyingOtp(false);
     }
   };
 
-  /* ================= PASSWORD LOGIN ================= */
   const loginWithPassword = async () => {
-    const err = validatePhone();
-    if (err) return setError(err);
-    if (!password) return setError("Vui lòng nhập mật khẩu");
+    clearAllErrors();
 
-    setLoading(true);
-    setError("");
+    const phoneErr = validatePhone();
+    const passwordErr = validatePassword();
+
+    if (phoneErr || passwordErr) {
+      if (phoneErr) setPhoneFieldError(true);
+      if (passwordErr) setPasswordFieldError(true);
+      setError(phoneErr || passwordErr);
+      return;
+    }
+
+    setIsLoggingIn(true);
 
     try {
-      const data = await apiFetchPublic<any>("/api/auth/login-password", {
+      const data = await apiFetchPublic<{
+        access_token: string;
+        refresh_token: string;
+        user: { role?: string };
+      }>("/api/auth/login-password", {
         method: "POST",
-        body: { phoneNumber, password },
+        body: { phoneNumber: phoneNumber.trim(), password },
       });
 
       tokenStorage.setTokens(data.access_token, data.refresh_token);
       handleLoginSuccess(data.user);
     } catch (e: any) {
-      setError(e.message || "Đăng nhập thất bại");
+      setPhoneFieldError(true);
+      setPasswordFieldError(true);
+      setError(e?.message || "Đăng nhập thất bại");
     } finally {
-      setLoading(false);
+      setIsLoggingIn(false);
     }
   };
+
+  const handlePasswordSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await loginWithPassword();
+  };
+
+  const handleOtpSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (step === "phone") {
+      await sendOtp();
+      return;
+    }
+
+    await verifyOtp();
+  };
+
+  const passwordBusy = isLoggingIn;
+  const otpBusy = isSendingOtp || isVerifyingOtp;
+
+  const phoneHasError = phoneFieldError;
+  const passwordHasError = passwordFieldError;
+  const otpHasError = otpFieldError;
+
+  const errorInputClass =
+    "border-red-500 text-red-600 focus:ring-red-400 focus:border-red-500";
+  const errorLabelClass = "text-red-600";
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-b from-gas-green-400 to-gas-green-600 p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
-        {/* Logo */}
-        <div className="flex justify-center mb-4">
-          <Image
-            src="/images/logo-main.png"
-            alt="Logo"
-            width={96}
-            height={96}
-            priority
-          />
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <div className="mb-5 flex items-center gap-4">
+          <div className="shrink-0">
+            <Image
+              src="/images/logo-main.png"
+              alt="Logo"
+              width={84}
+              height={84}
+              priority
+            />
+          </div>
+
+          <div>
+            <h1 className="mb-1 text-2xl font-semibold text-gas-green-600">
+              Đăng nhập
+            </h1>
+            <p className="text-sm text-gray-500">Chào mừng bạn quay lại 👋</p>
+          </div>
         </div>
 
-        <h1 className="text-2xl font-semibold text-center text-gas-green-600 mb-1">
-          Đăng nhập
-        </h1>
-        <p className="text-sm text-center text-gray-500 mb-6">
-          Chào mừng bạn quay lại 👋
-        </p>
-
-        {/* Phone */}
-        <input
-          type="tel"
-          placeholder="Số điện thoại"
-          value={phoneNumber}
-          onChange={(e) => {
-            setPhoneNumber(e.target.value);
-            setError("");
-          }}
-          className="w-full rounded-lg border px-4 py-3 mb-3 focus:outline-none focus:ring-2 focus:ring-gas-green-400"
-        />
-
-        {/* OTP MODE */}
-        {mode === "otp" && step === "phone" && (
-          <button
-            onClick={sendOtp}
-            disabled={loading}
-            className="w-full rounded-lg bg-gas-green-500 text-white py-3 font-medium hover:bg-gas-green-600 transition"
-          >
-            {loading ? "Đang gửi OTP..." : "Đăng nhập bằng OTP"}
-          </button>
-        )}
-
-        {mode === "otp" && step === "otp" && (
-          <>
-            <input
-              type="text"
-              placeholder="Nhập mã OTP"
-              value={otp}
-              onChange={(e) => {
-                setOtp(e.target.value);
-                setError("");
-              }}
-              className="w-full rounded-lg border px-4 py-3 mb-3 text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-gas-green-400"
-            />
-
-            <button
-              onClick={verifyOtp}
-              disabled={loading}
-              className="w-full rounded-lg bg-gas-green-500 text-white py-3 font-medium hover:bg-gas-green-600 transition"
+        <Tabs
+          value={mode}
+          onValueChange={handleModeChange}
+          className="w-full gap-0"
+        >
+          <TabsList className="mb-4 grid w-full grid-cols-2 bg-gas-green-50">
+            <TabsTrigger
+              value="password"
+              className="transition-all duration-100 data-[state=active]:bg-gas-green-600 data-[state=active]:text-white"
             >
-              {loading ? "Đang xác thực..." : "Xác thực OTP"}
-            </button>
-          </>
-        )}
-
-        {/* PASSWORD MODE */}
-        {mode === "password" && (
-          <>
-            <input
-              type="password"
-              placeholder="Mật khẩu"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setError("");
-              }}
-              className="w-full rounded-lg border px-4 py-3 mb-3 focus:outline-none focus:ring-2 focus:ring-gas-green-400"
-            />
-
-            <button
-              onClick={loginWithPassword}
-              disabled={loading}
-              className="w-full rounded-lg bg-gas-green-500 text-white py-3 font-medium hover:bg-gas-green-600 transition"
+              Mật khẩu
+            </TabsTrigger>
+            <TabsTrigger
+              value="otp"
+              className="transition-all duration-100 data-[state=active]:bg-gas-green-600 data-[state=active]:text-white"
             >
-              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
-            </button>
-          </>
-        )}
+              OTP
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Switch mode */}
-        <div className="mt-4 text-center">
-          {mode === "otp" ? (
-            <button
-              onClick={() => {
-                setMode("password");
-                setStep("phone");
-                setOtp("");
-              }}
-              className="text-sm text-gas-green-600 hover:underline"
-            >
-              Dùng mật khẩu thay thế
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                setMode("otp");
-                setPassword("");
-              }}
-              className="text-sm text-gas-green-600 hover:underline"
-            >
-              Quay lại đăng nhập bằng OTP
-            </button>
-          )}
-        </div>
+          <TabsContent value="password" className="mt-0">
+            <form onSubmit={handlePasswordSubmit}>
+              <FloatingLabelInput
+                type="tel"
+                label="Số điện thoại"
+                autoComplete="username"
+                value={phoneNumber}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                className={phoneHasError ? errorInputClass : ""}
+                labelClassName={phoneHasError ? errorLabelClass : ""}
+              />
 
-        {/* Register link */}
+              <FloatingLabelInput
+                type={showPassword ? "text" : "password"}
+                label="Mật khẩu"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => handlePasswordChange(e.target.value)}
+                className={passwordHasError ? errorInputClass : ""}
+                labelClassName={passwordHasError ? errorLabelClass : ""}
+                rightSlot={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className={`${
+                      passwordHasError
+                        ? "text-red-500 hover:text-red-600"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                }
+              />
+
+              <button
+                type="submit"
+                disabled={passwordBusy}
+                className="w-full rounded-lg bg-gas-green-500 py-3 font-medium text-white transition hover:bg-gas-green-600 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isLoggingIn ? "Đang đăng nhập..." : "Đăng nhập"}
+              </button>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="otp" className="mt-0 space-y-3">
+            <InfoBanner className="mb-4">
+              Gửi sms OTP hiện chưa khả dụng, vui lòng gọi tới số{" "}
+              <a className="text-red-500" href="tel:+840348480033">
+                📞0348480033
+              </a>{" "}
+              để được hỗ trợ.
+            </InfoBanner>
+
+            <form onSubmit={handleOtpSubmit}>
+              <FloatingLabelInput
+                type="tel"
+                label="Số điện thoại"
+                autoComplete="username"
+                value={phoneNumber}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                className={phoneHasError ? errorInputClass : ""}
+                labelClassName={phoneHasError ? errorLabelClass : ""}
+              />
+
+              <FloatingLabelInput
+                type="text"
+                label="Mã OTP"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={otp}
+                onChange={(e) => handleOtpChange(e.target.value)}
+                className={`pr-24 text-center tracking-widest ${
+                  otpHasError ? errorInputClass : ""
+                }`}
+                labelClassName={otpHasError ? errorLabelClass : ""}
+                rightSlot={
+                  step === "otp" ? (
+                    <button
+                      type="button"
+                      onClick={resendOtp}
+                      disabled={otpBusy || resendCooldown > 0}
+                      className="text-sm font-medium text-gas-green-600 hover:text-gas-green-700 disabled:cursor-not-allowed disabled:text-gray-400"
+                    >
+                      {resendCooldown > 0
+                        ? `Gửi lại ${resendCooldown}s`
+                        : "Gửi lại"}
+                    </button>
+                  ) : null
+                }
+              />
+
+              <button
+                type="submit"
+                disabled={otpBusy}
+                className="w-full rounded-lg bg-gas-green-500 py-3 font-medium text-white transition hover:bg-gas-green-600 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {step === "phone"
+                  ? isSendingOtp
+                    ? "Đang gửi OTP..."
+                    : "Gửi OTP"
+                  : isVerifyingOtp
+                    ? "Đang xác thực..."
+                    : "Xác thực OTP"}
+              </button>
+            </form>
+          </TabsContent>
+        </Tabs>
+
         <div className="mt-6 text-center text-sm">
           <span className="text-gray-500">Chưa có tài khoản? </span>
           <Link
             href="/register"
-            className="text-gas-green-600 font-medium hover:underline"
+            className="font-medium text-gas-green-600 hover:underline"
           >
             Đăng ký ngay
           </Link>

@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       data: {
         phoneNumber: phone,
         passwordHash: "",
-        name: name,
+        name: name ?? "Khách mới",
         nickname: `User${phone.slice(-4)}`,
         points: process.env.FIRST_CREATED_USER_BONUS_POINTS
           ? parseInt(process.env.FIRST_CREATED_USER_BONUS_POINTS)

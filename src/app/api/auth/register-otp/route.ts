@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   if (existingUser) {
     return NextResponse.json(
       { message: "Số điện thoại đã đăng ký" },
-      { status: 409 }
+      { status: 409 },
     );
   }
 
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       { message: "Failed to send OTP" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
