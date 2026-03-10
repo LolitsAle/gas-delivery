@@ -24,7 +24,6 @@ export async function POST(req: Request) {
     return Response.json({ message: "Thiếu thông tin" }, { status: 400 });
   }
 
-  // fast otp for bypass
   if (otp !== SECRET_OTP_CODE) {
     const record = await prisma.phoneOtp.findFirst({
       where: { phone },
@@ -49,22 +48,24 @@ export async function POST(req: Request) {
   });
 
   if (type === "REGISTER") {
+    if (!name) {
+      return Response.json({ message: "Thiếu tên người dùng" }, { status: 400 });
+    }
+
     if (user) {
-      return Response.json(
-        { message: "Số điện thoại đã tồn tại" },
-        { status: 409 },
-      );
+      return Response.json({ message: "Số điện thoại đã tồn tại" }, { status: 409 });
     }
 
     user = await prisma.user.create({
       data: {
         phoneNumber: phone,
         passwordHash: "",
-        name: name,
+        name,
         nickname: `User${phone.slice(-4)}`,
+        isVerified: true,
         points: process.env.FIRST_CREATED_USER_BONUS_POINTS
           ? parseInt(process.env.FIRST_CREATED_USER_BONUS_POINTS)
-          : 0, //tạo lần đầu sẽ được 1000 điểm (set trong env)
+          : 0,
       },
     });
   }
