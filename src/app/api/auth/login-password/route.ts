@@ -33,6 +33,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!user.passwordHash) {
+      return Response.json(
+        { message: "Tài khoản chưa thiết lập mật khẩu. Vui lòng cập nhật mật khẩu." },
+        { status: 403 },
+      );
+    }
+
     const valid = await verifyPassword(password, user.passwordHash);
     if (!valid) {
       return Response.json({ message: "Mật khẩu không đúng" }, { status: 401 });
