@@ -12,7 +12,7 @@ const Layout = ({
 }: Readonly<{
   children: React.ReactNode;
 }>) => {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const unsupported = useUnsupportedScreen();
 
   if (loading) {

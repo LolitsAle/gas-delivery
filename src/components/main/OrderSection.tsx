@@ -1,7 +1,14 @@
 "use client";
 
 import { PackageCheck, Pencil, ShoppingBasket } from "lucide-react";
-import React, { memo, useMemo, useState } from "react";
+import React, {
+  Dispatch,
+  DispatchWithoutAction,
+  memo,
+  SetStateAction,
+  useMemo,
+  useState,
+} from "react";
 import { StoveWithProducts } from "../context/CurrentUserContext";
 import { useRouter } from "next/navigation";
 import { Button } from "../admin/Commons";
@@ -22,7 +29,11 @@ import {
 } from "@/constants/promotion";
 import ProductPrice from "@/components/common/ProductPrice";
 
-function OrderSection() {
+function OrderSection({
+  setOpen,
+}: {
+  setOpen: Dispatch<SetStateAction<boolean>>;
+}) {
   const {
     currentUser: user,
     refreshUser,
@@ -32,7 +43,7 @@ function OrderSection() {
   } = useCurrentUser();
 
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+
   const [openSwitchDialog, setOpenSwitchDialog] = useState(false);
 
   const handleOrderNow = async () => {
@@ -89,7 +100,9 @@ function OrderSection() {
           quantity={activeStove.defaultProductQuantity}
           isBusinessUser={user?.tags?.includes("BUSINESS")}
           isBindableProduct={activeStove.product.tags?.includes("BINDABLE")}
-          promotionDiscountPerUnit={activeStove.product.promotionDiscountPerUnit ?? 0}
+          promotionDiscountPerUnit={
+            activeStove.product.promotionDiscountPerUnit ?? 0
+          }
           stovePromoDiscountPerUnit={
             activeStove.defaultPromoChoice === "DISCOUNT_CASH"
               ? PROMO_DISCOUNT_CASH_AMOUNT
@@ -218,12 +231,6 @@ function OrderSection() {
           </div>
         </div>
       </div>
-
-      <UserStoveDrawer
-        open={open}
-        onOpenChange={setOpen}
-        stove={activeStove as StoveWithProducts}
-      />
 
       <Dialog open={openSwitchDialog} onOpenChange={setOpenSwitchDialog}>
         <DialogContent className="w-[90vw] max-w-md rounded-2xl p-[5vw]">

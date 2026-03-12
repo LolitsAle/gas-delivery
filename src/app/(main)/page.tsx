@@ -1,15 +1,35 @@
 "use client";
 
-import { useCurrentUser } from "@/components/context/CurrentUserContext";
+import InfoBanner from "@/components/common/InfoBanner";
+import {
+  StoveWithProducts,
+  useCurrentUser,
+} from "@/components/context/CurrentUserContext";
 import ImageCarousel from "@/components/main/ImageCarousel";
 import OrderSection from "@/components/main/OrderSection";
 import PhoneCall from "@/components/main/PhoneCall";
+import UserStoveDrawer from "@/components/main/userInfo/StoveFormDrawer";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { User } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function Home() {
-  const { currentUser, isFetchingUser, refreshUser } = useCurrentUser();
+  const { currentUser, isFetchingUser, refreshUser, activeStove } =
+    useCurrentUser();
+
+  const [openUserStoveDrawer, setOpenUserStoveDrawer] = useState(false);
+  const [openMissingProductDialog, setOpenMissingProductDialog] =
+    useState(false);
+
   const router = useRouter();
 
   const renderUserData = useMemo(() => {
@@ -34,6 +54,20 @@ export default function Home() {
 
     router.push("/login");
   }, [currentUser, isFetchingUser, router]);
+
+  useEffect(() => {
+    if (isFetchingUser) return;
+    if (!currentUser) return;
+    if (!activeStove) return;
+
+    const hasProduct = !!activeStove.product?.productName;
+    setOpenMissingProductDialog(!hasProduct);
+  }, [isFetchingUser, currentUser, activeStove]);
+
+  const handleOpenStoveDrawer = () => {
+    setOpenMissingProductDialog(false);
+    setOpenUserStoveDrawer(true);
+  };
 
   return (
     <div className="relative w-screen h-screen bg-linear-to-b from-gas-green-500 to-white text-[3vw] select-none text-white">
@@ -60,7 +94,8 @@ export default function Home() {
 
       {/* Body */}
       <div className="w-full h-[78vh] rounded-2xl pt-[3vh] z-10 absolute top-[22vh] left-0 bg-gas-green-50 animate-gradient flex flex-col">
-        <OrderSection />
+        <OrderSection setOpen={() => setOpenMissingProductDialog(true)} />
+
         <div className="flex-1 overflow-auto pb-[30vw] no-scrollbar">
           <PhoneCall />
           <ImageCarousel
@@ -72,6 +107,50 @@ export default function Home() {
           />
         </div>
       </div>
+
+      <UserStoveDrawer
+        open={openUserStoveDrawer}
+        onOpenChange={setOpenUserStoveDrawer}
+        stove={activeStove as StoveWithProducts}
+      />
+
+      <Dialog
+        open={openMissingProductDialog}
+        onOpenChange={setOpenMissingProductDialog}
+      >
+        <DialogContent className="w-[90vw] max-w-md rounded-2xl">
+          <DialogHeader className="border-b-2 border-gas-gray-200">
+            <DialogTitle className="text-[5vw]">
+              🛠️ Bạn chưa cập nhật thông tin
+            </DialogTitle>
+            <DialogDescription></DialogDescription>
+          </DialogHeader>
+          <div className="text-[4vw]">
+            Cửa hàng chưa biết bạn xài gas gì và địa chỉ bạn ở đâu. vui lòng cập
+            nhật thông tin
+          </div>
+          <InfoBanner className="text-sm p-[2vw]">
+            <div className="flex flex-col gap-1 items-center">
+              <p>Nếu chưa rõ cách làm, bạn vẫn có thể</p>
+              <a
+                href="tel:+81975494948"
+                className="bg-red-400 text-white py-1 px-2 rounded-md w-fit"
+              >
+                Gọi hỗ trợ : 097 549 49 48
+              </a>
+            </div>
+          </InfoBanner>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2 ">
+            <Button
+              className="bg-gas-green-500 "
+              onClick={handleOpenStoveDrawer}
+            >
+              Cập nhật bếp ngay
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
