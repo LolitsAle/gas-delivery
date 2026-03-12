@@ -69,6 +69,7 @@ export async function GET(req: Request) {
       select: {
         id: true,
         phoneNumber: true,
+        isVerified: true,
         name: true,
         nickname: true,
         role: true,
@@ -119,6 +120,7 @@ export async function GET(req: Request) {
       select: {
         id: true,
         phoneNumber: true,
+        isVerified: true,
         name: true,
         nickname: true,
         role: true,
