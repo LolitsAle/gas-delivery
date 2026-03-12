@@ -146,7 +146,7 @@ export default function Home() {
               className="bg-gas-green-500 "
               onClick={handleOpenStoveDrawer}
             >
-              Cập nhật bếp ngay
+              Cập nhật điểm giao ngay
             </Button>
           </DialogFooter>
         </DialogContent>

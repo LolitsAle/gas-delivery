@@ -22,7 +22,7 @@ export default function TabImages({ form, setForm }: any) {
     const selected = Array.from(files);
 
     if (totalCount + selected.length > MAX_IMAGES) {
-      showToastError("Mỗi bếp tối đa 5 ảnh");
+      showToastError("Mỗi điểm giao tối đa 5 ảnh");
       return;
     }
 
