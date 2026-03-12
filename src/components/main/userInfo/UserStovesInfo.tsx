@@ -35,13 +35,13 @@ export default function UserStovesInfo({ stoves, onChange }: Props) {
   };
 
   const handleDelete = async (id: string) => {
-    // 🔒 Rule: phải còn ít nhất 1 bếp
+    // 🔒 Rule: phải còn ít nhất 1 điểm giao
     if (stoves.length <= 1) {
-      showToastError("Bạn phải có ít nhất 1 bếp");
+      showToastError("Bạn phải có ít nhất 1 điểm giao");
       return;
     }
 
-    const ok = confirm("Xóa bếp này? Hành động không thể hoàn tác.");
+    const ok = confirm("Xóa điểm giao này? Hành động không thể hoàn tác.");
     if (!ok) return;
 
     try {
@@ -58,18 +58,18 @@ export default function UserStovesInfo({ stoves, onChange }: Props) {
         setEditing(null);
       }
 
-      showToastSuccess("Đã xoá bếp thành công");
+      showToastSuccess("Đã xoá điểm giao thành công");
       await refreshUser();
     } catch (err: any) {
-      showToastError(err?.message || "Không thể xoá bếp");
+      showToastError(err?.message || "Không thể xoá điểm giao");
     }
   };
 
   return (
     <div>
       <InfoBanner type="error" className="mb-[4vw]">
-        Bếp là đại diện thói quen sử dụng gas của bạn. bếp chứa loại gas, số
-        lượng, địa chỉ và phần quà đi kèm. Nếu bạn điểu chỉnh dữ liệu bếp sai
+        Điểm giao là đại diện thói quen sử dụng gas của bạn. điểm giao chứa loại gas, số
+        lượng, địa chỉ và phần quà đi kèm. Nếu bạn điểu chỉnh dữ liệu điểm giao sai
         thực tế có thể ảnh hưởng đến quá trình giao gas của cửa hàng.
       </InfoBanner>
       {/* HEADER */}
@@ -79,7 +79,7 @@ export default function UserStovesInfo({ stoves, onChange }: Props) {
           onClick={openCreate}
           className="w-full bg-gas-green-500 text-white"
         >
-          <Plus className="w-[5vw] h-[5vw] font-bold" /> Thêm bếp
+          <Plus className="w-[5vw] h-[5vw] font-bold" /> Thêm điểm giao
         </Button>
       </div>
 
@@ -88,7 +88,7 @@ export default function UserStovesInfo({ stoves, onChange }: Props) {
         {stoves.length === 0 && (
           <Card>
             <CardContent className="p-4 text-sm text-muted-foreground">
-              Bạn chưa có bếp nào
+              Bạn chưa có điểm giao nào
             </CardContent>
           </Card>
         )}

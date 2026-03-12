@@ -134,7 +134,7 @@ export default function StoveSummary({ stove, onRemove }: CartStoveCardProps) {
                 </div>
               </div>
             ) : (
-              "Chưa chọn sản phẩm cho bếp này"
+              "Chưa chọn sản phẩm cho điểm giao này"
             )}
           </div>
         </CardContent>

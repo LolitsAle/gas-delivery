@@ -29,7 +29,7 @@ export default function UserPage() {
             className="data-[state=active]:bg-gas-green-600 data-[state=active]:text-white transition-all duration-100"
             value="stoves"
           >
-            Bếp của bạn
+            Điểm giao của bạn
           </TabsTrigger>
           <TabsTrigger
             className="data-[state=active]:bg-gas-green-600 data-[state=active]:text-white transition-all"

@@ -12,7 +12,7 @@ export default function TabInfo({
     <div className="space-y-4">
       <FieldCustomed
         id="name"
-        label="Tên bếp"
+        label="Tên điểm giao"
         value={form.name ?? ""}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
       />

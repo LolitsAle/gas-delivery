@@ -66,7 +66,7 @@ function OrderSection({
 
       await refreshUser();
       dismissToast(loading);
-      showToastSuccess("Đã thêm gas từ bếp!");
+      showToastSuccess("Đã thêm gas từ điểm giao!");
       router.push("/cart");
     } catch (err) {
       dismissToast(loading);
@@ -179,9 +179,9 @@ function OrderSection({
               : ""
           }`}
         >
-          <strong className="text-white">Bếp:</strong>
+          <strong className="text-white">Điểm giao:</strong>
           <span className="text-white font-semibold">
-            {activeStove?.name ?? "Chưa chọn bếp"}
+            {activeStove?.name ?? "Chưa chọn điểm giao"}
           </span>
         </div>
 
@@ -211,7 +211,7 @@ function OrderSection({
           <div className="flex-1 flex flex-col gap-[1vw]">
             <div className="flex justify-between items-center">
               <h2 className="text-gas-orange-100 font-bold text-[4vw] flex items-center gap-[2vw]">
-                {activeStove?.product?.productName ?? "Chưa cập nhật bếp"}
+                {activeStove?.product?.productName ?? "Chưa cập nhật điểm giao"}
               </h2>
 
               <Button
@@ -235,7 +235,7 @@ function OrderSection({
       <Dialog open={openSwitchDialog} onOpenChange={setOpenSwitchDialog}>
         <DialogContent className="w-[90vw] max-w-md rounded-2xl p-[5vw]">
           <DialogHeader>
-            <DialogTitle>Chọn bếp</DialogTitle>
+            <DialogTitle>Chọn điểm giao</DialogTitle>
             <DialogDescription className="sr-only"></DialogDescription>
           </DialogHeader>
 

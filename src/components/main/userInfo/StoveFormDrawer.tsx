@@ -99,12 +99,12 @@ export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
 
   const submit = async () => {
     if (!form.name?.trim() || !form.productId) {
-      showToastInfo("Vui lòng nhập đầy đủ tên bếp và sản phẩm gas");
+      showToastInfo("Vui lòng nhập đầy đủ tên điểm giao và sản phẩm gas");
       return;
     }
 
     const loadingToastId = showToastLoading(
-      isEdit ? "Đang lưu thay đổi..." : "Đang tạo bếp...",
+      isEdit ? "Đang lưu thay đổi..." : "Đang tạo điểm giao...",
     );
 
     try {
@@ -162,7 +162,7 @@ export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
         },
       });
 
-      showToastSuccess("Lưu bếp thành công 🎉", { id: loadingToastId });
+      showToastSuccess("Lưu điểm giao thành công 🎉", { id: loadingToastId });
       await refreshUser();
       onOpenChange(false);
     } catch (err: any) {
@@ -174,7 +174,7 @@ export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="bg-gray-50">
         <DrawerHeader>
-          <DrawerTitle>{isEdit ? "🛠️ Cập nhật bếp" : "➕ Tạo bếp"}</DrawerTitle>
+          <DrawerTitle>{isEdit ? "🛠️ Cập nhật điểm giao" : "➕ Tạo điểm giao"}</DrawerTitle>
         </DrawerHeader>
 
         <div className="p-4">
@@ -207,7 +207,7 @@ export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
 
         <DrawerFooter>
           <Button className="bg-gas-green-600" onClick={submit}>
-            {isEdit ? "Lưu thay đổi" : "Tạo bếp"}
+            {isEdit ? "Lưu thay đổi" : "Tạo điểm giao"}
           </Button>
           <DrawerClose asChild>
             <Button variant="outline">Huỷ</Button>

@@ -75,10 +75,10 @@ export default function OrdersHeader({
                 onValueChange={(val) => handleFilterChange("stoveId", val)}
               >
                 <SelectTrigger className="w-full bg-white">
-                  <SelectValue placeholder="Tất cả bếp" />
+                  <SelectValue placeholder="Tất cả điểm giao" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">Tất cả bếp</SelectItem>
+                  <SelectItem value="ALL">Tất cả điểm giao</SelectItem>
                   {currentUser?.stoves?.map((s: any) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.name}
