@@ -10,8 +10,19 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Field } from "../Commons";
-import { apiFetchAuth } from "@/lib/api/apiClient";
+import { apiFetchAuth, apiFetchPublic } from "@/lib/api/apiClient";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import Image from "next/image";
+import { r2Url } from "@/lib/helper/helpers";
 
 interface UserWithRelations extends User {
   stoves: any[];
@@ -25,33 +36,33 @@ interface Props {
   onSave: (data: Partial<UserWithRelations>) => Promise<void> | void;
 }
 
-export default function EditUserDrawer({
-  open,
-  selectedUser,
-  onClose,
-  onSave,
-}: Props) {
+const stoveDefaults = {
+  id: "",
+  name: "",
+  address: "",
+  note: "",
+  productId: "",
+  houseImage: [] as string[],
+};
+
+export default function EditUserDrawer({ open, selectedUser, onClose, onSave }: Props) {
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
-
   const [userDetail, setUserDetail] = useState<UserWithRelations | null>(null);
-
   const [form, setForm] = useState<any>(null);
-
-  /* ================= FETCH USER DETAIL ================= */
+  const [bindableProducts, setBindableProducts] = useState<any[]>([]);
+  const [editingStove, setEditingStove] = useState<any | null>(null);
+  const [stoveForm, setStoveForm] = useState<any>(stoveDefaults);
+  const [savingStove, setSavingStove] = useState(false);
 
   useEffect(() => {
-    console.log(open, selectedUser?.id);
     if (!open || !selectedUser?.id) return;
 
     const fetchUserDetail = async () => {
       try {
         setDetailLoading(true);
-
         const data = await apiFetchAuth(`/api/admin/users/${selectedUser.id}`);
-
         setUserDetail(data);
-
         setForm({
           phoneNumber: data.phoneNumber,
           name: data.name || "",
@@ -63,39 +74,31 @@ export default function EditUserDrawer({
           isVerified: data.isVerified,
           isActive: data.isActive,
           tags: data.tags || [],
+          password: "",
         });
-      } catch (err) {
-        console.error("Fetch user detail failed", err);
       } finally {
         setDetailLoading(false);
       }
     };
 
     fetchUserDetail();
+    apiFetchPublic("/api/products?tags=BINDABLE").then((data) => setBindableProducts(Array.isArray(data) ? data : []));
   }, [open, selectedUser?.id]);
-
-  /* ================= RESET WHEN CLOSE ================= */
 
   useEffect(() => {
     if (!open) {
       setUserDetail(null);
       setForm(null);
-      setLoading(false);
-      setDetailLoading(false);
+      setEditingStove(null);
+      setStoveForm(stoveDefaults);
     }
   }, [open]);
 
-  /* ================= HANDLERS ================= */
-
-  const update = (key: string, value: any) =>
-    setForm((prev: any) => ({ ...prev, [key]: value }));
+  const update = (key: string, value: any) => setForm((prev: any) => ({ ...prev, [key]: value }));
 
   const toggleTag = (tag: string) => {
-    const exists = form.tags.includes(tag);
-    update(
-      "tags",
-      exists ? form.tags.filter((t: string) => t !== tag) : [...form.tags, tag],
-    );
+    const currentTags = form.tags || [];
+    update("tags", currentTags.includes(tag) ? currentTags.filter((t: string) => t !== tag) : [...currentTags, tag]);
   };
 
   const handleSave = async () => {
@@ -103,164 +106,257 @@ export default function EditUserDrawer({
       setLoading(true);
       await onSave(form);
       onClose();
-    } catch (err) {
-      console.error(err);
-      alert("Lưu thất bại");
     } finally {
       setLoading(false);
     }
   };
 
-  /* ================= UI ================= */
+  const openEditStove = (stove: any) => {
+    setEditingStove(stove);
+    setStoveForm({
+      ...stoveDefaults,
+      ...stove,
+      houseImage: stove.houseImage || [],
+      productId: stove.productId || "",
+    });
+  };
+
+  const saveStove = async () => {
+    if (!editingStove?.id) return;
+    setSavingStove(true);
+    try {
+      await apiFetchAuth(`/api/admin/stoves/${editingStove.id}`, {
+        method: "PUT",
+        body: stoveForm,
+      });
+      const refreshed = await apiFetchAuth(`/api/admin/users/${selectedUser?.id}`);
+      setUserDetail(refreshed);
+      setEditingStove(null);
+    } finally {
+      setSavingStove(false);
+    }
+  };
 
   return (
-    <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
-      <DrawerContent className="md:max-w-2xl md:ml-auto flex flex-col">
-        <DrawerHeader>
-          <DrawerTitle>
-            {detailLoading
-              ? "Đang tải..."
-              : `Quản lý người dùng • ${
-                  form?.nickname ||
-                  form?.phoneNumber ||
-                  selectedUser?.phoneNumber ||
-                  ""
-                }`}
-          </DrawerTitle>
-        </DrawerHeader>
+    <>
+      <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
+        <DrawerContent className="flex flex-col md:ml-auto md:max-w-3xl">
+          <DrawerHeader>
+            <DrawerTitle>
+              {detailLoading
+                ? "Đang tải..."
+                : `Quản lý người dùng • ${form?.nickname || form?.phoneNumber || selectedUser?.phoneNumber || ""}`}
+            </DrawerTitle>
+          </DrawerHeader>
 
-        {detailLoading || !form ? (
-          <div className="flex-1 flex items-center justify-center text-sm">
-            Đang tải dữ liệu...
-          </div>
-        ) : (
-          <>
-            {/* BODY */}
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              <Tabs defaultValue="info">
-                <TabsList className="grid grid-cols-3 mb-4">
-                  <TabsTrigger value="info">Thông tin</TabsTrigger>
-                  <TabsTrigger value="stoves">Bếp</TabsTrigger>
-                  <TabsTrigger value="orders">Đơn hàng</TabsTrigger>
-                </TabsList>
+          {detailLoading || !form ? (
+            <div className="flex flex-1 items-center justify-center text-sm">Đang tải dữ liệu...</div>
+          ) : (
+            <>
+              <div className="flex-1 overflow-y-auto px-4 pb-4">
+                <Tabs defaultValue="info">
+                  <TabsList className="mb-4 grid grid-cols-3">
+                    <TabsTrigger value="info">Thông tin</TabsTrigger>
+                    <TabsTrigger value="stoves">Bếp</TabsTrigger>
+                    <TabsTrigger value="orders">Đơn hàng</TabsTrigger>
+                  </TabsList>
 
-                {/* INFO */}
-                <TabsContent value="info" className="space-y-4">
-                  <Field label="Số điện thoại">
-                    <input
-                      className="w-full bg-gray-100"
-                      value={form.phoneNumber}
-                      disabled
-                    />
-                  </Field>
+                  <TabsContent value="info" className="space-y-4">
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Số điện thoại</Label>
+                        <Input value={form.phoneNumber} onChange={(e) => update("phoneNumber", e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Mật khẩu mới</Label>
+                        <Input
+                          type="password"
+                          placeholder="Để trống nếu không đổi"
+                          value={form.password}
+                          onChange={(e) => update("password", e.target.value)}
+                        />
+                      </div>
+                    </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Tên">
-                      <input
-                        className="w-full"
-                        value={form.name}
-                        onChange={(e) => update("name", e.target.value)}
-                      />
-                    </Field>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Tên</Label>
+                        <Input value={form.name} onChange={(e) => update("name", e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Nickname</Label>
+                        <Input value={form.nickname} onChange={(e) => update("nickname", e.target.value)} />
+                      </div>
+                    </div>
 
-                    <Field label="Nickname">
-                      <input
-                        className="w-full"
-                        value={form.nickname}
-                        onChange={(e) => update("nickname", e.target.value)}
-                      />
-                    </Field>
-                  </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Điểm</Label>
+                        <Input
+                          type="number"
+                          value={form.points}
+                          onChange={(e) => update("points", Number(e.target.value || 0))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Role</Label>
+                        <Select value={form.role} onValueChange={(v) => update("role", v)}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USER">USER</SelectItem>
+                            <SelectItem value="STAFF">STAFF</SelectItem>
+                            <SelectItem value="ADMIN">ADMIN</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
 
-                  <Field label="Địa chỉ">
-                    <input
-                      className="w-full"
-                      value={form.address}
-                      onChange={(e) => update("address", e.target.value)}
-                    />
-                  </Field>
+                    <div className="space-y-2">
+                      <Label>Địa chỉ</Label>
+                      <Input value={form.address} onChange={(e) => update("address", e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Ghi chú địa chỉ</Label>
+                      <Textarea value={form.addressNote} onChange={(e) => update("addressNote", e.target.value)} />
+                    </div>
 
-                  {/* TAGS */}
-                  <Field label="Tags">
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-2 text-sm">
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { label: "BUSSINESS", value: "BUSSINESS" },
+                        { label: "VIP", value: "VIP" },
+                      ].map((item) => (
+                        <Button
+                          key={item.value}
+                          type="button"
+                          variant={form.tags.includes(item.value) ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleTag(item.value)}
+                        >
+                          {item.label}
+                        </Button>
+                      ))}
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <label className="flex items-center justify-between rounded-lg border p-3 text-sm">
+                        Đã xác thực
                         <input
                           type="checkbox"
-                          checked={form.tags.includes("BUSSINESS")}
-                          onChange={() => toggleTag("BUSSINESS")}
+                          checked={form.isVerified}
+                          onChange={(e) => update("isVerified", e.target.checked)}
                         />
-                        Business
+                      </label>
+                      <label className="flex items-center justify-between rounded-lg border p-3 text-sm">
+                        Đang hoạt động
+                        <input
+                          type="checkbox"
+                          checked={form.isActive}
+                          onChange={(e) => update("isActive", e.target.checked)}
+                        />
                       </label>
                     </div>
-                  </Field>
+                  </TabsContent>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="flex justify-between border rounded px-3 py-2 text-sm">
-                      <span>Đã xác thực</span>
-                      <input
-                        type="checkbox"
-                        checked={form.isVerified}
-                        onChange={(e) => update("isVerified", e.target.checked)}
-                      />
-                    </label>
+                  <TabsContent value="stoves" className="space-y-2">
+                    {userDetail?.stoves?.length ? (
+                      userDetail.stoves.map((s: any, i: number) => (
+                        <div key={s.id} className="rounded-lg border p-3">
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-sm font-medium">Bếp #{i + 1} • {s.name || s.address}</p>
+                            <Button variant="outline" size="sm" onClick={() => openEditStove(s)}>
+                              Cập nhật bếp
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{s.address}</p>
+                          <div className="mt-2 flex gap-2 overflow-x-auto">
+                            {(s.houseImage || []).map((img: string) => (
+                              <Image
+                                key={img}
+                                src={r2Url(img)}
+                                alt="stove"
+                                width={64}
+                                height={64}
+                                className="h-16 w-16 rounded-md border object-cover"
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-muted-foreground">Chưa có bếp</div>
+                    )}
+                  </TabsContent>
 
-                    <label className="flex justify-between border rounded px-3 py-2 text-sm">
-                      <span>Đang hoạt động</span>
-                      <input
-                        type="checkbox"
-                        checked={form.isActive}
-                        onChange={(e) => update("isActive", e.target.checked)}
-                      />
-                    </label>
-                  </div>
-                </TabsContent>
+                  <TabsContent value="orders">
+                    {userDetail?.orders?.length ? (
+                      userDetail.orders.map((o: any) => (
+                        <div key={o.id} className="mb-2 rounded border p-3 text-sm">
+                          #{o.id.slice(0, 8)} – {o.totalPrice?.toLocaleString()}đ
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-muted-foreground">Chưa có đơn</div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </div>
 
-                {/* STOVES */}
-                <TabsContent value="stoves">
-                  {userDetail?.stoves?.length ? (
-                    userDetail.stoves.map((s: any, i: number) => (
-                      <div
-                        key={s.id}
-                        className="border rounded p-3 text-sm mb-2"
-                      >
-                        Bếp #{i + 1} – {s.address}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-sm text-gray-500">Chưa có bếp</div>
-                  )}
-                </TabsContent>
+              <div className="flex justify-end gap-2 border-t px-5 py-4">
+                <Button variant="outline" onClick={onClose}>Đóng</Button>
+                <Button onClick={handleSave} disabled={loading}>{loading ? "Đang lưu..." : "Lưu thay đổi"}</Button>
+              </div>
+            </>
+          )}
+        </DrawerContent>
+      </Drawer>
 
-                {/* ORDERS */}
-                <TabsContent value="orders">
-                  {userDetail?.orders?.length ? (
-                    userDetail.orders.map((o: any) => (
-                      <div
-                        key={o.id}
-                        className="border rounded p-3 text-sm mb-2"
-                      >
-                        #{o.id.slice(0, 8)} – {o.totalPrice?.toLocaleString()}đ
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-sm text-gray-500">Chưa có đơn</div>
-                  )}
-                </TabsContent>
-              </Tabs>
+      <Drawer open={!!editingStove} onOpenChange={() => setEditingStove(null)}>
+        <DrawerContent className="md:ml-auto md:max-w-2xl">
+          <DrawerHeader>
+            <DrawerTitle>Cập nhật bếp</DrawerTitle>
+          </DrawerHeader>
+          <div className="space-y-4 px-4 pb-4">
+            <div className="space-y-2">
+              <Label>Tên điểm giao</Label>
+              <Input value={stoveForm.name} onChange={(e) => setStoveForm((p: any) => ({ ...p, name: e.target.value }))} />
             </div>
-
-            {/* FOOTER */}
-            <div className="border-t px-5 py-4 flex justify-end gap-2">
-              <Button variant="outline" onClick={onClose}>
-                Đóng
-              </Button>
-              <Button onClick={handleSave} disabled={loading}>
-                {loading ? "Đang lưu..." : "Lưu thay đổi"}
-              </Button>
+            <div className="space-y-2">
+              <Label>Địa chỉ</Label>
+              <Input value={stoveForm.address} onChange={(e) => setStoveForm((p: any) => ({ ...p, address: e.target.value }))} />
             </div>
-          </>
-        )}
-      </DrawerContent>
-    </Drawer>
+            <div className="space-y-2">
+              <Label>Ghi chú</Label>
+              <Textarea value={stoveForm.note || ""} onChange={(e) => setStoveForm((p: any) => ({ ...p, note: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Sản phẩm mặc định</Label>
+              <Select
+                value={stoveForm.productId || "NONE"}
+                onValueChange={(v) => setStoveForm((p: any) => ({ ...p, productId: v === "NONE" ? null : v }))}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">Không chọn</SelectItem>
+                  {bindableProducts.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.productName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {(stoveForm.houseImage || []).map((img: string) => (
+                <Image key={img} src={r2Url(img)} alt="stove image" width={120} height={120} className="aspect-square rounded-md border object-cover" />
+              ))}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEditingStove(null)}>Hủy</Button>
+              <Button onClick={saveStove} disabled={savingStove}>{savingStove ? "Đang lưu..." : "Lưu bếp"}</Button>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 }

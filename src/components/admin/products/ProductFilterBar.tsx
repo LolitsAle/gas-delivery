@@ -5,6 +5,15 @@ import { Search, Plus } from "lucide-react";
 import type { ProductTag } from "@/lib/types/promotion";
 import { PRODUCT_TAGS } from "@/lib/types/promotion";
 import { CategoryOption, ProductFilters } from "./types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Props {
   filters: ProductFilters;
@@ -13,116 +22,82 @@ interface Props {
   categories: CategoryOption[];
 }
 
-export default function ProductFilterBar({
-  filters,
-  onChange,
-  onAdd,
-  categories,
-}: Props) {
+export default function ProductFilterBar({ filters, onChange, onAdd, categories }: Props) {
   const [searchValue, setSearchValue] = useState(filters.search ?? "");
 
-  /* =============================
-     SYNC SEARCH FROM PARENT
-  ============================== */
   useEffect(() => {
     setSearchValue(filters.search ?? "");
   }, [filters.search]);
 
-  /* =============================
-     DEBOUNCE SEARCH
-  ============================== */
   useEffect(() => {
     const timeout = setTimeout(() => {
       onChange({ search: searchValue });
-    }, 400);
+    }, 350);
 
     return () => clearTimeout(timeout);
   }, [searchValue, onChange]);
 
-  /* =============================
-     TAG TOGGLE
-  ============================== */
   const toggleTag = (tag: ProductTag) => {
     const currentTags = filters.tags ?? [];
-    const exists = currentTags.includes(tag);
-
-    if (exists) {
-      onChange({
-        tags: currentTags.filter((t) => t !== tag),
-      });
-    } else {
-      onChange({
-        tags: [...currentTags, tag],
-      });
-    }
+    onChange({
+      tags: currentTags.includes(tag)
+        ? currentTags.filter((t) => t !== tag)
+        : [...currentTags, tag],
+    });
   };
-
-  /* =============================
-     RENDER
-  ============================== */
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-2 items-center">
-        {/* SEARCH */}
-        <div className="relative flex-1 min-w-50">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
+      <div className="flex flex-col gap-2 md:flex-row md:items-center">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             placeholder="Tìm sản phẩm..."
-            className="input w-full pl-9"
+            className="pl-9"
           />
         </div>
 
-        {/* CATEGORY */}
-        <select
-          value={filters.categoryId ?? "all"}
-          onChange={(e) =>
-            onChange({
-              categoryId: e.target.value,
-            })
-          }
-          className="input"
-        >
-          <option value="all">Tất cả danh mục</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+        <Select value={filters.categoryId ?? "all"} onValueChange={(value) => onChange({ categoryId: value })}>
+          <SelectTrigger className="w-full md:w-48">
+            <SelectValue placeholder="Danh mục" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả danh mục</SelectItem>
+            {categories.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-        {/* SORT */}
-        <select
+        <Select
           value={`${filters.sort}_${filters.order}`}
-          onChange={(e) => {
-            const [sort, order] = e.target.value.split("_");
-            onChange({
-              sort: sort as ProductFilters["sort"],
-              order: order as "asc" | "desc",
-            });
+          onValueChange={(value) => {
+            const [sort, order] = value.split("_");
+            onChange({ sort: sort as ProductFilters["sort"], order: order as "asc" | "desc" });
           }}
-          className="input"
         >
-          <option value="createdAt_desc">Mới nhất</option>
-          <option value="productName_asc">Tên A → Z</option>
-          <option value="productName_desc">Tên Z → A</option>
-          <option value="currentPrice_asc">Giá thấp → cao</option>
-          <option value="currentPrice_desc">Giá cao → thấp</option>
-        </select>
+          <SelectTrigger className="w-full md:w-44">
+            <SelectValue placeholder="Sắp xếp" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="createdAt_desc">Mới nhất</SelectItem>
+            <SelectItem value="productName_asc">Tên A → Z</SelectItem>
+            <SelectItem value="productName_desc">Tên Z → A</SelectItem>
+            <SelectItem value="currentPrice_asc">Giá thấp → cao</SelectItem>
+            <SelectItem value="currentPrice_desc">Giá cao → thấp</SelectItem>
+          </SelectContent>
+        </Select>
 
-        {/* ADD BUTTON */}
-        <button onClick={onAdd} className="btn-primary flex items-center gap-2">
-          <Plus size={16} />
+        <Button onClick={onAdd}>
+          <Plus size={16} className="mr-2" />
           Thêm
-        </button>
+        </Button>
       </div>
 
-      {/* TAG FILTER */}
       <div className="flex flex-wrap gap-2">
         {PRODUCT_TAGS.map((tag) => {
           const active = (filters.tags ?? []).includes(tag);
@@ -131,12 +106,9 @@ export default function ProductFilterBar({
             <button
               key={tag}
               onClick={() => toggleTag(tag)}
-              className={`px-3 py-1 rounded-full text-xs border transition
-                ${
-                  active
-                    ? "bg-black text-white border-black"
-                    : "bg-white border-gray-300 hover:bg-gray-100"
-                }`}
+              className={`rounded-full border px-3 py-1 text-xs transition ${
+                active ? "border-black bg-black text-white" : "border-gray-300 bg-white hover:bg-gray-100"
+              }`}
             >
               {tag}
             </button>

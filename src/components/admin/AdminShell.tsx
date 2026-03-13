@@ -53,6 +53,7 @@ export const DASHBOARD_MENU: IDashboardMenu[] = [
   // { name: "Shop Quà Tặng", icon: "Gift", href: "/admin/reward-shop" },
 
   // ===== HỆ THỐNG =====
+  { name: "Phone OTP", icon: "Mail", href: "/admin/phone-otp" },
   // { name: "Cài Đặt Hệ Thống", icon: "Settings", href: "/admin/settings" },
 ];
 

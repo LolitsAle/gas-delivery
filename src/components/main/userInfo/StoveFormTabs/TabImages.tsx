@@ -71,7 +71,6 @@ export default function TabImages({ form, setForm }: any) {
       <div className="grid grid-cols-3 gap-3 mt-2">
         {/* ===== ẢNH CŨ ===== */}
         {existingImages.map((key) => {
-          console.log(key);
           return (
             <div key={key} className="relative aspect-square">
               <Image

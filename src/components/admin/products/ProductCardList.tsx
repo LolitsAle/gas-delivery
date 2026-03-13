@@ -2,10 +2,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { ProductWithCategory } from "./types";
 import { r2Url } from "@/lib/helper/helpers";
+import {
+  AdminEmptyState,
+  AdminSectionCard,
+} from "@/components/admin/AdminPageKit";
 
 type ProductCardListProps = {
   products: ProductWithCategory[];
@@ -14,105 +17,52 @@ type ProductCardListProps = {
   onDelete?: (id: string) => void;
 };
 
-export default function ProductCardList({
-  products,
-  loading,
-  onEdit,
-  onDelete,
-}: ProductCardListProps) {
-  if (loading) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        Đang tải dữ liệu...
-      </div>
-    );
-  }
-
-  if (!products || products.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        Không có sản phẩm nào.
-      </div>
-    );
-  }
+export default function ProductCardList({ products, loading, onEdit, onDelete }: ProductCardListProps) {
+  if (loading) return <AdminSectionCard>Đang tải dữ liệu...</AdminSectionCard>;
+  if (!products?.length) return <AdminEmptyState title="Không có sản phẩm nào." />;
 
   return (
     <div className="space-y-3">
       {products.map((product) => (
-        <Card key={product.id} className="rounded-2xl shadow-sm">
-          <CardContent className="p-4 space-y-4">
-            <div className="flex gap-3">
-              {product.previewImageUrl ? (
-                <Image
-                  src={r2Url(product.previewImageUrl)}
-                  alt={product.productName}
-                  width={80}
-                  height={80}
-                  className="rounded-xl object-cover aspect-square shrink-0"
-                />
-              ) : (
-                <div className="w-20 h-20 bg-muted rounded-xl" />
-              )}
-
-              <div className="flex-1 space-y-1">
-                <div className="font-semibold text-base">
-                  {product.productName}
-                </div>
-
-                <div className="text-sm text-muted-foreground">
-                  Danh mục: {product.category?.name || "-"}
-                </div>
-
-                <div className="text-sm">
-                  Giá:{" "}
-                  <span className="font-medium">
-                    {product.currentPrice.toLocaleString()}đ
-                  </span>
-                </div>
-
-                <div className="text-sm">
-                  Điểm:{" "}
-                  <span className="font-medium">
-                    {(product.pointValue ?? 0).toLocaleString()}
-                  </span>
-                </div>
-              </div>
+        <AdminSectionCard key={product.id} className="space-y-3">
+          <div className="flex gap-3">
+            {product.previewImageUrl ? (
+              <Image
+                src={r2Url(product.previewImageUrl)}
+                alt={product.productName}
+                width={72}
+                height={72}
+                className="aspect-square shrink-0 rounded-lg object-cover"
+              />
+            ) : (
+              <div className="h-18 w-18 rounded-lg bg-muted" />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold">{product.productName}</p>
+              <p className="text-sm text-muted-foreground">{product.category?.name || "-"}</p>
+              <p className="text-sm">{product.currentPrice.toLocaleString()}đ</p>
             </div>
-
-            <div className="flex flex-wrap gap-1">
-              {product.tags.length > 0 ? (
-                product.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary">
-                    {tag}
-                  </Badge>
-                ))
-              ) : (
-                <span className="text-xs text-muted-foreground">
-                  Không có tag
-                </span>
-              )}
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1"
-                onClick={() => onEdit?.(product)}
-              >
-                Sửa
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                className="flex-1"
-                onClick={() => onDelete?.(product.id)}
-              >
-                Xoá
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {product.tags?.length ? (
+              product.tags.map((tag) => (
+                <Badge key={tag} variant="secondary">
+                  {tag}
+                </Badge>
+              ))
+            ) : (
+              <span className="text-xs text-muted-foreground">Không có tag</span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="flex-1" onClick={() => onEdit?.(product)}>
+              Sửa
+            </Button>
+            <Button size="sm" variant="destructive" className="flex-1" onClick={() => onDelete?.(product.id)}>
+              Xóa
+            </Button>
+          </div>
+        </AdminSectionCard>
       ))}
     </div>
   );
