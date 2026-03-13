@@ -320,26 +320,6 @@ export default function AdminOrdersPage() {
       socket.close();
     };
   }, [hydrated, loadOrders, pagination.page]);
-  // =======================
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-700";
-      case "CONFIRMED":
-        return "bg-blue-100 text-blue-700";
-      case "DELIVERING":
-        return "bg-purple-100 text-purple-700";
-      case "UNPAID":
-        return "bg-orange-100 text-orange-700";
-      case "COMPLETED":
-        return "bg-green-100 text-green-700";
-      case "CANCELLED":
-        return "bg-red-100 text-red-700";
-      default:
-        return "";
-    }
-  };
 
   const getAvailableTransitions = (status: OrderStatus) => {
     return allowedTransitions[status] || [];
@@ -536,8 +516,8 @@ export default function AdminOrdersPage() {
         <div className="hidden md:block">
           <AdminOrderTable
             orders={orders}
-            getStatusColor={getStatusColor}
             onChangeStatus={handleChangeStatus}
+            onViewUser={handleViewUser}
             getAvailableTransitions={getAvailableTransitions}
             updatingId={updatingId}
           />

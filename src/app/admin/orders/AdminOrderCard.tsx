@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/helper/helpers";
@@ -20,8 +20,15 @@ import {
   Truck,
   XCircle,
   Eye,
+  Package,
 } from "lucide-react";
 import ProductPrice from "@/components/common/ProductPrice";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
 type OrderStatus =
   | "PENDING"
@@ -46,7 +53,8 @@ export default function AdminOrderCard({
   getAvailableTransitions: (status: OrderStatus) => OrderStatus[];
   isUpdating: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [productExpanded, setProductExpanded] = useState(false);
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
 
   const statusMeta: Record<
     OrderStatus,
@@ -89,6 +97,14 @@ export default function AdminOrderCard({
   const isBusiness = order?.user?.tags?.includes("BUSINESS");
   const transitions = getAvailableTransitions(order.status);
 
+  const hasProductSection = useMemo(() => {
+    return (
+      (order?.stoveSnapshot?.quantity ?? 0) > 0 ||
+      (order?.items?.length ?? 0) > 0 ||
+      (order?.serviceItems?.length ?? 0) > 0
+    );
+  }, [order]);
+
   return (
     <Card className="rounded-md shadow-sm border border-gray-500">
       <CardContent className="p-0">
@@ -127,7 +143,11 @@ export default function AdminOrderCard({
                 <Badge
                   className={`px-2 py-2 rounded-md border ${
                     status?.style || "bg-gray-100 text-gray-600 border-gray-200"
-                  } ${transitions.length === 0 || isUpdating ? "opacity-60" : "cursor-pointer"}`}
+                  } ${
+                    transitions.length === 0 || isUpdating
+                      ? "opacity-60"
+                      : "cursor-pointer"
+                  }`}
                 >
                   <div className="flex items-center gap-1">
                     {status?.icon}
@@ -156,89 +176,134 @@ export default function AdminOrderCard({
           </div>
         </div>
 
-        <div className="flex flex-col gap-[2vw] p-[1vw]">
-          <div className="flex items-center gap-[2vw] flex-wrap">
-            <div className="text-[3vw] text-white/90 bg-blue-500 rounded-md px-2 py-[1vw]">
-              Ngày đặt: {formatDateTime(order.createdAt)}
-            </div>
-
-            {(order?.shipper || order?.shipperId) && (
-              <div className="text-[3vw] text-white/90 bg-purple-600 rounded-md px-2 py-[1vw] inline-flex items-center gap-1 max-w-[55vw]">
-                <Truck size={14} className="shrink-0" />
-                <span className="truncate">
-                  Shipper:{" "}
-                  {order?.shipper
-                    ? order.shipper.name ||
-                      order.shipper.nickname ||
-                      order.shipper.phoneNumber ||
-                      "Không tên"
-                    : order.shipperId}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {order.stoveSnapshot?.quantity > 0 && (
-            <div className="bg-gray-200 p-[3vw] rounded-md text-sm font-semibold flex justify-between">
-              <div>
-                {order.stoveSnapshot.productName} x
-                {order.stoveSnapshot.quantity}
-              </div>
-              <ProductPrice
-                unitPrice={order.stoveSnapshot.unitPrice}
-                quantity={order.stoveSnapshot.quantity}
-                snapshotDiscountPerUnit={
-                  order.stoveSnapshot.discountPerUnitSnapshot
-                }
-                priceClassName="text-sm text-gas-green-700"
-              />
-            </div>
-          )}
-
-          {order.items?.length > 0 && (
-            <div className="bg-white border border-gray-600 p-[3vw] rounded-md space-y-2 text-sm">
-              {order.items.map((item: any) => (
-                <div
-                  key={item.id}
-                  className="grid grid-cols-[1fr_auto] items-center"
-                >
-                  <div className="truncate">
-                    {item.product?.productName} x{item.quantity}
+        <Collapsible open={productExpanded} onOpenChange={setProductExpanded}>
+          <div className="flex flex-col gap-[2vw] p-[1vw]">
+            <div className="flex items-stretch gap-[2vw] min-w-0">
+              <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar">
+                <div className="flex items-center gap-[2vw] w-max min-w-full pr-1">
+                  <div className="shrink-0 text-[3vw] text-white/90 bg-blue-500 rounded-md px-2 py-[1vw] whitespace-nowrap">
+                    Ngày đặt: {formatDateTime(order.createdAt)}
                   </div>
-                  <div className="text-right font-medium tabular-nums">
-                    {item.payByPoints
-                      ? `${item.unitPointPrice * item.quantity} điểm`
-                      : (
-                        <ProductPrice
-                          unitPrice={item.unitPrice}
-                          quantity={item.quantity}
-                          snapshotDiscountPerUnit={
-                            item.discountPerUnitSnapshot
-                          }
-                          priceClassName="text-sm"
-                        />
+
+                  {(order?.shipper || order?.shipperId) && (
+                    <div className="shrink-0 text-[3vw] text-white/90 bg-purple-600 rounded-md px-2 py-[1vw] inline-flex items-center gap-1 whitespace-nowrap">
+                      <Truck size={14} className="shrink-0" />
+                      <span>
+                        Shipper:{" "}
+                        {order?.shipper
+                          ? order.shipper.name ||
+                            order.shipper.nickname ||
+                            order.shipper.phoneNumber ||
+                            "Không tên"
+                          : order.shipperId}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {hasProductSection && (
+                <div className="shrink-0 w-[11vw] flex justify-end">
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        "h-full min-h-[4vw] w-full inline-flex items-center justify-center rounded-md border shadow-sm transition active:scale-95",
+                        productExpanded
+                          ? "border-black bg-black text-white"
+                          : "border-gray-300 bg-white text-gray-700",
                       )}
-                  </div>
+                    >
+                      <div className="flex items-center gap-1">
+                        <Package size={14} />
+                      </div>
+                    </button>
+                  </CollapsibleTrigger>
                 </div>
-              ))}
+              )}
             </div>
-          )}
 
-          {order.serviceItems?.length > 0 && (
-            <div className="space-y-2 text-sm">
-              {order.serviceItems.map((item: any) => (
-                <div key={item.id} className="flex justify-between">
-                  <div>
-                    {item.serviceName} x{item.quantity}
-                  </div>
-                  <div>
-                    {(item.unitPrice * item.quantity).toLocaleString()}đ
+            <CollapsibleContent asChild>
+              <div
+                className={[
+                  "grid transition-all duration-300 ease-in-out",
+                  productExpanded
+                    ? "grid-rows-[1fr] opacity-100"
+                    : "grid-rows-[0fr] opacity-0",
+                ].join(" ")}
+              >
+                <div className="overflow-hidden">
+                  <div className="space-y-2 pt-1">
+                    {order.stoveSnapshot?.quantity > 0 && (
+                      <div className="bg-gray-200 p-[3vw] rounded-md text-sm font-semibold flex justify-between gap-2">
+                        <div>
+                          {order.stoveSnapshot.productName} x
+                          {order.stoveSnapshot.quantity}
+                        </div>
+                        <ProductPrice
+                          unitPrice={order.stoveSnapshot.unitPrice}
+                          quantity={order.stoveSnapshot.quantity}
+                          snapshotDiscountPerUnit={
+                            order.stoveSnapshot.discountPerUnitSnapshot
+                          }
+                          priceClassName="text-sm text-gas-green-700"
+                        />
+                      </div>
+                    )}
+
+                    {order.items?.length > 0 && (
+                      <div className="bg-white border border-gray-600 p-[3vw] rounded-md space-y-2 text-sm">
+                        {order.items.map((item: any) => (
+                          <div
+                            key={item.id}
+                            className="grid grid-cols-[1fr_auto] items-center gap-2"
+                          >
+                            <div className="truncate">
+                              {item.product?.productName} x{item.quantity}
+                            </div>
+
+                            <div className="text-right font-medium tabular-nums">
+                              {item.payByPoints ? (
+                                `${item.unitPointPrice * item.quantity} điểm`
+                              ) : (
+                                <ProductPrice
+                                  unitPrice={item.unitPrice}
+                                  quantity={item.quantity}
+                                  snapshotDiscountPerUnit={
+                                    item.discountPerUnitSnapshot
+                                  }
+                                  priceClassName="text-sm"
+                                />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {order.serviceItems?.length > 0 && (
+                      <div className="bg-white border border-gray-600 p-[3vw] rounded-md space-y-2 text-sm">
+                        {order.serviceItems.map((item: any) => (
+                          <div key={item.id} className="flex justify-between">
+                            <div>
+                              {item.serviceName} x{item.quantity}
+                            </div>
+                            <div>
+                              {(
+                                item.unitPrice * item.quantity
+                              ).toLocaleString()}
+                              đ
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
 
         <div className="border-t border-gray-700 py-3 px-[4vw] text-sm relative">
           <div className="flex justify-between font-semibold">
@@ -253,7 +318,7 @@ export default function AdminOrderCard({
             </div>
           )}
 
-          {expanded && (
+          {summaryExpanded && (
             <div className="mt-2 space-y-1">
               {order.pointsUsed > 0 && (
                 <div className="flex justify-between text-blue-600">
@@ -271,10 +336,14 @@ export default function AdminOrderCard({
           )}
 
           <button
-            onClick={() => setExpanded(!expanded)}
+            onClick={() => setSummaryExpanded(!summaryExpanded)}
             className="absolute bottom-0 left-1/2 translate-y-1/2 -translate-x-1/2 w-[8vw] h-[4vw] bg-gray-700 flex items-center justify-center text-white rounded-full shadow"
           >
-            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {summaryExpanded ? (
+              <ChevronUp size={16} />
+            ) : (
+              <ChevronDown size={16} />
+            )}
           </button>
         </div>
       </CardContent>
