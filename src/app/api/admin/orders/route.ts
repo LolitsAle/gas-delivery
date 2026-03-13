@@ -4,7 +4,7 @@ import { withAuth } from "@/lib/auth/withAuth";
 
 const BUSINESS_TAGS = ["BUSINESS", "BUSSINESS"] as const;
 
-export const GET = withAuth(["ADMIN"], async (req: NextRequest) => {
+export const GET = withAuth(["ADMIN", "STAFF"], async (req: NextRequest) => {
   try {
     const searchParams = req.nextUrl.searchParams;
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
@@ -92,13 +92,13 @@ export const GET = withAuth(["ADMIN"], async (req: NextRequest) => {
     const pagedOrders = sortedOrders.slice(startIndex, startIndex + limit);
 
     return NextResponse.json({
+      items: pagedOrders,
       orders: pagedOrders,
-      pagination: {
-        page: safePage,
-        limit,
-        total,
-        totalPages,
-      },
+      page: safePage,
+      pageSize: limit,
+      totalItems: total,
+      totalPages,
+      pagination: { page: safePage, limit, total, totalPages },
     });
   } catch (err) {
     console.error(err);

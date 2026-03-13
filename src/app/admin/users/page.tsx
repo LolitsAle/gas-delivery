@@ -1,449 +1,59 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { AdminCard, StatusBadge } from "@/components/admin/Commons";
+import { useEffect, useState } from "react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
-import type { User } from "@/lib/types/frontend";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Plus } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import CreateUserDrawer from "@/components/admin/forms/CreateUserDrawer";
-import EditUserDrawer from "@/components/admin/forms/EditUserDrawer";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { AdminDataTable, AdminEntityCreateButton, AdminEntityDrawer, AdminFilterBar, AdminPageHeader, AdminPageShell, AdminPagination, AdminSearchInput, AdminStatusBadge } from "@/components/admin/foundation";
 
-export interface UserWithStoves extends User {
-  stoves: any[];
-}
+type Stove = { id: string; name: string; address: string; note?: string; defaultProductQuantity?: number; defaultPromoChoice?: string; houseImage?: string[]; productId?: string; defaultPromoProductId?: string };
+type User = { id: string; name?: string; nickname: string; phoneNumber: string; role: "USER" | "ADMIN"; isVerified: boolean; isActive: boolean; points: number; tags: string[]; createdAt: string; stoves: Stove[] };
 
-interface Props {}
-
-function Page(props: Props) {
-  const {} = props;
-  const [query] = useState("");
-  const [limit] = useState(5);
-  const [total, setTotal] = useState(0);
-
-  const [editingUser, setEditingUser] = useState<UserWithStoves | null>(null);
-  const [creating, setCreating] = useState(false);
-
-  const [users, setUsers] = useState<UserWithStoves[]>([]);
-  const [loading, setLoading] = useState(true);
-
+export default function AdminUsersPage() {
+  const [items, setItems] = useState<User[]>([]);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
+  const [status, setStatus] = useState("ALL");
   const [page, setPage] = useState(1);
-  const [triggerUserRefresh, setTriggerUserRefresh] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<User | null>(null);
+  const [form, setForm] = useState<any>({ nickname: "", phoneNumber: "", role: "USER", isActive: true, isVerified: false, tags: [] as string[] });
 
-  const pageSize = 5;
+  const fetchData = async () => {
+    const q = new URLSearchParams({ page: String(page), limit: "10", search, ...(status !== "ALL" ? { status } : {}) });
+    const res = await apiFetchAuth<{ users: User[]; meta: { totalPages: number } }>(`/api/admin/users?${q.toString()}`);
+    setItems(res.users);
+    setTotalPages(res.meta.totalPages || 1);
+  };
 
-  const refreshUser = () => setTriggerUserRefresh((p) => !p);
+  useEffect(() => { fetchData(); }, [search, status, page]);
 
-  useEffect(() => {
-    setLoading(true);
+  const saveUser = async () => {
+    if (editing) await apiFetchAuth(`/api/admin/users/${editing.id}`, { method: "PUT", body: form });
+    else await apiFetchAuth(`/api/admin/users`, { method: "POST", body: { ...form, password: "temporary" } });
+    setOpen(false); setEditing(null); fetchData();
+  };
 
-    const params = new URLSearchParams({
-      page: String(page),
-      limit: String(limit),
-    });
-
-    if (query) params.set("search", query);
-    if (status !== "ALL") params.set("status", status);
-
-    apiFetchAuth<{ users: UserWithStoves[]; meta: any }>(
-      `/api/admin/users?${params.toString()}`,
-    )
-      .then((res) => {
-        setUsers(res.users);
-        setTotal(res.meta.total);
-      })
-      .finally(() => setLoading(false));
-  }, [page, limit, query, status, triggerUserRefresh]);
-
-  /* Reset page khi filter/search đổi */
-  useEffect(() => {
-    setPage(1);
-  }, [query, status]);
-
-  // Create user
-  async function createUser(data: Partial<UserWithStoves>) {
-    try {
-      const res = await apiFetchAuth<{ user: UserWithStoves }>(
-        "/api/admin/users",
-        {
-          method: "POST",
-          body: data,
-        },
-      );
-
-      if (page === 1) {
-        setUsers((prev) => [res.user, ...prev.slice(0, limit - 1)]);
-      }
-
-      setTotal((t) => t + 1);
-    } catch (error) {
-      console.error("Create User ERROR:", error);
-      alert("Tạo người dùng thất bại");
-    }
-  }
-
-  // Delete user
-  async function deleteUser(user: UserWithStoves) {
-    const snapshot = users;
-
-    try {
-      await apiFetchAuth(`/api/admin/users/${user.id}`, {
-        method: "DELETE",
-      });
-      await refreshUser();
-    } catch {
-      setUsers(snapshot);
-      setTotal((t) => t + 1);
-      alert("Xóa người dùng thất bại");
-    }
-  }
-
-  // Update user
-  async function updateUser(id: string, data: Partial<User>) {
-    const snapshot = users;
-
-    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...data } : u)));
-
-    try {
-      const res = await apiFetchAuth<{ user: UserWithStoves }>(
-        `/api/admin/users/${id}`,
-        {
-          method: "PUT",
-          body: data,
-        },
-      );
-
-      setUsers((prev) => prev.map((u) => (u.id === id ? res.user : u)));
-    } catch {
-      setUsers(snapshot);
-      alert("Cập nhật thất bại");
-    }
-  }
-
-  /* FILTER */
-  const filtered = users.filter((u) => {
-    const matchSearch =
-      (u.nickname || "").toLowerCase().includes(search.toLowerCase()) ||
-      (u.phoneNumber || "").includes(search);
-
-    const matchStatus =
-      status === "ALL" ||
-      (status === "ACTIVE" && u.isActive) ||
-      (status === "INACTIVE" && !u.isActive);
-
-    return matchSearch && matchStatus;
-  });
-
-  const totalPages = Math.ceil(total / pageSize);
-
-  return (
-    <div className="space-y-4">
-      {/* Search & Filter – Mobile first */}
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder="Tên / SĐT"
-          className="h-10 flex-1 rounded-md text-sm"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <Select
-          value={status}
-          onValueChange={(value) => setStatus(value as any)}
-        >
-          <SelectTrigger className="h-10 w-22.5 rounded-md text-sm">
-            <SelectValue placeholder="All" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Tất cả</SelectItem>
-            <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
-            <SelectItem value="INACTIVE">Đã bị khoá</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Button
-          size="icon"
-          className="h-10 w-10 rounded-md"
-          onClick={() => setCreating(true)}
-          aria-label="Tạo user"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+  return <AdminPageShell>
+    <AdminPageHeader title="Users" action={<AdminEntityCreateButton label="Create user" onClick={() => setOpen(true)} />} />
+    <AdminFilterBar>
+      <AdminSearchInput value={search} onChange={(e) => setSearch(e.target.value)} />
+      <Select value={status} onValueChange={setStatus}><SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ALL">All</SelectItem><SelectItem value="ACTIVE">Active</SelectItem><SelectItem value="INACTIVE">Inactive</SelectItem></SelectContent></Select>
+    </AdminFilterBar>
+    <AdminDataTable headers={["Name", "Phone", "Role", "Status", "Verified", "Stoves", "Actions"]} rows={items.map((u) => [u.nickname || u.name || "-", u.phoneNumber, u.role, <AdminStatusBadge key={u.id+"s"} status={u.isActive ? "ACTIVE" : "INACTIVE"} />, <AdminStatusBadge key={u.id+"v"} status={u.isVerified ? "VERIFIED" : "UNVERIFIED"} />, String(u.stoves?.length || 0), <div key={u.id} className="space-x-2"><Button size="sm" variant="outline" onClick={() => { setEditing(u); setForm({ ...u }); setOpen(true); }}>Edit</Button><Button size="sm" variant="destructive" onClick={async () => { await apiFetchAuth(`/api/admin/users/${u.id}`, { method: "DELETE" }); fetchData(); }}>Disable</Button></div>])} />
+    <AdminPagination page={page} totalPages={totalPages} onChange={setPage} />
+    <AdminEntityDrawer open={open} onOpenChange={setOpen} title={editing ? "Edit user" : "Create user"} onSubmit={saveUser}>
+      <div className="space-y-3">
+        <div><Label>Nickname</Label><Input value={form.nickname || ""} onChange={(e) => setForm((p: any) => ({ ...p, nickname: e.target.value }))} /></div>
+        <div><Label>Phone</Label><Input value={form.phoneNumber || ""} onChange={(e) => setForm((p: any) => ({ ...p, phoneNumber: e.target.value }))} /></div>
+        <div><Label>Role</Label><Select value={form.role || "USER"} onValueChange={(v) => setForm((p: any) => ({ ...p, role: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="USER">USER</SelectItem><SelectItem value="ADMIN">ADMIN</SelectItem></SelectContent></Select></div>
+        <div className="flex items-center gap-2"><Switch checked={!!form.isActive} onCheckedChange={(v) => setForm((p: any) => ({ ...p, isActive: v }))} /><Label>Active</Label></div>
+        <div className="flex items-center gap-2"><Switch checked={!!form.isVerified} onCheckedChange={(v) => setForm((p: any) => ({ ...p, isVerified: v }))} /><Label>Verified</Label></div>
+        <div className="space-y-2 rounded border p-2"><p className="text-sm font-medium">Stoves (reuse field mapping from UserStoveDrawer)</p>{(form.stoves || []).map((s: Stove) => <div key={s.id} className="rounded border p-2 text-xs"><p>{s.name}</p><p>{s.address}</p><p>Qty: {s.defaultProductQuantity || 1} - Promo: {s.defaultPromoChoice || "BONUS_POINT"}</p></div>)}</div>
       </div>
-      {/* Mobile – Card */}
-      <div className="md:hidden space-y-3">
-        {filtered.map((u) => (
-          <AdminCard
-            key={u.id}
-            title={
-              <div className="flex items-center gap-[2vw]">
-                <div className="max-w-[60%] truncate font-medium">
-                  {u.nickname}
-                </div>
-                <a
-                  href={`tel:${u.phoneNumber}`}
-                  className="shrink-0 text-md text-gray-700 underline"
-                >
-                  ({u.phoneNumber})
-                </a>
-              </div>
-            }
-            actions={
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    aria-label="Mở menu"
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent align="end" sideOffset={6}>
-                  <DropdownMenuItem onClick={() => setEditingUser(u)}>
-                    Chỉnh sửa
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-red-600 focus:text-red-600"
-                    onClick={() => deleteUser(u)}
-                  >
-                    Khoá user
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            }
-          >
-            {/* Row 2: Address + Points */}
-            <div className="flex justify-between text-sm text-gray-700">
-              <div className="truncate max-w-[70%]">
-                📍 {u.address || "Chưa có địa chỉ"}
-              </div>
-              <div className="whitespace-nowrap">⭐ {u.points}</div>
-            </div>
-
-            {/* Row 3: Address Note */}
-            {u.addressNote && (
-              <div className="text-sm font-medium text-gray-800">
-                {u.addressNote}
-              </div>
-            )}
-
-            {/* Row 4: Status tags */}
-            <div className="flex gap-2 flex-wrap">
-              <StatusBadge status={u.isActive ? "ACTIVE" : "INACTIVE"} />
-              <StatusBadge status={u.isVerified ? "VERIFIED" : "PENDING"} />
-            </div>
-
-            {/* Row 5: Stoves */}
-            <div className="text-xs text-gray-500">
-              🔥 {u.stoves.length} bếp
-            </div>
-          </AdminCard>
-        ))}
-      </div>
-      {/* Desktop – Table */}
-      <div className="hidden md:block w-full overflow-x-auto">
-        <div className="rounded-lg border bg-white shadow-sm">
-          <Table className="w-full table-fixed">
-            <TableHeader className="bg-muted/50">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Tên
-                </TableHead>
-                <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Số điện thoại
-                </TableHead>
-                <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Địa chỉ
-                </TableHead>
-                <TableHead className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  SL Bếp
-                </TableHead>
-                <TableHead className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Điểm
-                </TableHead>
-                <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Tình trạng
-                </TableHead>
-                <TableHead className="px-4 py-3 text-right" />
-              </TableRow>
-            </TableHeader>
-
-            {/* BODY */}
-            <TableBody>
-              {filtered.map((u) => (
-                <TableRow
-                  key={u.id}
-                  className="hover:bg-muted/40 transition-colors"
-                >
-                  <TableCell className="px-4 py-3 font-medium">
-                    {u.nickname}
-                  </TableCell>
-
-                  <TableCell className="px-4 py-3 text-sm text-muted-foreground">
-                    {u.phoneNumber}
-                  </TableCell>
-
-                  <TableCell className="px-4 py-3 max-w-65">
-                    <div className="truncate text-sm">{u.address || "-"}</div>
-                    {u.addressNote && (
-                      <div className="truncate text-xs text-muted-foreground">
-                        {u.addressNote}
-                      </div>
-                    )}
-                  </TableCell>
-
-                  <TableCell className="px-4 py-3 text-center text-sm">
-                    {u.stoves.length}
-                  </TableCell>
-
-                  <TableCell className="px-4 py-3 text-center text-sm">
-                    {u.points}
-                  </TableCell>
-
-                  <TableCell className="px-4 py-3">
-                    <div className="flex gap-2 flex-wrap">
-                      <StatusBadge
-                        status={u.isActive ? "ACTIVE" : "INACTIVE"}
-                      />
-                      <StatusBadge
-                        status={u.isVerified ? "VERIFIED" : "PENDING"}
-                      />
-                    </div>
-                  </TableCell>
-
-                  <TableCell className="px-4 py-3 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          aria-label="Mở menu"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-
-                      <DropdownMenuContent align="end" sideOffset={6}>
-                        <DropdownMenuItem onClick={() => setEditingUser(u)}>
-                          Chỉnh sửa
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-red-600 focus:text-red-600"
-                          onClick={() => deleteUser(u)}
-                        >
-                          Khoá user
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-      <Pagination className="mt-4">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                if (page > 1) setPage(page - 1);
-              }}
-              className={page === 1 ? "pointer-events-none opacity-50" : ""}
-            />
-          </PaginationItem>
-
-          {Array.from({ length: totalPages }).map((_, i) => {
-            const p = i + 1;
-
-            return (
-              <PaginationItem key={p}>
-                <PaginationLink
-                  href="#"
-                  isActive={p === page}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setPage(p);
-                  }}
-                >
-                  {p}
-                </PaginationLink>
-              </PaginationItem>
-            );
-          })}
-          <PaginationItem>
-            <PaginationNext
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                if (page < totalPages) setPage(page + 1);
-              }}
-              className={
-                page === totalPages ? "pointer-events-none opacity-50" : ""
-              }
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-
-      <CreateUserDrawer
-        open={creating}
-        onClose={() => setCreating(false)}
-        onCreate={async (data) => {
-          await createUser(data);
-          setCreating(false);
-        }}
-      />
-
-      <EditUserDrawer
-        open={!!editingUser}
-        selectedUser={editingUser!}
-        onClose={() => setEditingUser(null)}
-        onSave={async (data) => {
-          await updateUser(editingUser!.id, data);
-          setEditingUser(null);
-        }}
-      />
-    </div>
-  );
+    </AdminEntityDrawer>
+  </AdminPageShell>;
 }
-
-export default Page;
