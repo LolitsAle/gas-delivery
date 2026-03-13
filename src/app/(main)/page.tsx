@@ -94,7 +94,10 @@ export default function Home() {
 
       {/* Body */}
       <div className="w-full h-[78vh] rounded-2xl pt-[3vh] z-10 absolute top-[22vh] left-0 bg-gas-green-50 animate-gradient flex flex-col">
-        <OrderSection setOpen={() => setOpenMissingProductDialog(true)} />
+        <OrderSection
+          openMissing={() => setOpenMissingProductDialog(true)}
+          openEdit={handleOpenStoveDrawer}
+        />
 
         <div className="flex-1 overflow-auto pb-[30vw] no-scrollbar">
           <PhoneCall />

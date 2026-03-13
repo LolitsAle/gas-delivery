@@ -30,9 +30,11 @@ import {
 import ProductPrice from "@/components/common/ProductPrice";
 
 function OrderSection({
-  setOpen,
+  openMissing,
+  openEdit,
 }: {
-  setOpen: Dispatch<SetStateAction<boolean>>;
+  openMissing: Dispatch<SetStateAction<boolean>>;
+  openEdit: () => void;
 }) {
   const {
     currentUser: user,
@@ -49,7 +51,7 @@ function OrderSection({
   const handleOrderNow = async () => {
     if (!activeStove) return;
     if (!activeStove?.productId) {
-      setOpen(true);
+      openMissing(true);
       return;
     }
 
@@ -218,7 +220,7 @@ function OrderSection({
                 className="shadow rounded-lg bg-white p-[1.5vw]"
                 size="icon"
                 variant="ghost"
-                onClick={() => setOpen(true)}
+                onClick={() => openEdit()}
               >
                 <Pencil className="w-4 h-4" />
               </Button>

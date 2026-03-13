@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { apiFetchAuth, apiFetchPublic, apiLogoutClient } from "@/lib/api/apiClient";
+import {
+  apiFetchAuth,
+  apiFetchPublic,
+  apiLogoutClient,
+} from "@/lib/api/apiClient";
 import { useCurrentUser } from "@/components/context/CurrentUserContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,7 +34,9 @@ export default function UserBasicInfo({ user }: Props) {
   const router = useRouter();
   const { refreshUser } = useCurrentUser();
 
-  const [editingField, setEditingField] = useState<EditableFieldKey | null>(null);
+  const [editingField, setEditingField] = useState<EditableFieldKey | null>(
+    null,
+  );
   const [editingValue, setEditingValue] = useState("");
   const [savingField, setSavingField] = useState<EditableFieldKey | null>(null);
 
@@ -188,12 +194,13 @@ export default function UserBasicInfo({ user }: Props) {
         <div className="text-sm text-gray-500">{label}</div>
 
         {isEditing ? (
-          <div className="mt-2 space-y-2">
+          <div className="mt-2 space-y-2 flex justify-between items-center gap-[2vw]">
             <Input
               value={editingValue}
               onChange={(e) => setEditingValue(e.target.value)}
               placeholder={placeholder}
               disabled={isSaving}
+              className="m-0"
             />
 
             <div className="flex items-center gap-2">
@@ -212,13 +219,14 @@ export default function UserBasicInfo({ user }: Props) {
                 size="sm"
                 disabled={isSaving}
                 onClick={cancelEdit}
+                className="bg-red-500 text-white"
               >
                 Hủy
               </Button>
             </div>
           </div>
         ) : (
-          <div className="mt-2 flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3">
             <div className="font-semibold">{value?.trim() || placeholder}</div>
             <Button
               type="button"
@@ -238,18 +246,13 @@ export default function UserBasicInfo({ user }: Props) {
     <>
       <div className="space-y-3">
         {renderEditableRow("Tên", "name", user.name, "Nhập tên")}
-        {renderEditableRow("Địa chỉ", "address", user.address, "Nhập địa chỉ")}
-        {renderEditableRow(
-          "Ghi chú địa chỉ",
-          "addressNote",
-          user.addressNote,
-          "Nhập ghi chú",
-        )}
 
         <div className="rounded-xl border bg-white p-3">
           <div className="text-sm text-gray-500">Số điện thoại</div>
           <div className="mt-2 flex items-center justify-between gap-3">
-            <div className="font-semibold">{phoneNumber || "Chưa cập nhật"}</div>
+            <div className="font-semibold">
+              {phoneNumber || "Chưa cập nhật"}
+            </div>
             {user.isVerified ? (
               <Badge className="bg-green-600 text-white">Đã xác thực</Badge>
             ) : (
@@ -326,7 +329,9 @@ export default function UserBasicInfo({ user }: Props) {
 
         <div className="rounded-xl border bg-white p-3">
           <div className="text-sm text-gray-500">Điểm thưởng</div>
-          <div className="mt-2 font-semibold text-green-600">{user.points ?? 0}</div>
+          <div className="mt-2 font-semibold text-green-600">
+            {user.points ?? 0}
+          </div>
         </div>
       </div>
 
