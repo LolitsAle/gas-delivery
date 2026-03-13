@@ -2,22 +2,31 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/withAuth";
+import { parseListQuery } from "@/lib/api/admin/contracts";
 
 /* ======================================================
    GET CATEGORIES (LIST)
 ====================================================== */
-export const GET = withAuth(["ADMIN"], async () => {
+export const GET = withAuth(["ADMIN", "STAFF"], async (req) => {
   try {
-    const categories = await prisma.category.findMany({
+    const { page, pageSize, search } = parseListQuery(req.url, { pageSize: 50, sort: "name:asc" });
+    const where = search ? { name: { contains: search, mode: "insensitive" as const } } : {};
+    const [categories, totalItems] = await Promise.all([prisma.category.findMany({
+      where,
       orderBy: { name: "asc" },
-      include: {
-        products: {
-          select: { id: true },
-        },
-      },
-    });
+      include: { products: { select: { id: true } } },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }), prisma.category.count({ where })]);
 
-    return NextResponse.json({ categories });
+    return NextResponse.json({
+      items: categories,
+      categories,
+      page,
+      pageSize,
+      totalItems,
+      totalPages: Math.max(Math.ceil(totalItems / pageSize), 1),
+    });
   } catch (error) {
     console.log("error", error);
     return NextResponse.json(null, { status: 500 });

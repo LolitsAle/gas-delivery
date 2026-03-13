@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/withAuth";
 
-export const GET = withAuth(["ADMIN"], async (req) => {
+export const GET = withAuth(["ADMIN", "STAFF"], async (req) => {
   const { searchParams } = new URL(req.url);
 
   const search = searchParams.get("search")?.trim() || "";
@@ -72,13 +72,13 @@ export const GET = withAuth(["ADMIN"], async (req) => {
   ]);
 
   return NextResponse.json({
+    items: users,
     users,
-    meta: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
+    page,
+    pageSize: limit,
+    totalItems: total,
+    totalPages: Math.ceil(total / limit),
+    meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
   });
 });
 

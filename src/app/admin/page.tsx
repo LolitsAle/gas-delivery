@@ -1,71 +1,82 @@
 "use client";
-import BaseBarChart from "@/components/admin/charts/BaseBarChart";
-import BaseLineChart from "@/components/admin/charts/BaseLineChart";
-import BasePieChart from "@/components/admin/charts/BasePieChart";
-import StatCard from "@/components/admin/StatCard";
+
+import { useEffect, useState } from "react";
+import { apiFetchAuth } from "@/lib/api/apiClient";
+import { formatVND } from "@/lib/pricing/productPrice";
 import {
-  SAMPLE_BAR_CHART_DATA,
-  SAMPLE_LINE_CHART_DATA,
-  SAMPLE_PIE_CHART_DATA,
-  SAMPLE_PIE_CHART_DATA_2,
-} from "@/constants/SAMPLEDATA";
-import { motion } from "framer-motion";
-import { DollarSign, User } from "lucide-react";
-import React from "react";
+  AdminEmptyState,
+  AdminErrorState,
+  AdminLoadingSkeleton,
+  AdminPageHeader,
+  AdminPageShell,
+  AdminStatsGrid,
+} from "@/components/admin/foundation";
 
-function DashboardPage() {
+type DashboardRes = {
+  stats: {
+    dayOrders: number;
+    monthOrders: number;
+    quarterOrders: number;
+    pendingOrders: number;
+    totalUsers: number;
+    unverifiedUsers: number;
+  };
+  recentOrders: { id: string; status: string; totalPrice: number; createdAt: string; user: { nickname: string; phoneNumber: string } }[];
+};
+
+export default function AdminDashboardPage() {
+  const [data, setData] = useState<DashboardRes | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      setData(await apiFetchAuth<DashboardRes>("/api/admin/dashboard"));
+    } catch (e: any) {
+      setError(e.message || "Không tải được dashboard");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   return (
-    <div className="flex-1 overflow-auto relative z-10">
-      DASHBOARD
-      <main className="max-w-7xl mx-auto py-4 px-4 lg:px-8">
-        <motion.div
-          className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-        >
-          <StatCard
-            name="Đơn Hàng chưa giao"
-            icon={DollarSign}
-            value={1 + " đơn"}
-          ></StatCard>
-          <StatCard
-            name="Đơn hàng hôm nay"
-            icon={DollarSign}
-            value={20 + " đơn"}
-          ></StatCard>
-          <StatCard
-            name="Số Đơn nợ"
-            icon={DollarSign}
-            value={5 + " đơn"}
-          ></StatCard>
-          <StatCard
-            name="Số lượng người dùng"
-            icon={User}
-            value={100 + " user"}
-          ></StatCard>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <BaseLineChart
-            chartData={SAMPLE_LINE_CHART_DATA}
-            title="Biểu đồ đường"
+    <AdminPageShell>
+      <AdminPageHeader title="Admin Dashboard" description="Tổng quan vận hành" />
+      {loading && <AdminLoadingSkeleton />}
+      {error && <AdminErrorState message={error} />}
+      {data && (
+        <>
+          <AdminStatsGrid
+            items={[
+              { label: "Đơn trong ngày", value: String(data.stats.dayOrders) },
+              { label: "Đơn trong tháng", value: String(data.stats.monthOrders) },
+              { label: "Đơn trong quý", value: String(data.stats.quarterOrders) },
+              { label: "Đơn chưa hoàn thành", value: String(data.stats.pendingOrders) },
+              { label: "Tổng users", value: String(data.stats.totalUsers) },
+              { label: "Users chưa xác thực", value: String(data.stats.unverifiedUsers) },
+            ]}
           />
-          <BasePieChart
-            chartData={SAMPLE_PIE_CHART_DATA}
-            title="Biểu đồ tròn"
-            labelStroke={false}
-          />
-          <BasePieChart
-            chartData={SAMPLE_PIE_CHART_DATA_2}
-            title="Biểu đồ tròn"
-            labelStroke={true}
-          />
-          <BaseBarChart chartData={SAMPLE_BAR_CHART_DATA} title="Biểu đồ cột" />
-        </div>
-      </main>
-    </div>
+          {data.recentOrders.length === 0 ? (
+            <AdminEmptyState title="Chưa có đơn gần đây" />
+          ) : (
+            <div className="space-y-2 rounded-lg border p-3">
+              <p className="text-sm font-medium">Đơn mới gần đây</p>
+              {data.recentOrders.map((item) => (
+                <div key={item.id} className="flex items-center justify-between rounded border p-2 text-sm">
+                  <div>{item.user.nickname} ({item.user.phoneNumber})</div>
+                  <div>{formatVND(item.totalPrice)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </AdminPageShell>
   );
 }
-
-export default DashboardPage;

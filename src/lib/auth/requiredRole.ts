@@ -2,6 +2,7 @@
 import { prisma } from "@/lib/prisma";
 import { verifyJwt } from "@/lib/auth/jwt-node";
 import { AuthError } from "./authError";
+import { isRoleAllowed } from "./adminRoles";
 
 type AccessTokenPayload = {
   userId: string;
@@ -49,7 +50,7 @@ export async function requireRole(req: Request, roles: string[]) {
   }
 
   // 🔐 role check → FORBIDDEN
-  if (!roles.includes(user.role)) {
+  if (!isRoleAllowed(user.role, roles)) {
     throw new AuthError("Không có quyền truy cập", 403);
   }
 

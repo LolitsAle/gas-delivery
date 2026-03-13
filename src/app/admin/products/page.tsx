@@ -1,170 +1,67 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
+import { formatVND } from "@/lib/pricing/productPrice";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { ProductTag } from "@prisma/client";
+import { AdminDataTable, AdminEntityCreateButton, AdminEntityDrawer, AdminFilterActions, AdminFilterBar, AdminPageHeader, AdminPageShell, AdminPagination, AdminSearchInput } from "@/components/admin/foundation";
 
-import ProductFilterBar from "@/components/admin/products/ProductFilterBar";
-import ProductTable from "@/components/admin/products/ProductTable";
-
-import {
-  CategoryOption,
-  ProductFilters,
-  ProductWithCategory,
-} from "@/components/admin/products/types";
-import ProductCardList from "@/components/admin/products/ProductCardList";
-import ProductDrawerForm from "@/components/admin/products/ProductDrawerForm";
+type Category = { id: string; name: string };
+type Product = { id: string; productName: string; currentPrice: number; pointValue: number; description: string; categoryId: string; category: Category; tags: ProductTag[] };
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<ProductWithCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState("ALL");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [form, setForm] = useState({ productName: "", currentPrice: 0, pointValue: 0, description: "", categoryId: "", tags: [] as ProductTag[] });
 
-  const [filters, setFilters] = useState<ProductFilters>({
-    search: "",
-    categoryId: "all",
-    tags: [],
-    sort: "createdAt",
-    order: "desc",
-    page: 1,
-    pageSize: 20,
-  });
-
-  const [pagination, setPagination] = useState({
-    total: 0,
-    totalPages: 1,
-  });
-
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [categories, setCategories] = useState<CategoryOption[]>([]);
-  const [editingProduct, setEditingProduct] =
-    useState<ProductWithCategory | null>(null);
-
-  /* =============================
-     FETCH PRODUCTS
-  ============================== */
-
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-
-      const params = new URLSearchParams();
-
-      if (filters.search) params.set("search", filters.search);
-      if (filters.categoryId !== "all")
-        params.set("categoryId", filters.categoryId);
-
-      if (filters.tags.length) params.set("tags", filters.tags.join(","));
-
-      params.set("sort", filters.sort);
-      params.set("order", filters.order);
-      params.set("page", String(filters.page));
-      params.set("pageSize", String(filters.pageSize));
-
-      const res = await apiFetchAuth(
-        `/api/admin/products?${params.toString()}`,
-      );
-
-      setProducts(res.products);
-      setPagination(res.pagination);
-    } catch (error) {
-      console.error("Fetch products error", error);
-    } finally {
-      setLoading(false);
-    }
+  const fetchData = async () => {
+    const query = new URLSearchParams({ page: String(page), pageSize: "10", search, ...(categoryId !== "ALL" ? { categoryId } : {}) });
+    const [prods, cats] = await Promise.all([
+      apiFetchAuth<{ products: Product[]; pagination: { totalPages: number } }>(`/api/admin/products?${query.toString()}`),
+      apiFetchAuth<{ categories: Category[] }>("/api/admin/categories"),
+    ]);
+    setItems(prods.products);
+    setTotalPages(prods.pagination.totalPages || 1);
+    setCategories(cats.categories);
   };
 
-  useEffect(() => {
-    fetchProducts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { fetchData(); }, [page, search, categoryId]);
 
-  /* =============================
-     HANDLERS
-  ============================== */
-
-  const handleCreate = () => {
-    setEditingProduct(null);
-    setDrawerOpen(true);
+  const submit = async () => {
+    const body = { ...form, currentPrice: Number(form.currentPrice), pointValue: Number(form.pointValue) };
+    if (editing) await apiFetchAuth(`/api/admin/products/${editing.id}`, { method: "PUT", body });
+    else await apiFetchAuth("/api/admin/products", { method: "POST", body });
+    setOpen(false); setEditing(null); fetchData();
   };
 
-  const handleEdit = (product: ProductWithCategory) => {
-    setEditingProduct(product);
-    setDrawerOpen(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Xóa sản phẩm này → không thể hoàn tác?")) return;
-
-    await apiFetchAuth(`/api/admin/products/${id}`, {
-      method: "DELETE",
-    });
-
-    fetchProducts();
-  };
-
-  const handleSaveSuccess = () => {
-    setDrawerOpen(false);
-    setEditingProduct(null);
-    fetchProducts();
-  };
-  /* =============================
-       FETCH CATEGORIES
-    ============================== */
-  useEffect(() => {
-    apiFetchAuth<{ categories: CategoryOption[] }>("/api/admin/categories")
-      .then((res) => setCategories(res.categories))
-      .catch(console.error);
-  }, []);
-
-  /* =============================
-     RENDER
-  ============================== */
-
-  return (
-    <div className="p-4 space-y-4">
-      {/* FILTER BAR */}
-      <ProductFilterBar
-        filters={filters}
-        categories={categories}
-        onChange={(newFilters) =>
-          setFilters((prev) => ({
-            ...prev,
-            ...newFilters,
-            page: 1, // reset page khi filter thay đổi
-          }))
-        }
-        onAdd={handleCreate}
-      />
-
-      {/* DESKTOP TABLE */}
-      <div className="hidden md:block">
-        <ProductTable
-          products={products}
-          loading={loading}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+  return <AdminPageShell>
+    <AdminPageHeader title="Products" action={<AdminEntityCreateButton label="Create product" onClick={() => setOpen(true)} />} />
+    <AdminFilterBar>
+      <AdminSearchInput value={search} onChange={(e) => setSearch(e.target.value)} />
+      <Select value={categoryId} onValueChange={setCategoryId}><SelectTrigger className="w-[180px]"><SelectValue placeholder="Category" /></SelectTrigger><SelectContent><SelectItem value="ALL">All category</SelectItem>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select>
+      <AdminFilterActions onReset={() => { setSearch(""); setCategoryId("ALL"); }} onRefresh={fetchData} />
+    </AdminFilterBar>
+    <AdminDataTable headers={["Name", "Category", "Price", "Point", "Actions"]} rows={items.map((it) => [it.productName, it.category?.name || "-", formatVND(it.currentPrice), String(it.pointValue), <div key={it.id} className="space-x-2"><Button size="sm" variant="outline" onClick={() => { setEditing(it); setForm({ productName: it.productName, currentPrice: it.currentPrice, pointValue: it.pointValue, description: it.description, categoryId: it.categoryId, tags: it.tags }); setOpen(true); }}>Edit</Button><Button size="sm" variant="destructive" onClick={async () => { await apiFetchAuth(`/api/admin/products/${it.id}`, { method: "DELETE" }); fetchData(); }}>Delete</Button></div>])} />
+    <AdminPagination page={page} totalPages={totalPages} onChange={setPage} />
+    <AdminEntityDrawer open={open} onOpenChange={setOpen} title={editing ? "Edit product" : "Create product"} onSubmit={submit}>
+      <div className="space-y-3">
+        <div><Label>Name</Label><Input value={form.productName} onChange={(e) => setForm((p) => ({ ...p, productName: e.target.value }))} /></div>
+        <div><Label>Category</Label><Select value={form.categoryId} onValueChange={(v) => setForm((p) => ({ ...p, categoryId: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
+        <div><Label>Price</Label><Input type="number" value={form.currentPrice} onChange={(e) => setForm((p) => ({ ...p, currentPrice: Number(e.target.value) }))} /></div>
+        <div><Label>Point</Label><Input type="number" value={form.pointValue} onChange={(e) => setForm((p) => ({ ...p, pointValue: Number(e.target.value) }))} /></div>
+        <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} /></div>
       </div>
-
-      {/* MOBILE CARD LIST */}
-      <div className="md:hidden">
-        <ProductCardList
-          products={products}
-          loading={loading}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-      </div>
-
-      {/* DRAWER FORM */}
-      <ProductDrawerForm
-        open={drawerOpen}
-        product={editingProduct}
-        onOpenChange={() => setDrawerOpen(false)}
-        onSuccess={handleSaveSuccess}
-        categories={categories}
-      />
-
-      {/* Pagination UI sẽ build sau */}
-    </div>
-  );
+    </AdminEntityDrawer>
+  </AdminPageShell>;
 }
