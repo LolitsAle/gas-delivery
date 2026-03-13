@@ -48,9 +48,7 @@ export default function CreateUserDrawer({ open, onClose, onCreate }: Props) {
   return (
     <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
       <DrawerContent
-        className="
-          h-[95vh] 
-          md:h-screen md:max-w-md md:ml-auto
+        className="md:max-w-md md:ml-auto
           flex flex-col
         "
       >

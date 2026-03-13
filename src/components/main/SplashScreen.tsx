@@ -15,8 +15,8 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
           return 100;
         }
 
-        if (old < 90) return old + 7;
-        return old + 1;
+        if (old < 90) return old + 9;
+        return old + 2;
       });
     }, 80);
 

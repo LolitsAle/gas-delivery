@@ -115,7 +115,7 @@ export default function EditUserDrawer({
 
   return (
     <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
-      <DrawerContent className="h-[95vh] md:h-screen md:max-w-2xl md:ml-auto flex flex-col">
+      <DrawerContent className="md:max-w-2xl md:ml-auto flex flex-col">
         <DrawerHeader>
           <DrawerTitle>
             {detailLoading

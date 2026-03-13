@@ -390,7 +390,7 @@ export default function ShopPage() {
         </div>
       </div>
       <Drawer open={openDrawer} onOpenChange={setOpenDrawer}>
-        <DrawerContent className="rounded-t-2xl max-h-[90vh] overflow-hidden  ">
+        <DrawerContent className="rounded-t-2xl overflow-hidden">
           <div className="hidden">
             <DrawerTitle>Chi tiết sản phẩm</DrawerTitle>
           </div>

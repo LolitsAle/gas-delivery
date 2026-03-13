@@ -47,7 +47,11 @@ interface Props {
   onClose: () => void;
 }
 
-export default function EditUserDrawer({ open, selectedOrder, onClose }: Props) {
+export default function EditUserDrawer({
+  open,
+  selectedOrder,
+  onClose,
+}: Props) {
   const [detailLoading, setDetailLoading] = useState(false);
   const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
 
@@ -57,7 +61,9 @@ export default function EditUserDrawer({ open, selectedOrder, onClose }: Props) 
     const fetchUserDetail = async () => {
       try {
         setDetailLoading(true);
-        const data = await apiFetchAuth(`/api/admin/users/${selectedOrder.user.id}`);
+        const data = await apiFetchAuth(
+          `/api/admin/users/${selectedOrder.user.id}`,
+        );
         setUserDetail(data);
       } catch (err) {
         console.error("Fetch user detail failed", err);
@@ -79,14 +85,17 @@ export default function EditUserDrawer({ open, selectedOrder, onClose }: Props) 
   const boundStove = useMemo(() => {
     if (!selectedOrder?.stoveId || !userDetail?.stoves?.length) return null;
 
-    return userDetail.stoves.find((stove) => stove.id === selectedOrder.stoveId) || null;
+    return (
+      userDetail.stoves.find((stove) => stove.id === selectedOrder.stoveId) ||
+      null
+    );
   }, [selectedOrder?.stoveId, userDetail?.stoves]);
 
   const stoveImages = boundStove?.houseImage || [];
 
   return (
     <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
-      <DrawerContent className="h-[95vh] md:h-screen md:max-w-2xl md:ml-auto flex flex-col">
+      <DrawerContent className="md:max-w-2xl md:ml-auto flex flex-col">
         <DrawerHeader>
           <DrawerTitle>
             {detailLoading
@@ -102,7 +111,9 @@ export default function EditUserDrawer({ open, selectedOrder, onClose }: Props) 
         </DrawerHeader>
 
         {detailLoading || !userDetail ? (
-          <div className="flex-1 flex items-center justify-center text-sm">Đang tải dữ liệu...</div>
+          <div className="flex-1 flex items-center justify-center text-sm">
+            Đang tải dữ liệu...
+          </div>
         ) : (
           <div className="flex-1 overflow-y-auto px-5 py-4">
             <Tabs defaultValue="info">
@@ -125,7 +136,9 @@ export default function EditUserDrawer({ open, selectedOrder, onClose }: Props) 
 
                   <div className="border rounded p-3">
                     <div className="text-gray-500">Nickname</div>
-                    <div className="font-medium">{userDetail.nickname || "-"}</div>
+                    <div className="font-medium">
+                      {userDetail.nickname || "-"}
+                    </div>
                   </div>
                 </div>
 
@@ -139,13 +152,19 @@ export default function EditUserDrawer({ open, selectedOrder, onClose }: Props) 
                 {boundStove ? (
                   <>
                     <div className="border rounded p-3 text-sm space-y-1">
-                      <div className="font-semibold">{boundStove.name || "Bếp đã bind"}</div>
+                      <div className="font-semibold">
+                        {boundStove.name || "Bếp đã bind"}
+                      </div>
                       <div>{boundStove.address || "Không có địa chỉ"}</div>
                       {boundStove.product?.productName && (
-                        <div className="text-gray-600">Sản phẩm: {boundStove.product.productName}</div>
+                        <div className="text-gray-600">
+                          Sản phẩm: {boundStove.product.productName}
+                        </div>
                       )}
                       {boundStove.note && (
-                        <div className="text-gray-600">Ghi chú: {boundStove.note}</div>
+                        <div className="text-gray-600">
+                          Ghi chú: {boundStove.note}
+                        </div>
                       )}
                     </div>
 
@@ -163,7 +182,9 @@ export default function EditUserDrawer({ open, selectedOrder, onClose }: Props) 
                           />
                         ))
                       ) : (
-                        <div className="text-sm text-gray-500">Không có ảnh bếp</div>
+                        <div className="text-sm text-gray-500">
+                          Không có ảnh bếp
+                        </div>
                       )}
                     </div>
                   </>

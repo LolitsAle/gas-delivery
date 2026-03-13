@@ -171,10 +171,12 @@ export default function UserStoveDrawer({ open, onOpenChange, stove }: Props) {
   };
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer open={open} onOpenChange={onOpenChange} repositionInputs={false}>
       <DrawerContent className="bg-gray-50">
         <DrawerHeader>
-          <DrawerTitle>{isEdit ? "🛠️ Cập nhật điểm giao" : "➕ Tạo điểm giao"}</DrawerTitle>
+          <DrawerTitle>
+            {isEdit ? "🛠️ Cập nhật điểm giao" : "➕ Tạo điểm giao"}
+          </DrawerTitle>
         </DrawerHeader>
 
         <div className="p-4">

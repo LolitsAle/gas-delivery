@@ -270,7 +270,7 @@ export default function UserBasicInfo({ user }: Props) {
                   onClick={sendPhoneOtp}
                   disabled={isSendingOtp}
                 >
-                  {isSendingOtp ? "Đang gửi OTP..." : "Xác nhận"}
+                  {isSendingOtp ? "Đang gửi OTP..." : "Xác thực"}
                 </Button>
               ) : (
                 <div className="space-y-2">

@@ -163,7 +163,7 @@ export default function ProductDrawerForm({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="p-4 max-h-[90vh] flex flex-col">
+      <DrawerContent className="p-4 flex flex-col">
         <DrawerHeader>
           <DrawerTitle>
             {isEdit ? "Chỉnh sửa sản phẩm" : "Tạo sản phẩm"}

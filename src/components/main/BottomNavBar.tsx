@@ -19,7 +19,7 @@ function BottomNavBar() {
   return (
     <>
       <div
-        className="fixed bottom-0 left-0 w-screen h-[28vw] pointer-events-none z-40"
+        className="fixed bottom-0 left-0 w-screen h-[28vw] z-40"
         style={{
           backdropFilter: "blur(28px)",
           WebkitBackdropFilter: "blur(28px)",
@@ -28,6 +28,7 @@ function BottomNavBar() {
           WebkitMaskImage:
             "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.15) 100%)",
         }}
+        onClick={() => {}}
       />
 
       {/* 🔥 Nav Bar */}
