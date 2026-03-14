@@ -86,22 +86,6 @@ export default function CreateUserDrawer({ open, onClose, onCreate }: Props) {
               />
             </Field>
           </div>
-
-          <Field label="Địa chỉ">
-            <input
-              className="w-full text-sm"
-              value={form.address}
-              onChange={(e) => update("address", e.target.value)}
-            />
-          </Field>
-
-          <Field label="Ghi chú địa chỉ">
-            <input
-              className="w-full text-sm"
-              value={form.addressNote}
-              onChange={(e) => update("addressNote", e.target.value)}
-            />
-          </Field>
         </div>
 
         {/* FOOTER */}

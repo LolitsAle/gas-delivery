@@ -57,8 +57,8 @@ export default function AdminCategoriesPage() {
   return (
     <div className="space-y-4 p-[2vw] md:p-[4vw]">
       <AdminActionBar>
-        <div className="flex flex-col gap-2 md:flex-row md:items-center">
-          <div className="relative flex-1">
+        <div className="flex flex-row items-center gap-2">
+          <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
@@ -67,9 +67,13 @@ export default function AdminCategoriesPage() {
               className="pl-9"
             />
           </div>
-          <Button onClick={() => setCreating(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Thêm danh mục
+
+          <Button
+            onClick={() => setCreating(true)}
+            className="min-w-9 px-2 sm:px-3"
+          >
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Thêm danh mục</span>
           </Button>
         </div>
       </AdminActionBar>
@@ -94,7 +98,11 @@ export default function AdminCategoriesPage() {
                       <TableCell className="font-medium">{c.name}</TableCell>
                       <TableCell>{c.freeShip ? "Có" : "Không"}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => setEditing(c)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditing(c)}
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
@@ -110,7 +118,9 @@ export default function AdminCategoriesPage() {
                   ))}
                 </TableBody>
               </Table>
-              {filtered.length === 0 ? <AdminEmptyState title="Không có danh mục phù hợp" /> : null}
+              {filtered.length === 0 ? (
+                <AdminEmptyState title="Không có danh mục phù hợp" />
+              ) : null}
             </AdminSectionCard>
           </div>
 
@@ -121,19 +131,33 @@ export default function AdminCategoriesPage() {
                 header={<p className="font-semibold">{c.name}</p>}
                 footer={
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setEditing(c)}>
-                      <Pencil className="mr-2 h-3.5 w-3.5" />Sửa
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditing(c)}
+                    >
+                      <Pencil className="mr-2 h-3.5 w-3.5" />
+                      Sửa
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={() => setDeleting(c)}>
-                      <Trash2 className="mr-2 h-3.5 w-3.5" />Xóa
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeleting(c)}
+                    >
+                      <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      Xóa
                     </Button>
                   </div>
                 }
               >
-                <p className="text-sm text-muted-foreground">Miễn ship: {c.freeShip ? "Có" : "Không"}</p>
+                <p className="text-sm text-muted-foreground">
+                  Miễn ship: {c.freeShip ? "Có" : "Không"}
+                </p>
               </AdminMobileCard>
             ))}
-            {filtered.length === 0 ? <AdminEmptyState title="Không có danh mục phù hợp" /> : null}
+            {filtered.length === 0 ? (
+              <AdminEmptyState title="Không có danh mục phù hợp" />
+            ) : null}
           </div>
         </>
       )}
@@ -148,18 +172,26 @@ export default function AdminCategoriesPage() {
           }}
           onSave={async (data) => {
             if (editing) {
-              const res = await apiFetchAuth<{ category: Category }>("/api/admin/categories", {
-                method: "PUT",
-                body: { id: editing.id, ...data },
-              });
-              setCategories((prev) => prev.map((c) => (c.id === editing.id ? res.category : c)));
+              const res = await apiFetchAuth<{ category: Category }>(
+                "/api/admin/categories",
+                {
+                  method: "PUT",
+                  body: { id: editing.id, ...data },
+                },
+              );
+              setCategories((prev) =>
+                prev.map((c) => (c.id === editing.id ? res.category : c)),
+              );
               setEditing(null);
               return;
             }
-            const res = await apiFetchAuth<{ category: Category }>("/api/admin/categories", {
-              method: "POST",
-              body: data,
-            });
+            const res = await apiFetchAuth<{ category: Category }>(
+              "/api/admin/categories",
+              {
+                method: "POST",
+                body: data,
+              },
+            );
             setCategories((prev) => [res.category, ...prev]);
             setCreating(false);
           }}
@@ -184,10 +216,15 @@ export default function AdminCategoriesPage() {
                 if (!deleting) return;
                 setDeletingLoading(true);
                 try {
-                  await apiFetchAuth(`/api/admin/categories?id=${deleting.id}`, {
-                    method: "DELETE",
-                  });
-                  setCategories((prev) => prev.filter((c) => c.id !== deleting.id));
+                  await apiFetchAuth(
+                    `/api/admin/categories?id=${deleting.id}`,
+                    {
+                      method: "DELETE",
+                    },
+                  );
+                  setCategories((prev) =>
+                    prev.filter((c) => c.id !== deleting.id),
+                  );
                   setDeleting(null);
                 } finally {
                   setDeletingLoading(false);
@@ -225,10 +262,18 @@ function CategoryForm({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tên danh mục" />
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Tên danh mục"
+          />
           <label className="flex items-center justify-between rounded-lg border p-3 text-sm">
             Miễn phí vận chuyển
-            <Switch checked={freeShip} onCheckedChange={setFreeShip} />
+            <Switch
+              checked={freeShip}
+              onCheckedChange={setFreeShip}
+              className="border border-zinc-200 data-[state=checked]:bg-green-100 data-[state=unchecked]:bg-red-100 [&>span]:data-[state=checked]:bg-green-600 [&>span]:data-[state=unchecked]:bg-red-600"
+            />
           </label>
         </div>
         <DialogFooter>

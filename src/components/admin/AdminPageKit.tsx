@@ -80,10 +80,12 @@ export function AdminRefreshButton({
       variant="outline"
       onClick={onClick}
       disabled={loading}
-      className={className}
+      className={cn("px-2 sm:px-3", className)}
     >
-      <RefreshCcw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
-      Refresh
+      <RefreshCcw
+        className={cn("h-4 w-4 sm:mr-2", loading && "animate-spin")}
+      />
+      <span className="hidden sm:inline">Refresh</span>
     </Button>
   );
 }

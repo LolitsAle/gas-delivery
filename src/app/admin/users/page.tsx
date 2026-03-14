@@ -65,11 +65,16 @@ export default function Page() {
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams({ page: String(page), limit: String(pageSize) });
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(pageSize),
+    });
     if (search.trim()) params.set("search", search.trim());
     if (status !== "ALL") params.set("status", status);
 
-    apiFetchAuth<{ users: UserWithStoves[]; meta: any }>(`/api/admin/users?${params.toString()}`)
+    apiFetchAuth<{ users: UserWithStoves[]; meta: any }>(
+      `/api/admin/users?${params.toString()}`,
+    )
       .then((res) => {
         setUsers(res.users || []);
         setTotal(res.meta?.total || 0);
@@ -86,8 +91,8 @@ export default function Page() {
   return (
     <div className="space-y-4 p-[2vw] md:p-[4vw]">
       <AdminActionBar>
-        <div className="flex flex-col gap-2 md:flex-row md:items-center">
-          <div className="relative flex-1">
+        <div className="flex flex-row gap-2 md:items-center">
+          <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Tên / SĐT"
@@ -96,8 +101,12 @@ export default function Page() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Select value={status} onValueChange={(value) => setStatus(value as any)}>
-            <SelectTrigger className="w-full md:w-52">
+
+          <Select
+            value={status}
+            onValueChange={(value) => setStatus(value as any)}
+          >
+            <SelectTrigger className="w-fit min-w-120px max-w-160px">
               <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent>
@@ -106,10 +115,15 @@ export default function Page() {
               <SelectItem value="INACTIVE">Đã bị khoá</SelectItem>
             </SelectContent>
           </Select>
+
           <AdminRefreshButton onClick={refreshUser} loading={loading} />
-          <Button onClick={() => setCreating(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Tạo user
+
+          <Button
+            onClick={() => setCreating(true)}
+            className="min-w-9 px-2 sm:px-3"
+          >
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Tạo user</span>
           </Button>
         </div>
       </AdminActionBar>
@@ -121,21 +135,33 @@ export default function Page() {
             header={
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{u.nickname || u.name || "Không tên"}</p>
-                  <p className="text-xs text-muted-foreground">{u.phoneNumber}</p>
+                  <p className="truncate text-sm font-semibold">
+                    {u.nickname || u.name || "Không tên"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {u.phoneNumber}
+                  </p>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/80">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 bg-white/80"
+                    >
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setEditingUser(u)}>Chỉnh sửa</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setEditingUser(u)}>
+                      Chỉnh sửa
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-red-600"
                       onClick={async () => {
-                        await apiFetchAuth(`/api/admin/users/${u.id}`, { method: "DELETE" });
+                        await apiFetchAuth(`/api/admin/users/${u.id}`, {
+                          method: "DELETE",
+                        });
                         refreshUser();
                       }}
                     >
@@ -147,11 +173,17 @@ export default function Page() {
             }
           >
             <p className="text-sm text-muted-foreground">Điểm: {u.points}</p>
-            <p className="text-sm text-muted-foreground">Bếp: {u.stoves.length}</p>
-            <p className="truncate text-sm text-muted-foreground">{u.address || "Không có địa chỉ"}</p>
+            <p className="text-sm text-muted-foreground">
+              Bếp: {u.stoves.length}
+            </p>
+            <p className="truncate text-sm text-muted-foreground">
+              {u.address || "Không có địa chỉ"}
+            </p>
           </AdminMobileCard>
         ))}
-        {!loading && users.length === 0 ? <AdminEmptyState title="Không có người dùng" /> : null}
+        {!loading && users.length === 0 ? (
+          <AdminEmptyState title="Không có người dùng" />
+        ) : null}
       </div>
 
       <div className="hidden md:block">
@@ -170,10 +202,14 @@ export default function Page() {
             <TableBody>
               {users.map((u) => (
                 <TableRow key={u.id}>
-                  <TableCell className="font-medium">{u.nickname || u.name || "-"}</TableCell>
+                  <TableCell className="font-medium">
+                    {u.nickname || u.name || "-"}
+                  </TableCell>
                   <TableCell>{u.phoneNumber}</TableCell>
                   <TableCell>{u.address || "-"}</TableCell>
-                  <TableCell className="text-center">{u.stoves.length}</TableCell>
+                  <TableCell className="text-center">
+                    {u.stoves.length}
+                  </TableCell>
                   <TableCell className="text-center">{u.points}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -183,11 +219,15 @@ export default function Page() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditingUser(u)}>Chỉnh sửa</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setEditingUser(u)}>
+                          Chỉnh sửa
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-red-600"
                           onClick={async () => {
-                            await apiFetchAuth(`/api/admin/users/${u.id}`, { method: "DELETE" });
+                            await apiFetchAuth(`/api/admin/users/${u.id}`, {
+                              method: "DELETE",
+                            });
                             refreshUser();
                           }}
                         >
@@ -200,7 +240,9 @@ export default function Page() {
               ))}
             </TableBody>
           </Table>
-          {!loading && users.length === 0 ? <AdminEmptyState title="Không có người dùng" /> : null}
+          {!loading && users.length === 0 ? (
+            <AdminEmptyState title="Không có người dùng" />
+          ) : null}
         </AdminSectionCard>
       </div>
 
@@ -240,7 +282,9 @@ export default function Page() {
                 e.preventDefault();
                 if (page < totalPages) setPage(page + 1);
               }}
-              className={page === totalPages ? "pointer-events-none opacity-50" : ""}
+              className={
+                page === totalPages ? "pointer-events-none opacity-50" : ""
+              }
             />
           </PaginationItem>
         </PaginationContent>
@@ -250,7 +294,10 @@ export default function Page() {
         open={creating}
         onClose={() => setCreating(false)}
         onCreate={async (data) => {
-          await apiFetchAuth("/api/admin/users", { method: "POST", body: data });
+          await apiFetchAuth("/api/admin/users", {
+            method: "POST",
+            body: data,
+          });
           setCreating(false);
           refreshUser();
         }}
