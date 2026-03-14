@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import {
+  AdminActionBar,
   AdminEmptyState,
-  AdminPageHeader,
+  AdminMobileCard,
   AdminRefreshButton,
   AdminSectionCard,
 } from "@/components/admin/AdminPageKit";
@@ -53,33 +54,18 @@ export default function AdminPhoneOtpPage() {
     load();
   }, []);
 
-  const cleanExpired = async () => {
-    setCleaning(true);
-    try {
-      await apiFetchAuth("/api/admin/phone-otp", { method: "DELETE" });
-      setConfirmOpen(false);
-      load();
-    } finally {
-      setCleaning(false);
-    }
-  };
-
   const now = Date.now();
 
   return (
     <div className="space-y-4 p-[2vw] md:p-[4vw]">
-      <AdminPageHeader
-        title="Phone OTP"
-        description="Theo dõi OTP điện thoại, làm mới dữ liệu và dọn OTP hết hạn."
-        actions={
-          <>
-            <AdminRefreshButton onClick={load} loading={loading} />
-            <Button variant="destructive" onClick={() => setConfirmOpen(true)}>
-              Clean OTP
-            </Button>
-          </>
-        }
-      />
+      <AdminActionBar>
+        <div className="flex flex-wrap items-center gap-2">
+          <AdminRefreshButton onClick={load} loading={loading} />
+          <Button variant="destructive" onClick={() => setConfirmOpen(true)}>
+            Clean OTP
+          </Button>
+        </div>
+      </AdminActionBar>
 
       <div className="hidden md:block">
         <AdminSectionCard className="overflow-hidden p-0">
@@ -118,14 +104,17 @@ export default function AdminPhoneOtpPage() {
         {items.map((item) => {
           const expired = new Date(item.expiresAt).getTime() < now;
           return (
-            <AdminSectionCard key={item.id} className="space-y-1">
-              <p className="text-sm font-medium">{item.phone}</p>
+            <AdminMobileCard
+              key={item.id}
+              header={<p className="text-sm font-semibold">{item.phone}</p>}
+            >
               <p className="text-sm">Code: {item.code}</p>
-              <p className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleString("vi-VN")}</p>
+              <p className="text-xs text-muted-foreground">Tạo: {new Date(item.createdAt).toLocaleString("vi-VN")}</p>
+              <p className="text-xs text-muted-foreground">Hết hạn: {new Date(item.expiresAt).toLocaleString("vi-VN")}</p>
               <p className={`text-xs ${expired ? "text-red-600" : "text-green-600"}`}>
                 {expired ? "Đã hết hạn" : "Còn hạn"}
               </p>
-            </AdminSectionCard>
+            </AdminMobileCard>
           );
         })}
         {!loading && items.length === 0 ? <AdminEmptyState title="Không có OTP" /> : null}
@@ -139,7 +128,20 @@ export default function AdminPhoneOtpPage() {
           <p className="text-sm text-muted-foreground">Bạn có chắc muốn xóa tất cả OTP đã hết hạn?</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>Hủy</Button>
-            <Button variant="destructive" onClick={cleanExpired} disabled={cleaning}>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                setCleaning(true);
+                try {
+                  await apiFetchAuth("/api/admin/phone-otp", { method: "DELETE" });
+                  setConfirmOpen(false);
+                  load();
+                } finally {
+                  setCleaning(false);
+                }
+              }}
+              disabled={cleaning}
+            >
               {cleaning ? "Đang xử lý..." : "Clean OTP"}
             </Button>
           </DialogFooter>

@@ -38,8 +38,9 @@ import {
 import CreateUserDrawer from "@/components/admin/forms/CreateUserDrawer";
 import EditUserDrawer from "@/components/admin/forms/EditUserDrawer";
 import {
+  AdminActionBar,
   AdminEmptyState,
-  AdminPageHeader,
+  AdminMobileCard,
   AdminRefreshButton,
   AdminSectionCard,
 } from "@/components/admin/AdminPageKit";
@@ -80,38 +81,11 @@ export default function Page() {
     setPage(1);
   }, [search, status]);
 
-  async function createUser(data: Partial<UserWithStoves>) {
-    await apiFetchAuth<{ user: UserWithStoves }>("/api/admin/users", {
-      method: "POST",
-      body: data,
-    });
-    refreshUser();
-  }
-
-  async function deleteUser(user: UserWithStoves) {
-    await apiFetchAuth(`/api/admin/users/${user.id}`, { method: "DELETE" });
-    refreshUser();
-  }
-
-  async function updateUser(id: string, data: Partial<User>) {
-    await apiFetchAuth(`/api/admin/users/${id}`, {
-      method: "PUT",
-      body: data,
-    });
-    refreshUser();
-  }
-
   const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div className="space-y-4 p-[2vw] md:p-[4vw]">
-      <AdminPageHeader
-        title="Khách hàng"
-        description="Quản lý hồ sơ người dùng, điểm, mật khẩu và bếp giao hàng."
-        actions={<AdminRefreshButton onClick={refreshUser} loading={loading} />}
-      />
-
-      <AdminSectionCard>
+      <AdminActionBar>
         <div className="flex flex-col gap-2 md:flex-row md:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -132,38 +106,50 @@ export default function Page() {
               <SelectItem value="INACTIVE">Đã bị khoá</SelectItem>
             </SelectContent>
           </Select>
+          <AdminRefreshButton onClick={refreshUser} loading={loading} />
           <Button onClick={() => setCreating(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Tạo user
           </Button>
         </div>
-      </AdminSectionCard>
+      </AdminActionBar>
 
       <div className="space-y-3 md:hidden">
         {users.map((u) => (
-          <AdminSectionCard key={u.id}>
-            <div className="mb-2 flex items-start justify-between gap-2">
-              <div>
-                <p className="font-medium">{u.nickname || u.name || "Không tên"}</p>
-                <p className="text-sm text-muted-foreground">{u.phoneNumber}</p>
+          <AdminMobileCard
+            key={u.id}
+            header={
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">{u.nickname || u.name || "Không tên"}</p>
+                  <p className="text-xs text-muted-foreground">{u.phoneNumber}</p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/80">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setEditingUser(u)}>Chỉnh sửa</DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-red-600"
+                      onClick={async () => {
+                        await apiFetchAuth(`/api/admin/users/${u.id}`, { method: "DELETE" });
+                        refreshUser();
+                      }}
+                    >
+                      Khóa user
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setEditingUser(u)}>Chỉnh sửa</DropdownMenuItem>
-                  <DropdownMenuItem className="text-red-600" onClick={() => deleteUser(u)}>
-                    Khóa user
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="text-sm text-muted-foreground">Điểm: {u.points}</div>
-            <div className="text-sm text-muted-foreground">Bếp: {u.stoves.length}</div>
-          </AdminSectionCard>
+            }
+          >
+            <p className="text-sm text-muted-foreground">Điểm: {u.points}</p>
+            <p className="text-sm text-muted-foreground">Bếp: {u.stoves.length}</p>
+            <p className="truncate text-sm text-muted-foreground">{u.address || "Không có địa chỉ"}</p>
+          </AdminMobileCard>
         ))}
         {!loading && users.length === 0 ? <AdminEmptyState title="Không có người dùng" /> : null}
       </div>
@@ -198,7 +184,13 @@ export default function Page() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => setEditingUser(u)}>Chỉnh sửa</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600" onClick={() => deleteUser(u)}>
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={async () => {
+                            await apiFetchAuth(`/api/admin/users/${u.id}`, { method: "DELETE" });
+                            refreshUser();
+                          }}
+                        >
                           Khoá user
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -258,8 +250,9 @@ export default function Page() {
         open={creating}
         onClose={() => setCreating(false)}
         onCreate={async (data) => {
-          await createUser(data);
+          await apiFetchAuth("/api/admin/users", { method: "POST", body: data });
           setCreating(false);
+          refreshUser();
         }}
       />
 
@@ -268,8 +261,12 @@ export default function Page() {
         selectedUser={editingUser!}
         onClose={() => setEditingUser(null)}
         onSave={async (data) => {
-          await updateUser(editingUser!.id, data);
+          await apiFetchAuth(`/api/admin/users/${editingUser!.id}`, {
+            method: "PUT",
+            body: data,
+          });
           setEditingUser(null);
+          refreshUser();
         }}
       />
     </div>

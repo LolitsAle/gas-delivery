@@ -22,8 +22,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  AdminActionBar,
   AdminEmptyState,
-  AdminPageHeader,
+  AdminMobileCard,
   AdminSectionCard,
 } from "@/components/admin/AdminPageKit";
 
@@ -53,44 +54,9 @@ export default function AdminCategoriesPage() {
     return categories.filter((c) => c.name.toLowerCase().includes(q));
   }, [categories, query]);
 
-  async function createCategory(data: Partial<Category>) {
-    const res = await apiFetchAuth<{ category: Category }>("/api/admin/categories", {
-      method: "POST",
-      body: data,
-    });
-    setCategories((prev) => [res.category, ...prev]);
-    setCreating(false);
-  }
-
-  async function updateCategory(id: string, data: Partial<Category>) {
-    const res = await apiFetchAuth<{ category: Category }>("/api/admin/categories", {
-      method: "PUT",
-      body: { id, ...data },
-    });
-    setCategories((prev) => prev.map((c) => (c.id === id ? res.category : c)));
-    setEditing(null);
-  }
-
-  async function confirmDeleteCategory() {
-    if (!deleting) return;
-    try {
-      setDeletingLoading(true);
-      await apiFetchAuth(`/api/admin/categories?id=${deleting.id}`, { method: "DELETE" });
-      setCategories((prev) => prev.filter((c) => c.id !== deleting.id));
-      setDeleting(null);
-    } finally {
-      setDeletingLoading(false);
-    }
-  }
-
   return (
     <div className="space-y-4 p-[2vw] md:p-[4vw]">
-      <AdminPageHeader
-        title="Danh mục sản phẩm"
-        description="Quản lý danh mục và trạng thái miễn phí vận chuyển."
-      />
-
-      <AdminSectionCard className="space-y-3">
+      <AdminActionBar>
         <div className="flex flex-col gap-2 md:flex-row md:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -101,12 +67,12 @@ export default function AdminCategoriesPage() {
               className="pl-9"
             />
           </div>
-          <Button onClick={() => setCreating(true)} className="md:w-auto">
+          <Button onClick={() => setCreating(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Thêm danh mục
           </Button>
         </div>
-      </AdminSectionCard>
+      </AdminActionBar>
 
       {loading ? (
         <AdminSectionCard>Đang tải dữ liệu...</AdminSectionCard>
@@ -150,25 +116,22 @@ export default function AdminCategoriesPage() {
 
           <div className="space-y-3 md:hidden">
             {filtered.map((c) => (
-              <AdminSectionCard key={c.id} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="font-medium">{c.name}</p>
-                  <div className="space-x-1">
-                    <Button variant="ghost" size="icon" onClick={() => setEditing(c)}>
-                      <Pencil className="h-4 w-4" />
+              <AdminMobileCard
+                key={c.id}
+                header={<p className="font-semibold">{c.name}</p>}
+                footer={
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setEditing(c)}>
+                      <Pencil className="mr-2 h-3.5 w-3.5" />Sửa
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-red-600"
-                      onClick={() => setDeleting(c)}
-                    >
-                      <Trash2 className="h-4 w-4" />
+                    <Button variant="destructive" size="sm" onClick={() => setDeleting(c)}>
+                      <Trash2 className="mr-2 h-3.5 w-3.5" />Xóa
                     </Button>
                   </div>
-                </div>
+                }
+              >
                 <p className="text-sm text-muted-foreground">Miễn ship: {c.freeShip ? "Có" : "Không"}</p>
-              </AdminSectionCard>
+              </AdminMobileCard>
             ))}
             {filtered.length === 0 ? <AdminEmptyState title="Không có danh mục phù hợp" /> : null}
           </div>
@@ -183,7 +146,23 @@ export default function AdminCategoriesPage() {
             setCreating(false);
             setEditing(null);
           }}
-          onSave={(data) => (editing ? updateCategory(editing.id, data) : createCategory(data))}
+          onSave={async (data) => {
+            if (editing) {
+              const res = await apiFetchAuth<{ category: Category }>("/api/admin/categories", {
+                method: "PUT",
+                body: { id: editing.id, ...data },
+              });
+              setCategories((prev) => prev.map((c) => (c.id === editing.id ? res.category : c)));
+              setEditing(null);
+              return;
+            }
+            const res = await apiFetchAuth<{ category: Category }>("/api/admin/categories", {
+              method: "POST",
+              body: data,
+            });
+            setCategories((prev) => [res.category, ...prev]);
+            setCreating(false);
+          }}
         />
       )}
 
@@ -199,7 +178,23 @@ export default function AdminCategoriesPage() {
             <Button variant="outline" onClick={() => setDeleting(null)}>
               Hủy
             </Button>
-            <Button variant="destructive" onClick={confirmDeleteCategory} disabled={deletingLoading}>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!deleting) return;
+                setDeletingLoading(true);
+                try {
+                  await apiFetchAuth(`/api/admin/categories?id=${deleting.id}`, {
+                    method: "DELETE",
+                  });
+                  setCategories((prev) => prev.filter((c) => c.id !== deleting.id));
+                  setDeleting(null);
+                } finally {
+                  setDeletingLoading(false);
+                }
+              }}
+              disabled={deletingLoading}
+            >
               {deletingLoading ? "Đang xóa..." : "Xóa"}
             </Button>
           </DialogFooter>

@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
-
 import ProductFilterBar from "@/components/admin/products/ProductFilterBar";
 import ProductTable from "@/components/admin/products/ProductTable";
-
 import {
   CategoryOption,
   ProductFilters,
@@ -14,15 +12,13 @@ import {
 import ProductCardList from "@/components/admin/products/ProductCardList";
 import ProductDrawerForm from "@/components/admin/products/ProductDrawerForm";
 import {
-  AdminPageHeader,
+  AdminActionBar,
   AdminRefreshButton,
-  AdminSectionCard,
 } from "@/components/admin/AdminPageKit";
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<ProductWithCategory[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [filters, setFilters] = useState<ProductFilters>({
     search: "",
     categoryId: "all",
@@ -32,13 +28,12 @@ export default function AdminProductsPage() {
     page: 1,
     pageSize: 20,
   });
-
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [editingProduct, setEditingProduct] =
     useState<ProductWithCategory | null>(null);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -56,12 +51,11 @@ export default function AdminProductsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     fetchProducts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
+  }, [fetchProducts]);
 
   useEffect(() => {
     apiFetchAuth<{ categories: CategoryOption[] }>("/api/admin/categories")
@@ -69,15 +63,21 @@ export default function AdminProductsPage() {
       .catch(console.error);
   }, []);
 
-  const handleCreate = () => {
-    setEditingProduct(null);
-    setDrawerOpen(true);
-  };
+  const handleFilterChange = useCallback((newFilters: Partial<ProductFilters>) => {
+    setFilters((prev) => {
+      const next = { ...prev, ...newFilters, page: 1 };
+      const same =
+        prev.search === next.search &&
+        prev.categoryId === next.categoryId &&
+        prev.sort === next.sort &&
+        prev.order === next.order &&
+        prev.page === next.page &&
+        prev.pageSize === next.pageSize &&
+        prev.tags.join("|") === next.tags.join("|");
 
-  const handleEdit = (product: ProductWithCategory) => {
-    setEditingProduct(product);
-    setDrawerOpen(true);
-  };
+      return same ? prev : next;
+    });
+  }, []);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Xóa sản phẩm này → không thể hoàn tác?")) return;
@@ -87,27 +87,41 @@ export default function AdminProductsPage() {
 
   return (
     <div className="space-y-4 p-[2vw] md:p-[4vw]">
-      <AdminPageHeader
-        title="Sản phẩm"
-        description="Quản lý danh sách sản phẩm với giao diện đồng nhất admin."
-        actions={<AdminRefreshButton onClick={fetchProducts} loading={loading} />}
-      />
-
-      <AdminSectionCard>
+      <AdminActionBar>
         <ProductFilterBar
           filters={filters}
           categories={categories}
-          onChange={(newFilters) => setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }))}
-          onAdd={handleCreate}
+          onChange={handleFilterChange}
+          onAdd={() => {
+            setEditingProduct(null);
+            setDrawerOpen(true);
+          }}
+          actions={<AdminRefreshButton onClick={fetchProducts} loading={loading} />}
         />
-      </AdminSectionCard>
+      </AdminActionBar>
 
       <div className="hidden md:block">
-        <ProductTable products={products} loading={loading} onEdit={handleEdit} onDelete={handleDelete} />
+        <ProductTable
+          products={products}
+          loading={loading}
+          onEdit={(product) => {
+            setEditingProduct(product);
+            setDrawerOpen(true);
+          }}
+          onDelete={handleDelete}
+        />
       </div>
 
       <div className="md:hidden">
-        <ProductCardList products={products} loading={loading} onEdit={handleEdit} onDelete={handleDelete} />
+        <ProductCardList
+          products={products}
+          loading={loading}
+          onEdit={(product) => {
+            setEditingProduct(product);
+            setDrawerOpen(true);
+          }}
+          onDelete={handleDelete}
+        />
       </div>
 
       <ProductDrawerForm
