@@ -1,5 +1,6 @@
 import { seedCategoriesAndProducts } from "./productAndCategory.seed";
 import { seedPromotions } from "./promotion.seed";
+import { seedUsers } from "./user.seed";
 
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -13,7 +14,7 @@ const prisma = new PrismaClient({ adapter });
 export async function seedAll() {
   try {
     console.log("🌱 Seeding started...");
-
+    await seedUsers(prisma);
     await seedCategoriesAndProducts(prisma);
     await seedPromotions(prisma);
 
