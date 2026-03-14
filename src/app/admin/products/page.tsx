@@ -13,6 +13,7 @@ import ProductCardList from "@/components/admin/products/ProductCardList";
 import ProductDrawerForm from "@/components/admin/products/ProductDrawerForm";
 import {
   AdminActionBar,
+  AdminPageLayout,
   AdminRefreshButton,
 } from "@/components/admin/AdminPageKit";
 
@@ -86,8 +87,9 @@ export default function AdminProductsPage() {
   };
 
   return (
-    <div className="space-y-4 p-[2vw] md:p-[4vw]">
-      <AdminActionBar>
+    <AdminPageLayout
+      actionBar={
+        <AdminActionBar>
         <ProductFilterBar
           filters={filters}
           categories={categories}
@@ -98,8 +100,9 @@ export default function AdminProductsPage() {
           }}
           actions={<AdminRefreshButton onClick={fetchProducts} loading={loading} />}
         />
-      </AdminActionBar>
-
+        </AdminActionBar>
+      }
+    >
       <div className="hidden md:block">
         <ProductTable
           products={products}
@@ -135,6 +138,6 @@ export default function AdminProductsPage() {
         }}
         categories={categories}
       />
-    </div>
+    </AdminPageLayout>
   );
 }

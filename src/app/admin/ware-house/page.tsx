@@ -1,9 +1,9 @@
-import React from 'react'
+import { AdminPageLayout, AdminSectionCard } from "@/components/admin/AdminPageKit";
 
-function Page() {
-    return (
-        <div>Ware house</div>
-    )
+export default function Page() {
+  return (
+    <AdminPageLayout>
+      <AdminSectionCard>Ware house</AdminSectionCard>
+    </AdminPageLayout>
+  );
 }
-
-export default Page

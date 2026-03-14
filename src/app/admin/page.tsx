@@ -12,12 +12,12 @@ import {
 import { motion } from "framer-motion";
 import { DollarSign, User } from "lucide-react";
 import React from "react";
+import { AdminPageLayout } from "@/components/admin/AdminPageKit";
 
 function DashboardPage() {
   return (
-    <div className="flex-1 overflow-auto relative z-10">
-      DASHBOARD
-      <main className="max-w-7xl mx-auto py-4 px-4 lg:px-8">
+    <AdminPageLayout contentClassName="max-w-7xl mx-auto py-2 px-1 lg:px-2">
+      <main>
         <motion.div
           className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8"
           initial={{ opacity: 0, y: 20 }}
@@ -64,7 +64,7 @@ function DashboardPage() {
           <BaseBarChart chartData={SAMPLE_BAR_CHART_DATA} title="Biểu đồ cột" />
         </div>
       </main>
-    </div>
+    </AdminPageLayout>
   );
 }
 

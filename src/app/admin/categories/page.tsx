@@ -25,6 +25,7 @@ import {
   AdminActionBar,
   AdminEmptyState,
   AdminMobileCard,
+  AdminPageLayout,
   AdminSectionCard,
 } from "@/components/admin/AdminPageKit";
 
@@ -55,8 +56,9 @@ export default function AdminCategoriesPage() {
   }, [categories, query]);
 
   return (
-    <div className="space-y-4 p-[2vw] md:p-[4vw]">
-      <AdminActionBar>
+    <AdminPageLayout
+      actionBar={
+        <AdminActionBar>
         <div className="flex flex-row items-center gap-2">
           <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -77,7 +79,8 @@ export default function AdminCategoriesPage() {
           </Button>
         </div>
       </AdminActionBar>
-
+      }
+    >
       {loading ? (
         <AdminSectionCard>Đang tải dữ liệu...</AdminSectionCard>
       ) : (
@@ -237,7 +240,7 @@ export default function AdminCategoriesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminPageLayout>
   );
 }
 
