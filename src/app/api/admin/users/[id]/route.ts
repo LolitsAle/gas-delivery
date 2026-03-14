@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/withAuth";
 import { getId } from "@/lib/api/helper";
+import { hashPassword } from "@/lib/password";
 
 /* ======================================================
    GET USER DETAIL
@@ -89,17 +90,26 @@ export const PUT = withAuth(["ADMIN"], async (req, { params }) => {
 
   const body = await req.json();
 
+  const updateData: any = {
+    ...(body.nickname !== undefined && { nickname: body.nickname }),
+    ...(body.name !== undefined && { name: body.name }),
+    ...(body.address !== undefined && { address: body.address }),
+    ...(body.addressNote !== undefined && { addressNote: body.addressNote }),
+    ...(body.role !== undefined && { role: body.role }),
+    ...(body.isActive !== undefined && { isActive: body.isActive }),
+    ...(body.isVerified !== undefined && { isVerified: body.isVerified }),
+    ...(body.tags !== undefined && { tags: body.tags }),
+    ...(body.points !== undefined && { points: Number(body.points) || 0 }),
+    ...(body.phoneNumber !== undefined && { phoneNumber: body.phoneNumber }),
+  };
+
+  if (typeof body.password === "string" && body.password.trim()) {
+    updateData.passwordHash = await hashPassword(body.password.trim());
+  }
+
   const user = await prisma.user.update({
     where: { id: userId },
-    data: {
-      ...(body.nickname !== undefined && { nickname: body.nickname }),
-      ...(body.name !== undefined && { name: body.name }),
-      ...(body.address !== undefined && { address: body.address }),
-      ...(body.addressNote !== undefined && { addressNote: body.addressNote }),
-      ...(body.role !== undefined && { role: body.role }),
-      ...(body.isActive !== undefined && { isActive: body.isActive }),
-      ...(body.isVerified !== undefined && { isVerified: body.isVerified }),
-    },
+    data: updateData,
     select: {
       id: true,
       phoneNumber: true,
@@ -111,6 +121,7 @@ export const PUT = withAuth(["ADMIN"], async (req, { params }) => {
       points: true,
       address: true,
       addressNote: true,
+      tags: true,
       createdAt: true,
       updatedAt: true,
       stoves: {

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { AdminCard, StatusBadge } from "@/components/admin/Commons";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import type { User } from "@/lib/types/frontend";
 import { Input } from "@/components/ui/input";
@@ -13,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Plus } from "lucide-react";
+import { MoreVertical, Plus, Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -38,334 +37,159 @@ import {
 } from "@/components/ui/dropdown-menu";
 import CreateUserDrawer from "@/components/admin/forms/CreateUserDrawer";
 import EditUserDrawer from "@/components/admin/forms/EditUserDrawer";
+import {
+  AdminActionBar,
+  AdminEmptyState,
+  AdminMobileCard,
+  AdminRefreshButton,
+  AdminSectionCard,
+} from "@/components/admin/AdminPageKit";
 
 export interface UserWithStoves extends User {
   stoves: any[];
 }
 
-interface Props {}
-
-function Page(props: Props) {
-  const {} = props;
-  const [query] = useState("");
-  const [limit] = useState(5);
+export default function Page() {
   const [total, setTotal] = useState(0);
-
   const [editingUser, setEditingUser] = useState<UserWithStoves | null>(null);
   const [creating, setCreating] = useState(false);
-
   const [users, setUsers] = useState<UserWithStoves[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [page, setPage] = useState(1);
   const [triggerUserRefresh, setTriggerUserRefresh] = useState(false);
 
-  const pageSize = 5;
-
+  const pageSize = 10;
   const refreshUser = () => setTriggerUserRefresh((p) => !p);
 
   useEffect(() => {
     setLoading(true);
-
-    const params = new URLSearchParams({
-      page: String(page),
-      limit: String(limit),
-    });
-
-    if (query) params.set("search", query);
+    const params = new URLSearchParams({ page: String(page), limit: String(pageSize) });
+    if (search.trim()) params.set("search", search.trim());
     if (status !== "ALL") params.set("status", status);
 
-    apiFetchAuth<{ users: UserWithStoves[]; meta: any }>(
-      `/api/admin/users?${params.toString()}`,
-    )
+    apiFetchAuth<{ users: UserWithStoves[]; meta: any }>(`/api/admin/users?${params.toString()}`)
       .then((res) => {
-        setUsers(res.users);
-        setTotal(res.meta.total);
+        setUsers(res.users || []);
+        setTotal(res.meta?.total || 0);
       })
       .finally(() => setLoading(false));
-  }, [page, limit, query, status, triggerUserRefresh]);
+  }, [page, search, status, triggerUserRefresh]);
 
-  /* Reset page khi filter/search đổi */
   useEffect(() => {
     setPage(1);
-  }, [query, status]);
-
-  // Create user
-  async function createUser(data: Partial<UserWithStoves>) {
-    try {
-      const res = await apiFetchAuth<{ user: UserWithStoves }>(
-        "/api/admin/users",
-        {
-          method: "POST",
-          body: data,
-        },
-      );
-
-      if (page === 1) {
-        setUsers((prev) => [res.user, ...prev.slice(0, limit - 1)]);
-      }
-
-      setTotal((t) => t + 1);
-    } catch (error) {
-      console.error("Create User ERROR:", error);
-      alert("Tạo người dùng thất bại");
-    }
-  }
-
-  // Delete user
-  async function deleteUser(user: UserWithStoves) {
-    const snapshot = users;
-
-    try {
-      await apiFetchAuth(`/api/admin/users/${user.id}`, {
-        method: "DELETE",
-      });
-      await refreshUser();
-    } catch {
-      setUsers(snapshot);
-      setTotal((t) => t + 1);
-      alert("Xóa người dùng thất bại");
-    }
-  }
-
-  // Update user
-  async function updateUser(id: string, data: Partial<User>) {
-    const snapshot = users;
-
-    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...data } : u)));
-
-    try {
-      const res = await apiFetchAuth<{ user: UserWithStoves }>(
-        `/api/admin/users/${id}`,
-        {
-          method: "PUT",
-          body: data,
-        },
-      );
-
-      setUsers((prev) => prev.map((u) => (u.id === id ? res.user : u)));
-    } catch {
-      setUsers(snapshot);
-      alert("Cập nhật thất bại");
-    }
-  }
-
-  /* FILTER */
-  const filtered = users.filter((u) => {
-    const matchSearch =
-      (u.nickname || "").toLowerCase().includes(search.toLowerCase()) ||
-      (u.phoneNumber || "").includes(search);
-
-    const matchStatus =
-      status === "ALL" ||
-      (status === "ACTIVE" && u.isActive) ||
-      (status === "INACTIVE" && !u.isActive);
-
-    return matchSearch && matchStatus;
-  });
+  }, [search, status]);
 
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div className="space-y-4">
-      {/* Search & Filter – Mobile first */}
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder="Tên / SĐT"
-          className="h-10 flex-1 rounded-md text-sm"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+    <div className="space-y-4 p-[2vw] md:p-[4vw]">
+      <AdminActionBar>
+        <div className="flex flex-col gap-2 md:flex-row md:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Tên / SĐT"
+              className="pl-9"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <Select value={status} onValueChange={(value) => setStatus(value as any)}>
+            <SelectTrigger className="w-full md:w-52">
+              <SelectValue placeholder="All" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Tất cả</SelectItem>
+              <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
+              <SelectItem value="INACTIVE">Đã bị khoá</SelectItem>
+            </SelectContent>
+          </Select>
+          <AdminRefreshButton onClick={refreshUser} loading={loading} />
+          <Button onClick={() => setCreating(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Tạo user
+          </Button>
+        </div>
+      </AdminActionBar>
 
-        <Select
-          value={status}
-          onValueChange={(value) => setStatus(value as any)}
-        >
-          <SelectTrigger className="h-10 w-22.5 rounded-md text-sm">
-            <SelectValue placeholder="All" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Tất cả</SelectItem>
-            <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
-            <SelectItem value="INACTIVE">Đã bị khoá</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Button
-          size="icon"
-          className="h-10 w-10 rounded-md"
-          onClick={() => setCreating(true)}
-          aria-label="Tạo user"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
-      {/* Mobile – Card */}
-      <div className="md:hidden space-y-3">
-        {filtered.map((u) => (
-          <AdminCard
+      <div className="space-y-3 md:hidden">
+        {users.map((u) => (
+          <AdminMobileCard
             key={u.id}
-            title={
-              <div className="flex items-center gap-[2vw]">
-                <div className="max-w-[60%] truncate font-medium">
-                  {u.nickname}
+            header={
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">{u.nickname || u.name || "Không tên"}</p>
+                  <p className="text-xs text-muted-foreground">{u.phoneNumber}</p>
                 </div>
-                <a
-                  href={`tel:${u.phoneNumber}`}
-                  className="shrink-0 text-md text-gray-700 underline"
-                >
-                  ({u.phoneNumber})
-                </a>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/80">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setEditingUser(u)}>Chỉnh sửa</DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-red-600"
+                      onClick={async () => {
+                        await apiFetchAuth(`/api/admin/users/${u.id}`, { method: "DELETE" });
+                        refreshUser();
+                      }}
+                    >
+                      Khóa user
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-            }
-            actions={
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    aria-label="Mở menu"
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent align="end" sideOffset={6}>
-                  <DropdownMenuItem onClick={() => setEditingUser(u)}>
-                    Chỉnh sửa
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-red-600 focus:text-red-600"
-                    onClick={() => deleteUser(u)}
-                  >
-                    Khoá user
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             }
           >
-            {/* Row 2: Address + Points */}
-            <div className="flex justify-between text-sm text-gray-700">
-              <div className="truncate max-w-[70%]">
-                📍 {u.address || "Chưa có địa chỉ"}
-              </div>
-              <div className="whitespace-nowrap">⭐ {u.points}</div>
-            </div>
-
-            {/* Row 3: Address Note */}
-            {u.addressNote && (
-              <div className="text-sm font-medium text-gray-800">
-                {u.addressNote}
-              </div>
-            )}
-
-            {/* Row 4: Status tags */}
-            <div className="flex gap-2 flex-wrap">
-              <StatusBadge status={u.isActive ? "ACTIVE" : "INACTIVE"} />
-              <StatusBadge status={u.isVerified ? "VERIFIED" : "PENDING"} />
-            </div>
-
-            {/* Row 5: Stoves */}
-            <div className="text-xs text-gray-500">
-              🔥 {u.stoves.length} bếp
-            </div>
-          </AdminCard>
+            <p className="text-sm text-muted-foreground">Điểm: {u.points}</p>
+            <p className="text-sm text-muted-foreground">Bếp: {u.stoves.length}</p>
+            <p className="truncate text-sm text-muted-foreground">{u.address || "Không có địa chỉ"}</p>
+          </AdminMobileCard>
         ))}
+        {!loading && users.length === 0 ? <AdminEmptyState title="Không có người dùng" /> : null}
       </div>
-      {/* Desktop – Table */}
-      <div className="hidden md:block w-full overflow-x-auto">
-        <div className="rounded-lg border bg-white shadow-sm">
-          <Table className="w-full table-fixed">
-            <TableHeader className="bg-muted/50">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Tên
-                </TableHead>
-                <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Số điện thoại
-                </TableHead>
-                <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Địa chỉ
-                </TableHead>
-                <TableHead className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  SL Bếp
-                </TableHead>
-                <TableHead className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Điểm
-                </TableHead>
-                <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Tình trạng
-                </TableHead>
-                <TableHead className="px-4 py-3 text-right" />
+
+      <div className="hidden md:block">
+        <AdminSectionCard className="overflow-hidden p-0">
+          <Table>
+            <TableHeader className="bg-muted/40">
+              <TableRow>
+                <TableHead>Tên</TableHead>
+                <TableHead>Số điện thoại</TableHead>
+                <TableHead>Địa chỉ</TableHead>
+                <TableHead className="text-center">SL Bếp</TableHead>
+                <TableHead className="text-center">Điểm</TableHead>
+                <TableHead className="text-right">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
-
-            {/* BODY */}
             <TableBody>
-              {filtered.map((u) => (
-                <TableRow
-                  key={u.id}
-                  className="hover:bg-muted/40 transition-colors"
-                >
-                  <TableCell className="px-4 py-3 font-medium">
-                    {u.nickname}
-                  </TableCell>
-
-                  <TableCell className="px-4 py-3 text-sm text-muted-foreground">
-                    {u.phoneNumber}
-                  </TableCell>
-
-                  <TableCell className="px-4 py-3 max-w-65">
-                    <div className="truncate text-sm">{u.address || "-"}</div>
-                    {u.addressNote && (
-                      <div className="truncate text-xs text-muted-foreground">
-                        {u.addressNote}
-                      </div>
-                    )}
-                  </TableCell>
-
-                  <TableCell className="px-4 py-3 text-center text-sm">
-                    {u.stoves.length}
-                  </TableCell>
-
-                  <TableCell className="px-4 py-3 text-center text-sm">
-                    {u.points}
-                  </TableCell>
-
-                  <TableCell className="px-4 py-3">
-                    <div className="flex gap-2 flex-wrap">
-                      <StatusBadge
-                        status={u.isActive ? "ACTIVE" : "INACTIVE"}
-                      />
-                      <StatusBadge
-                        status={u.isVerified ? "VERIFIED" : "PENDING"}
-                      />
-                    </div>
-                  </TableCell>
-
-                  <TableCell className="px-4 py-3 text-right">
+              {users.map((u) => (
+                <TableRow key={u.id}>
+                  <TableCell className="font-medium">{u.nickname || u.name || "-"}</TableCell>
+                  <TableCell>{u.phoneNumber}</TableCell>
+                  <TableCell>{u.address || "-"}</TableCell>
+                  <TableCell className="text-center">{u.stoves.length}</TableCell>
+                  <TableCell className="text-center">{u.points}</TableCell>
+                  <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          aria-label="Mở menu"
-                        >
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-
-                      <DropdownMenuContent align="end" sideOffset={6}>
-                        <DropdownMenuItem onClick={() => setEditingUser(u)}>
-                          Chỉnh sửa
-                        </DropdownMenuItem>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditingUser(u)}>Chỉnh sửa</DropdownMenuItem>
                         <DropdownMenuItem
-                          className="text-red-600 focus:text-red-600"
-                          onClick={() => deleteUser(u)}
+                          className="text-red-600"
+                          onClick={async () => {
+                            await apiFetchAuth(`/api/admin/users/${u.id}`, { method: "DELETE" });
+                            refreshUser();
+                          }}
                         >
                           Khoá user
                         </DropdownMenuItem>
@@ -376,9 +200,11 @@ function Page(props: Props) {
               ))}
             </TableBody>
           </Table>
-        </div>
+          {!loading && users.length === 0 ? <AdminEmptyState title="Không có người dùng" /> : null}
+        </AdminSectionCard>
       </div>
-      <Pagination className="mt-4">
+
+      <Pagination className="mt-2">
         <PaginationContent>
           <PaginationItem>
             <PaginationPrevious
@@ -390,10 +216,8 @@ function Page(props: Props) {
               className={page === 1 ? "pointer-events-none opacity-50" : ""}
             />
           </PaginationItem>
-
           {Array.from({ length: totalPages }).map((_, i) => {
             const p = i + 1;
-
             return (
               <PaginationItem key={p}>
                 <PaginationLink
@@ -416,9 +240,7 @@ function Page(props: Props) {
                 e.preventDefault();
                 if (page < totalPages) setPage(page + 1);
               }}
-              className={
-                page === totalPages ? "pointer-events-none opacity-50" : ""
-              }
+              className={page === totalPages ? "pointer-events-none opacity-50" : ""}
             />
           </PaginationItem>
         </PaginationContent>
@@ -428,8 +250,9 @@ function Page(props: Props) {
         open={creating}
         onClose={() => setCreating(false)}
         onCreate={async (data) => {
-          await createUser(data);
+          await apiFetchAuth("/api/admin/users", { method: "POST", body: data });
           setCreating(false);
+          refreshUser();
         }}
       />
 
@@ -438,12 +261,14 @@ function Page(props: Props) {
         selectedUser={editingUser!}
         onClose={() => setEditingUser(null)}
         onSave={async (data) => {
-          await updateUser(editingUser!.id, data);
+          await apiFetchAuth(`/api/admin/users/${editingUser!.id}`, {
+            method: "PUT",
+            body: data,
+          });
           setEditingUser(null);
+          refreshUser();
         }}
       />
     </div>
   );
 }
-
-export default Page;
