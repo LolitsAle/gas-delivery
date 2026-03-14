@@ -11,8 +11,8 @@ export const metadata: Metadata = {
   description: "An toàn là trên hết",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icons/icon-192.png",
-    apple: "/icons/icon-512.png",
+    icon: "/icons/logo-192x192.png",
+    apple: "/icons/logo-512x512.png",
   },
 };
 
