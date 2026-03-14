@@ -79,8 +79,8 @@ export default function AdminShell({
       <div className="flex flex-col flex-1 min-w-0">
         <Header onMenuClick={() => setSidebarOpen(true)} />
 
-        <main className="flex-1 overflow-y-auto">
-          <div>{children}</div>
+        <main className="flex-1 min-h-0 overflow-hidden">
+          <div className="h-full">{children}</div>
         </main>
       </div>
     </div>

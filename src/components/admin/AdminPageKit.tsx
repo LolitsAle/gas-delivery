@@ -5,6 +5,65 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { RefreshCcw } from "lucide-react";
 
+export function AdminPageLayout({
+  actionBar,
+  children,
+  className,
+  contentClassName,
+  scrollClassName,
+  actionBarClassName,
+}: {
+  actionBar?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  contentClassName?: string;
+  scrollClassName?: string;
+  actionBarClassName?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex h-full min-h-0 flex-col gap-4 overflow-hidden p-[2vw] md:p-[4vw]",
+        className,
+      )}
+    >
+      {actionBar ? (
+        <div className={cn("shrink-0", actionBarClassName)}>{actionBar}</div>
+      ) : null}
+
+      <AdminScrollableArea className={scrollClassName}>
+        <AdminPageContent className={contentClassName}>{children}</AdminPageContent>
+      </AdminScrollableArea>
+    </div>
+  );
+}
+
+export function AdminPageContent({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={cn("space-y-4", className)}>{children}</div>;
+}
+
+export function AdminScrollableArea({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className="flex-1 min-h-0 overflow-hidden">
+      <div className={cn("h-full overflow-y-auto no-scrollbar", className)}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function AdminSectionCard({
   children,
   className,

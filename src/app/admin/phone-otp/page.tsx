@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { apiFetchAuth } from "@/lib/api/apiClient";
 import {
   AdminActionBar,
+  AdminPageLayout,
   AdminEmptyState,
   AdminMobileCard,
   AdminRefreshButton,
@@ -57,8 +58,9 @@ export default function AdminPhoneOtpPage() {
   const now = Date.now();
 
   return (
-    <div className="space-y-4 p-[2vw] md:p-[4vw]">
-      <AdminActionBar>
+    <AdminPageLayout
+      actionBar={
+        <AdminActionBar>
         <div className="flex flex-wrap items-center gap-2">
           <AdminRefreshButton onClick={load} loading={loading} />
           <Button variant="destructive" onClick={() => setConfirmOpen(true)}>
@@ -66,7 +68,8 @@ export default function AdminPhoneOtpPage() {
           </Button>
         </div>
       </AdminActionBar>
-
+      }
+    >
       <div className="hidden md:block">
         <AdminSectionCard className="overflow-hidden p-0">
           <Table>
@@ -147,6 +150,6 @@ export default function AdminPhoneOtpPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminPageLayout>
   );
 }

@@ -47,6 +47,7 @@ import {
 } from "@/lib/types/promotion";
 import {
   AdminActionBar,
+  AdminPageLayout,
   AdminEmptyState,
   AdminMobileCard,
   AdminRefreshButton,
@@ -241,8 +242,9 @@ export default function AdminPromotionsPage() {
   };
 
   return (
-    <div className="space-y-4 p-[2vw] md:p-[4vw]">
-      <AdminActionBar>
+    <AdminPageLayout
+      actionBar={
+        <AdminActionBar>
         <div className="flex flex-wrap items-center gap-2">
           <AdminRefreshButton onClick={loadPromotions} loading={loading} />
           <Button onClick={openCreate}>
@@ -251,7 +253,8 @@ export default function AdminPromotionsPage() {
           </Button>
         </div>
       </AdminActionBar>
-
+      }
+    >
       <div className="hidden md:block">
         <AdminSectionCard className="overflow-hidden p-0">
           <Table>
@@ -426,6 +429,6 @@ export default function AdminPromotionsPage() {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
-    </div>
+    </AdminPageLayout>
   );
 }

@@ -47,6 +47,7 @@ import {
 import { CalendarDays, ChevronDown } from "lucide-react";
 import { ORDER_SOCKET_PATH } from "@/lib/socket/orderEvents";
 import { playAdminSound } from "@/lib/helper/adminAudioManager";
+import { AdminActionBar, AdminPageLayout } from "@/components/admin/AdminPageKit";
 
 type OrderStatus =
   | "PENDING"
@@ -414,9 +415,9 @@ export default function AdminOrdersPage() {
   };
 
   return (
-    <div className="p-[2vw] md:p-[4vw]">
-      {/* FILTER */}
-      <div className="mb-4 rounded-xl border p-3 md:p-4">
+    <AdminPageLayout
+      actionBar={
+        <AdminActionBar>
         <Collapsible open={openAdvanced} onOpenChange={setOpenAdvanced}>
           {/* ROW 1 */}
           <div className="flex items-center gap-3">
@@ -494,8 +495,9 @@ export default function AdminOrdersPage() {
             </div>
           </CollapsibleContent>
         </Collapsible>
-      </div>
-
+        </AdminActionBar>
+      }
+    >
       {/* ORDERS WRAPPER */}
       <div className="relative">
         {/* MOBILE */}
@@ -665,6 +667,6 @@ export default function AdminOrdersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminPageLayout>
   );
 }

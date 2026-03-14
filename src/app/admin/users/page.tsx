@@ -41,6 +41,7 @@ import {
   AdminActionBar,
   AdminEmptyState,
   AdminMobileCard,
+  AdminPageLayout,
   AdminRefreshButton,
   AdminSectionCard,
 } from "@/components/admin/AdminPageKit";
@@ -89,45 +90,47 @@ export default function Page() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div className="space-y-4 p-[2vw] md:p-[4vw]">
-      <AdminActionBar>
-        <div className="flex flex-row gap-2 md:items-center">
-          <div className="relative min-w-0 flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Tên / SĐT"
-              className="pl-9"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+    <AdminPageLayout
+      actionBar={
+        <AdminActionBar>
+          <div className="flex flex-row gap-2 md:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Tên / SĐT"
+                className="pl-9"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            <Select
+              value={status}
+              onValueChange={(value) => setStatus(value as any)}
+            >
+              <SelectTrigger className="w-fit min-w-120px max-w-160px">
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Tất cả</SelectItem>
+                <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
+                <SelectItem value="INACTIVE">Đã bị khoá</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <AdminRefreshButton onClick={refreshUser} loading={loading} />
+
+            <Button
+              onClick={() => setCreating(true)}
+              className="min-w-9 px-2 sm:px-3"
+            >
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Tạo user</span>
+            </Button>
           </div>
-
-          <Select
-            value={status}
-            onValueChange={(value) => setStatus(value as any)}
-          >
-            <SelectTrigger className="w-fit min-w-120px max-w-160px">
-              <SelectValue placeholder="All" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả</SelectItem>
-              <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
-              <SelectItem value="INACTIVE">Đã bị khoá</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <AdminRefreshButton onClick={refreshUser} loading={loading} />
-
-          <Button
-            onClick={() => setCreating(true)}
-            className="min-w-9 px-2 sm:px-3"
-          >
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Tạo user</span>
-          </Button>
-        </div>
-      </AdminActionBar>
-
+        </AdminActionBar>
+      }
+    >
       <div className="space-y-3 md:hidden">
         {users.map((u) => (
           <AdminMobileCard
@@ -316,6 +319,6 @@ export default function Page() {
           refreshUser();
         }}
       />
-    </div>
+    </AdminPageLayout>
   );
 }
