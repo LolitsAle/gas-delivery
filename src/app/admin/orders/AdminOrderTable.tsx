@@ -260,7 +260,7 @@ export default function AdminOrderTable({
                                   align="start"
                                   position="popper"
                                   sideOffset={6}
-                                  className="z-[9999]"
+                                  className="z-200"
                                 >
                                   {transitions.map((s) => (
                                     <SelectItem key={s} value={s}>
